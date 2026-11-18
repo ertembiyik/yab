@@ -135,7 +135,7 @@ enum Guide {
 
     /// Goes up when what the skill file says changes, so an older one on
     /// disk can be told to set up again.
-    static let skillVersion = 3
+    static let skillVersion = 4
 
     static var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
