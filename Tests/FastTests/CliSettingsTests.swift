@@ -42,4 +42,12 @@ struct CliSettingsTests {
         #expect(CliSettings.exitCode(result("Refused", error: true)) == 1)
         #expect(CliSettings.exitCode(result(#"{"settings":[]}"#)) == 0)
     }
+
+    @Test func aLaterOperationRejoinsTheSessionTheApplyLeftWaiting() throws {
+        let call = try CliSettings.parse(["operation", "OP1", "--session", "S1", "--seconds", "5"])
+        #expect(call.tool == "native_operation")
+        #expect(call.session == "S1")
+        #expect(call.input["operationId"] as? String == "OP1")
+        #expect(try CliSettings.parse(["show"]).session == nil)
+    }
 }

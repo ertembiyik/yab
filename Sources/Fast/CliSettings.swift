@@ -22,6 +22,8 @@ enum CliSettings {
         var tool: String
         var input: [String: AnyHashable]
         var json: Bool
+        /// A session an earlier apply left waiting for the person (`--session`).
+        var session: String? = nil
     }
 
     /// The tool and its input, from the words after `settings`. `newID`
@@ -32,6 +34,7 @@ enum CliSettings {
         var target: [String: AnyHashable]?
         var expected: String?, requestID: String?, seconds: Double?
         var cancel = false
+        var session: String?
         var i = 0
         func value(_ flag: String) throws -> String {
             i += 1
@@ -49,6 +52,7 @@ enum CliSettings {
                 target = ["kind": parts[0], "id": parts[1]]
             case "--expect": expected = try value(arg)
             case "--request-id": requestID = try value(arg)
+            case "--session": session = try value(arg)
             case "--seconds":
                 guard let s = Double(try value(arg)), (0...10).contains(s) else { throw Failure(message: "--seconds must be 0 to 10.") }
                 seconds = s
@@ -59,6 +63,14 @@ enum CliSettings {
             }
             i += 1
         }
+        var call = try call(plain, json: json, target: target, expected: expected, requestID: requestID,
+                            seconds: seconds, cancel: cancel, newID: newID)
+        call.session = session
+        return call
+    }
+
+    private static func call(_ plain: [String], json: Bool, target: [String: AnyHashable]?, expected: String?, requestID: String?,
+                             seconds: Double?, cancel: Bool, newID: () -> String) throws -> Call {
         let verb = plain.first?.lowercased() ?? "show"
         let rest = Array(plain.dropFirst())
         let query = rest.joined(separator: " ")
@@ -90,7 +102,7 @@ enum CliSettings {
             guard rest.count <= 1 else { throw Failure(message: "usage: \(AgentSetup.command) settings undo [CHANGE_ID]") }
             return Call(tool: "native_undo", input: rest.first.map { ["changeId": $0] } ?? [:], json: json)
         case "operation":
-            guard rest.count == 1 else { throw Failure(message: "usage: \(AgentSetup.command) settings operation OPERATION_ID [--seconds N] [--cancel]") }
+            guard rest.count == 1 else { throw Failure(message: "usage: \(AgentSetup.command) settings operation OPERATION_ID [--session ID] [--seconds N] [--cancel]") }
             var input: [String: AnyHashable] = ["operationId": rest[0]]
             if let seconds { input["seconds"] = seconds }
             if cancel { input["cancel"] = true }
@@ -119,9 +131,10 @@ enum CliSettings {
             FileHandle.standardError.write(Data((error.localizedDescription + "\n" + usage + "\n").utf8))
             exit(2)
         }
+        Mcp.session = call.session
         let result = Mcp.within(args) { () -> [String: Any] in
             var result = Mcp.call(call.tool, call.input)
-            guard call.tool == "native_apply" else { return result }
+            guard ["native_apply", "native_operation"].contains(call.tool) else { return result }
             // The yes is asked in this session, so it waits here: leaving would take the card away.
             let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 600 : 15)
             var told = false
@@ -131,6 +144,11 @@ enum CliSettings {
                     FileHandle.standardError.write(Data("Waiting for your yes in Yab…\n".utf8))
                 }
                 result = Mcp.call("native_operation", ["operationId": id, "seconds": 10])
+            }
+            // Still unanswered: the card stays with its session, for a later `settings operation`.
+            if status(of: result) == "needs_user", let id = operation(of: result), let session = Mcp.session {
+                Mcp.keepSession = true
+                FileHandle.standardError.write(Data("Still waiting for your yes in Yab. Ask again: \(AgentSetup.command) settings operation \(id) --session \(session)\n".utf8))
             }
             return result
         }
@@ -173,7 +191,7 @@ enum CliSettings {
                \(c) settings actions [WORDS] [--json]                    what can be changed, with argument schemas
                \(c) settings apply ACTION ['{"key":value}'] [--target KIND:ID] [--expect VERSION] [--request-id ID] [--json]
                \(c) settings undo [CHANGE_ID] [--json]
-               \(c) settings operation OPERATION_ID [--seconds N] [--cancel] [--json]
+               \(c) settings operation OPERATION_ID [--session ID] [--seconds N] [--cancel] [--json]
         The target defaults to the app (application:app). An apply that needs your yes waits for it in Yab.
         Undo reaches changes made in the same session, such as one exec script or an agent's shell.
         exit: 0 done · 1 refused or failed · 2 usage · 3 needs you in Yab
