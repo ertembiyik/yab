@@ -31,4 +31,15 @@ struct CliSettingsTests {
             #expect(throws: CliSettings.Failure.self) { try CliSettings.parse(args) }
         }
     }
+
+    @Test func anApplyStillWaitingForThePersonExitsThree() {
+        func result(_ json: String, error: Bool = false) -> [String: Any] {
+            ["content": [["type": "text", "text": json]], "isError": error]
+        }
+        #expect(CliSettings.exitCode(result(#"{"status":"needs_user","operationId":"A"}"#)) == 3)
+        #expect(CliSettings.exitCode(result(#"{"status":"verified","operationId":"A"}"#)) == 0)
+        #expect(CliSettings.exitCode(result(#"{"status":"unknown_outcome"}"#)) == 1)
+        #expect(CliSettings.exitCode(result("Refused", error: true)) == 1)
+        #expect(CliSettings.exitCode(result(#"{"settings":[]}"#)) == 0)
+    }
 }
