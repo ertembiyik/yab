@@ -335,8 +335,7 @@ enum AgentSetup {
     Control Yab through its tools, not Computer Use, AppleScript or desktop keystrokes.
 
     For Yab settings, inspect `native_context` and `native_actions`, then use a listed action with
-    `native_apply`. From a shell: `\(command) settings show WORDS`, `settings actions WORDS`, then
-    `settings apply ACTION '{"key":value}'`; in `exec`, the same names are functions. Use `\(command) guide` for more examples and `\(command) guide setup` for setup.
+    `native_apply`. Use `\(command) guide` for more examples and `\(command) guide setup` for setup.
     If the command is missing, the user can install it in Settings › Developers.
     If agents are disabled, ask the user to enable Let agents use Yab there.
     """ }

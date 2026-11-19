@@ -148,7 +148,7 @@ enum CliSettings {
             // Still unanswered: the card stays with its session, for a later `settings operation`.
             if status(of: result) == "needs_user", let id = operation(of: result), let session = Mcp.session {
                 Mcp.keepSession = true
-                FileHandle.standardError.write(Data("Still waiting for your yes in Yab. Ask again: \(AgentSetup.command) settings operation \(id) --session \(session)\n".utf8))
+                FileHandle.standardError.write(Data("Still waiting for your yes in Yab. Ask again within \(Int(Mcp.keptFor / 60)) minutes: \(AgentSetup.command) settings operation \(id) --session \(session)\n".utf8))
             }
             return result
         }
