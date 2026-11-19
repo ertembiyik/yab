@@ -278,6 +278,8 @@ final class Extensions: NSObject, ObservableObject {
         // the extensions. Extensions are told they run in Chrome by the shim
         // instead (navigator.userAgent in their pages and workers).
         views.applicationNameForUserAgent = Web.userAgentName
+        // Extension pages send Global Privacy Control as tabs do.
+        Web.globalPrivacyControl(views)
         // A test run sits behind other windows, where WebKit slows its views
         // to a crawl and messages between an extension's popup and its
         // worker stop arriving. Not what anyone is testing.

@@ -2794,6 +2794,10 @@ class App : public CefApp, public CefBrowserProcessHandler {
     // media engagement, and the hidden overlay never gets a press. A trusted one
     // leaves both hidden. Document Picture in Picture doesn't read this.
     features += ",VideoPipForceTrustedForMediaPlaybackForTesting";
+    // Global Privacy Control, as WebKit tabs send it (Web.globalPrivacyControl).
+    // Chrome's own pref needs its UniversalOptOut settings UI; this is the
+    // switch behind chrome://flags#enable-global-privacy-control.
+    features += ",GlobalPrivacyControlForce";
 #if YABCORE_DISCARD
     // Native discard is off by default on macOS.
     features += ",WebContentsDiscard";

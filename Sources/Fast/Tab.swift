@@ -77,6 +77,17 @@ enum Web {
         unsafeBitCast(preferences.method(for: selector), to: Setter.self)(preferences, selector, on)
     }
 
+    /// Global Privacy Control: `Sec-GPC: 1` on a page's, frames' and subresources'
+    /// requests to secure origins, and `navigator.globalPrivacyControl`. Public on
+    /// macOS 27 only; set by name because releases build against the macOS 26 SDK.
+    static func globalPrivacyControl(_ config: WKWebViewConfiguration) {
+        let preferences: WKWebpagePreferences = config.defaultWebpagePreferences
+        let selector = NSSelectorFromString("setGlobalPrivacyControlEnabled:")
+        guard preferences.responds(to: selector) else { return }
+        typealias Setter = @convention(c) (AnyObject, Selector, Bool) -> Void
+        unsafeBitCast(preferences.method(for: selector), to: Setter.self)(preferences, selector, true)
+    }
+
     /// Where yab's own page scripts run, and where their messages come
     /// from: a world of their own beside the page's. They see the same page,
     /// and the page sees none of them, no variable of theirs, and no
@@ -190,6 +201,7 @@ enum Web {
         let config = WKWebViewConfiguration()
         MainActor.assumeIsolated { AppleWritingTools.configure(config) }
         config.processPool = pool
+        globalPrivacyControl(config)
         // ⌫ is no Back on a page, whatever else is cut (Web.backspaceNavigation, #262).
         Web.backspaceNavigation(config.preferences, on: Web.backspaceGoesBack)
         if LinkGap.cut("config") {
