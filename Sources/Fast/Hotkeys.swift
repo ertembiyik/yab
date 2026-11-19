@@ -99,6 +99,7 @@ import SwiftUI
     /// that answers it: yab's own rebinding, when it has one, is to answer
     /// here too.
     func keys(_ title: String) -> String {
+        _ = version
         // One Settings › Shortcuts can change: as it has it (Keymap).
         if let action = Self.action(forTitle: title) { return Keymap.shared.keys(action)?.text ?? "" }
         return now[title] ?? Hotkeys.items.first { $0.title == title }?.keys ?? ""

@@ -41,6 +41,7 @@ extension Share {
     /// call each say their side, and a share with nothing to look at in this
     /// window is said over whatever is in front.
     func status(in browser: Browser, over tab: Tab?) -> ShareStatus? {
+        _ = revision
         guard let tab else { return nil }
         let front = tab.id == browser.activeID
         guard let session = sessions.values.sorted(by: { $0.id < $1.id }).first(where: { $0.browser === browser }) else {
@@ -96,7 +97,8 @@ extension Share {
 
     /// The words' state of this share.
     func fold(_ status: ShareStatus) -> ShareFold {
-        status.session.flatMap { sessions[$0]?.fold } ?? systemFold
+        _ = revision
+        return status.session.flatMap { sessions[$0]?.fold } ?? systemFold
     }
 
     /// Whatever this tab is part of, ended.

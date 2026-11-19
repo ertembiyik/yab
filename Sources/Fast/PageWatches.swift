@@ -157,7 +157,12 @@ enum PageWatchCheck {
 
     /// Bumped when what a row or a menu shows changes, not at every read.
     private(set) var revision = 0
-    @ObservationIgnored private(set) var all: [PageWatch] = []
+    /// Read through `revision`: a write that isn't shown doesn't redraw.
+    private(set) var all: [PageWatch] {
+        get { _ = revision; return watches }
+        set { watches = newValue }
+    }
+    @ObservationIgnored private var watches: [PageWatch] = []
     /// What each hit said, for the bench: the notification's words.
     @ObservationIgnored private(set) var told: [[String: String]] = []
     @ObservationIgnored private var reading: Set<String> = []

@@ -204,6 +204,7 @@ import UserNotifications
 
     /// A listing's picture, fetched once; nil until it comes.
     func picture(_ item: Item, after: Bool = true) -> NSImage? {
+        _ = version
         guard let path = after ? item.pictures?.after : item.pictures?.before,
               let base = Updater.site ?? URL(string: "https://yetanotherbrowser.com/"),
               let url = URL(string: path, relativeTo: base)?.absoluteURL, url.scheme == "https" else { return nil }

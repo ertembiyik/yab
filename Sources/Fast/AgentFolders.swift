@@ -499,7 +499,7 @@ extension Agents {
 
     @ObservationIgnored private var watching: [AnyCancellable] = []
     @ObservationIgnored private var following: ObservationLoop?
-    private var pending = false
+    @ObservationIgnored private var pending = false
 
     weak var browser: Browser? {
         didSet {

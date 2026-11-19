@@ -8,8 +8,9 @@ import SwiftUI
     static let shared = BoostAI()
     private(set) var change = 0
     private func key(_ id: String) -> String { "boosts.ai." + id + "." + String(ISO8601DateFormatter().string(from: Date()).prefix(10)) }
-    func used(_ id: String) -> Int { Store.settings.integer(forKey: key(id)) }
+    func used(_ id: String) -> Int { _ = change; return Store.settings.integer(forKey: key(id)) }
     func limit(_ package: BoostPackage) -> Int {
+        _ = change
         let value = Store.settings.object(forKey: "boosts.limit." + package.id) as? Int
         return min(package.plugin.dailyLimit, max(0, value ?? package.plugin.dailyLimit))
     }
@@ -20,7 +21,7 @@ import SwiftUI
         guard used(package.id) < limit(package) else { throw BoostPackage.Invalid("This plugin reached its daily AI limit of \(limit(package)). Change its limit in Settings > AI or wait until tomorrow.") }
         Store.settings.set(used(package.id) + 1, forKey: key(package.id)); change += 1
     }
-    func planAllowed(_ id: String, revision: String) -> Bool { Store.settings.string(forKey: "boosts.plan." + id) == revision }
+    func planAllowed(_ id: String, revision: String) -> Bool { _ = change; return Store.settings.string(forKey: "boosts.plan." + id) == revision }
     func allowPlan(_ id: String, revision: String) { Store.settings.set(revision, forKey: "boosts.plan." + id); change += 1 }
     func revokePlan(_ id: String) { Store.settings.removeObject(forKey: "boosts.plan." + id); change += 1 }
 }

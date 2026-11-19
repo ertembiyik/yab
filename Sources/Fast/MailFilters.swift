@@ -157,7 +157,7 @@ extension MailRule {
         account + "\u{1F}" + base + "\u{1F}" + line
     }
 
-    func count(_ line: String, base: String, account: String) -> Count? { known[Self.key(line, base: base, account: account)] }
+    func count(_ line: String, base: String, account: String) -> Count? { _ = version; return known[Self.key(line, base: base, account: account)] }
 
     /// Lines to count beside the split's own (`base`): those known or on
     /// their way left out.

@@ -141,7 +141,8 @@ enum ChatSpring {
         progress = list ? 0 : 1
         target = progress
         look = ChatPaneLook(width: width)
-        Self.all[ObjectIdentifier(browser)] = Weak(self)
+        // @State builds one on every init of the column and keeps the first: a later one mustn't take its place.
+        if Self.all[ObjectIdentifier(browser)]?.zoom == nil { Self.all[ObjectIdentifier(browser)] = Weak(self) }
     }
 
     private final class Weak {

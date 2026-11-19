@@ -33,7 +33,12 @@ struct MailCodeItem: Identifiable, Equatable {
     @ObservationIgnored private var cachedRevision = -1
     @ObservationIgnored private var items: [String: MailCodeItem] = [:]
     @ObservationIgnored private var absent = Set<String>()
-    @ObservationIgnored private(set) var copyTimes: [String: Date] = [:]
+    /// Read through `revision`, which every copy and its end bump.
+    private(set) var copyTimes: [String: Date] {
+        get { _ = revision; return copiedAt }
+        set { copiedAt = newValue }
+    }
+    @ObservationIgnored private var copiedAt: [String: Date] = [:]
 
     init() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -72,6 +77,7 @@ struct MailCodeItem: Identifiable, Equatable {
     }
 
     func state(_ item: MailCodeItem, now: Date = Date()) -> MailCodes.State {
+        _ = revision
         let store = MailCenter.shared.engines[item.account]?.store
         if uses.contains(item.id) || store?.codeUse(message: item.message) != nil { return .used }
         if item.at > now.addingTimeInterval(30) || now >= item.expires || store?.codeReplaced(message: item.message, now: now) == true { return .expired }

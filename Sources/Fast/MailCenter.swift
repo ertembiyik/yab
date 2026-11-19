@@ -108,7 +108,12 @@ import SwiftUI
     /// Settings › Mail); back from there, or the field's Pin Mail.
     private(set) var pinWanted = Store.settings.object(forKey: "mail.pin") as? Bool ?? true
 
-    @ObservationIgnored private(set) var engines: [String: Engine] = [:] { didSet { relink() } }
+    /// Read through `changed`: what a store holds moves with it, not with the table.
+    private(set) var engines: [String: Engine] {
+        get { _ = changed; return engineTable }
+        set { engineTable = newValue; relink() }
+    }
+    @ObservationIgnored private var engineTable: [String: Engine] = [:]
     /// The next beat: set for when the soonest ask is due, not a tick.
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var last: [String: Date] = [:]
