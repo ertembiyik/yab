@@ -543,7 +543,7 @@ struct FormFillRow: View {
     let lit: Bool
     var point: (() -> Void)? = nil
     let pick: () -> Void
-    @ObservedObject private var fillKey = Keymap.shared.slot(.fillForm)
+    private var fillKey = Keymap.shared.slot(.fillForm)
 
     var body: some View {
         FieldListRow(title: "Fill the form", detail: offer.detail, used: nil, lit: lit, keys: fillKey.keys?.text ?? "", point: point, pick: pick) {

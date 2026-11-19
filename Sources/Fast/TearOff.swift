@@ -703,22 +703,22 @@ final class TearOff {
 }
 
 @MainActor
-final class TearCardModel: ObservableObject {
-    @Published var image: NSImage?
-    @Published var title = ""
-    @Published var icon: NSImage?
-    @Published var monogram = ""
+@Observable final class TearCardModel {
+    var image: NSImage?
+    var title = ""
+    var icon: NSImage?
+    var monogram = ""
     /// Grown from the row into the card.
-    @Published var shown = false
+    var shown = false
     /// Over another window's tabs: a row again, for the line.
-    @Published var over = false
+    var over = false
     /// Growing into the new window: the card fills the panel.
-    @Published var fill = false
+    var fill = false
     /// Where in the window it was taken, from its top-left, as a fraction.
-    var grip = UnitPoint(x: 0.5, y: 0)
+    @ObservationIgnored var grip = UnitPoint(x: 0.5, y: 0)
     /// The picture's size, and the row it grows out of, in the card's space.
-    var picture = CGSize(width: 240, height: 160)
-    var row = CGRect(x: 0, y: 0, width: 220, height: 32)
+    @ObservationIgnored var picture = CGSize(width: 240, height: 160)
+    @ObservationIgnored var row = CGRect(x: 0, y: 0, width: 220, height: 32)
 }
 
 /// The page in small, on a card, as the window it is about to be. It
@@ -728,7 +728,7 @@ final class TearCardModel: ObservableObject {
 /// page comes up out of a blur. Over another window's tabs it is a row
 /// again, and back inside its own window it goes back into one as it fades.
 struct TearCard: View {
-    @ObservedObject var model: TearCardModel
+    var model: TearCardModel
 
     static let morph = Animation.spring(response: 0.2, dampingFraction: 1)
     static let rowWidth: CGFloat = 220

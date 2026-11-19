@@ -13,11 +13,11 @@ extension AssistantPlace {
 
 struct AssistantDetailPage: View {
     let id: String
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var assistants = Assistants.shared
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var approvals = AssistantApprovals.shared
+    var browser: Browser
+    var model: SettingsModel
+    private var assistants = Assistants.shared
+    private var agents = Agents.shared
+    private var approvals = AssistantApprovals.shared
     @State private var journal: [AssistantHost.Entry] = []
     @State private var journalSaid: String?
 

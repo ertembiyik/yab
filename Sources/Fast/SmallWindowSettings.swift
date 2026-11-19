@@ -3,11 +3,11 @@ import SwiftUI
 /// Settings › Small Window, the way Arc has a page for Little Arc: what it
 /// is for at the top, as every feature's page has it, and the ways into it.
 struct SmallWindowPage: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var newKey = Keymap.shared.slot(.newSmallWindow)
-    @ObservedObject private var keepKey = Keymap.shared.slot(.peekTab)
-    @ObservedObject private var closeKey = Keymap.shared.slot(.closeTab)
-    @ObservedObject private var heard = LinkWindow.globalKey
+    @Bindable var prefs: Preferences
+    private var newKey = Keymap.shared.slot(.newSmallWindow)
+    private var keepKey = Keymap.shared.slot(.peekTab)
+    private var closeKey = Keymap.shared.slot(.closeTab)
+    private var heard = LinkWindow.globalKey
 
     var body: some View {
         PageHero(page: .smallWindow)

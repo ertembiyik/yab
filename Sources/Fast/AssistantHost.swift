@@ -12,7 +12,7 @@ import Security
 // It has nothing to do with Sync: no account, no keys.
 
 @MainActor
-final class AssistantHost: ObservableObject {
+@Observable final class AssistantHost {
     static let shared = AssistantHost()
 
     enum State: Equatable {
@@ -20,7 +20,7 @@ final class AssistantHost: ObservableObject {
         case offline(String)
     }
 
-    @Published private(set) var state: State = .off
+    private(set) var state: State = .off
 
     /// The server: YAB_ASSIST_URL (a test's `wrangler dev`), else ours.
     static var origin: URL {
@@ -29,16 +29,16 @@ final class AssistantHost: ObservableObject {
         return URL(string: "https://yab-sync.21st.workers.dev")!
     }
 
-    private var socket: URLSessionWebSocketTask?
-    private var session = URLSession(configuration: .ephemeral)
-    private var pinger: Timer?
-    private var retry: DispatchWorkItem?
-    private var backoff: Double = 1
+    @ObservationIgnored private var socket: URLSessionWebSocketTask?
+    @ObservationIgnored private var session = URLSession(configuration: .ephemeral)
+    @ObservationIgnored private var pinger: Timer?
+    @ObservationIgnored private var retry: DispatchWorkItem?
+    @ObservationIgnored private var backoff: Double = 1
     /// When the line last came up: the backoff starts over only once it
     /// has held a while, so a server that takes and drops it isn't hammered.
-    private var upSince: Date?
+    @ObservationIgnored private var upSince: Date?
     /// Bumped with each socket, so a stale one's callbacks do nothing.
-    private var generation = 0
+    @ObservationIgnored private var generation = 0
 
     private init() {
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
@@ -420,10 +420,10 @@ final class AssistantHost: ObservableObject {
 /// assistants find it and routines run on time. A closed lid still sleeps,
 /// as it does for everything else.
 @MainActor
-final class AssistantReach: ObservableObject {
+@Observable final class AssistantReach {
     static let shared = AssistantReach()
 
-    @Published var on: Bool {
+    var on: Bool {
         didSet {
             Store.settings.set(on, forKey: "assistants.reachable")
             if on, !OpenAtLogin.shared.on { OpenAtLogin.shared.set(true) }
@@ -431,9 +431,9 @@ final class AssistantReach: ObservableObject {
         }
     }
 
-    private var assertion: IOPMAssertionID = 0
-    private var timer: Timer?
-    private var routinesWatch: NSObjectProtocol?
+    @ObservationIgnored private var assertion: IOPMAssertionID = 0
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var routinesWatch: NSObjectProtocol?
 
     private init() {
         on = Store.settings.bool(forKey: "assistants.reachable")

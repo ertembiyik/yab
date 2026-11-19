@@ -25,12 +25,12 @@ enum PasswordManagersPlace {
 
 /// The section at the top of Settings › Passwords.
 struct PasswordManagersSection: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
     let browser: Browser
-    @ObservedObject private var extensions = Extensions.here
-    @ObservedObject private var managers = ManagerExtensions.shared
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var extensions = Extensions.here
+    private var managers = ManagerExtensions.shared
+    private var connections = PasswordManagers.Connections.shared
 
     private var note: String {
         if !prefs.usesYabPasswords && connections.list.isEmpty { return "Yab doesn't fill or save passwords. Agents ask you to sign in." }
@@ -109,9 +109,9 @@ private struct AddManagerRow: View {
 /// A manager on this Mac, not connected: where it was found, and Connect.
 private struct HereRow: View {
     let id: String
-    @ObservedObject private var extensions = Extensions.here
-    @ObservedObject private var managers = ManagerExtensions.shared
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var extensions = Extensions.here
+    private var managers = ManagerExtensions.shared
+    private var connections = PasswordManagers.Connections.shared
 
     var body: some View {
         HStack(spacing: 10) {
@@ -137,11 +137,11 @@ private struct HereRow: View {
 /// words, at most one button, and ⋯.
 private struct ManagerRow: View {
     let id: String
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
     let browser: Browser
-    @ObservedObject private var extensions = Extensions.here
-    @ObservedObject private var managers = ManagerExtensions.shared
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var extensions = Extensions.here
+    private var managers = ManagerExtensions.shared
+    private var connections = PasswordManagers.Connections.shared
     @State private var waiting = false
 
     var body: some View {
@@ -223,8 +223,8 @@ private struct ManagerRow: View {
 struct ManagerIcon: View {
     let id: String
     let side: CGFloat
-    @ObservedObject private var extensions = Extensions.here
-    @ObservedObject private var managers = ManagerExtensions.shared
+    private var extensions = Extensions.here
+    private var managers = ManagerExtensions.shared
 
     var body: some View {
         Group {
@@ -247,7 +247,7 @@ struct ManagerIcon: View {
 /// slide in first (that took 0.32 s, and finding the managers in the
 /// sheet's body 1.5 s more).
 struct PasswordCardLayer: View {
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var connections = PasswordManagers.Connections.shared
 
     var body: some View {
         ZStack {
@@ -332,10 +332,10 @@ private struct CardButton: View {
 /// under Passwords, a row each. Add brings a manager's extension in, and
 /// then Connect asks how it unlocks; connected, it is back to Passwords.
 struct ConnectManagersPage: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var extensions = Extensions.here
-    @ObservedObject private var managers = ManagerExtensions.shared
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    var model: SettingsModel
+    private var extensions = Extensions.here
+    private var managers = ManagerExtensions.shared
+    private var connections = PasswordManagers.Connections.shared
     /// Fixed as the page opens, so a row added here stays where it was.
     @State private var ids: [String] = PasswordManagers.providers.map(\.id).filter {
         PasswordManagers.Connections.shared.connection($0) == nil && PasswordManagers.found($0) == nil
@@ -483,9 +483,9 @@ private struct UnlockField: View {
 /// then Connect ↩. Back is Cancel.
 struct ConnectManagerPage: View {
     let id: String
-    @ObservedObject private var extensions = Extensions.here
-    @ObservedObject private var managers = ManagerExtensions.shared
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var extensions = Extensions.here
+    private var managers = ManagerExtensions.shared
+    private var connections = PasswordManagers.Connections.shared
     @State private var mode = PasswordManagers.Mode.you
     @State private var password = ""
     @State private var tried = false
@@ -649,7 +649,7 @@ struct ConnectManagerPage: View {
 /// Save Unlock Password…, Change Unlock Password…, Change… and Save Again….
 private struct UnlockPasswordCard: View {
     let id: String
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var connections = PasswordManagers.Connections.shared
     @State private var password = ""
     @State private var failed = false
 
@@ -691,7 +691,7 @@ private struct UnlockPasswordCard: View {
 /// Disconnect…'s question.
 private struct DisconnectManagerCard: View {
     let id: String
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var connections = PasswordManagers.Connections.shared
 
     var body: some View {
         let name = PasswordManagers.name(id)

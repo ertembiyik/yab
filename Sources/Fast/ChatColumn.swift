@@ -512,11 +512,11 @@ struct ChatColumnHost: NSViewRepresentable {
 
 /// What the column's own hosting view is told by the window's.
 @MainActor
-final class ChatColumnLook: ObservableObject {
-    @Published var corner: CGFloat
-    @Published var width: CGFloat
+@Observable final class ChatColumnLook {
+    var corner: CGFloat
+    var width: CGFloat
     /// On the window's left (Browser.chatLeads).
-    @Published var leading: Bool
+    var leading: Bool
 
     init(corner: CGFloat, width: CGFloat, leading: Bool) {
         self.corner = corner
@@ -527,10 +527,10 @@ final class ChatColumnLook: ObservableObject {
 
 private struct ChatColumnRoot: View {
     let browser: Browser
-    @ObservedObject var look: ChatColumnLook
+    var look: ChatColumnLook
     let feed: ChatFeed
-    @ObservedObject private var here = ExtensionsHere.shared
-    @ObservedObject private var chromiumPanels = ChromiumSidePanel.shared
+    private var here = ExtensionsHere.shared
+    private var chromiumPanels = ChromiumSidePanel.shared
 
     var body: some View {
         ZStack {
@@ -721,30 +721,41 @@ final class ChatColumnView: NSView {
 /// nothing redraws for each), a kept one as the store has it. Published
 /// only when something changed.
 @MainActor
-final class ChatFeed: ObservableObject {
+@Observable final class ChatFeed {
     /// How many times the column's body was worked out, for `bench pace`.
     static var bodies = 0
-    @Published private(set) var chat: Chat?
-    @Published private(set) var live = false
+    private(set) var chat: Chat?
+    private(set) var live = false
     /// What the chat asks of itself, its mail (Agents.askChat): in the
     /// field's place while the column shows it.
-    @Published private(set) var permit: AgentPermit?
-    private(set) var id: String?
-    private var timer: Timer?
-    private var watching: AnyCancellable?
-    private var mark = ""
+    private(set) var permit: AgentPermit?
+    @ObservationIgnored private(set) var id: String?
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var watching: ObservationLoop?
+    @ObservationIgnored private var mark = ""
 
-    init() {
-        // Something noted, a step, a state: looked at once, a beat later.
-        watching = Agents.shared.objectWillChange.merge(with: Chats.shared.objectWillChange)
-            .sink { [weak self] _ in DispatchQueue.main.async { self?.look() } }
-    }
+    init() { watch() }
 
     func follow(_ id: String?) {
         guard id != self.id else { return }
         self.id = id
         mark = ""
         look()
+        watch()
+    }
+
+    /// Follows the chat's step, state and name; the timer reads its words.
+    private func watch() {
+        watching = ObservationLoop { [weak self] in
+            guard let self else { return }
+            if let session = Agents.shared.session(id) {
+                _ = (session.state, session.saying.count, session.title, session.project, session.permit)
+                _ = Agents.shared.tabs(of: session).count
+            } else {
+                _ = Chats.shared.chat(id)
+            }
+            DispatchQueue.main.async { [weak self] in MainActor.assumeIsolated { self?.look() } }
+        }
     }
 
     func stop() {
@@ -817,11 +828,11 @@ struct ChatColumn: View {
     var width: CGFloat = ChatLook.normal
     /// Kept by the view it is hosted in (ChatColumnView), which lets it
     /// go when the column goes.
-    @ObservedObject var feed: ChatFeed
-    @ObservedObject private var chats = Chats.shared
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var projects = Projects.shared
-    @ObservedObject private var banners = ChatBanners.shared
+    var feed: ChatFeed
+    private var chats = Chats.shared
+    private var agents = Agents.shared
+    private var projects = Projects.shared
+    private var banners = ChatBanners.shared
     /// The project shown in the list's place (Browser.chatProject).
     @State private var projectShown: String?
     /// New Project's sheet is up (Browser.chatProjectSheet).
@@ -842,19 +853,19 @@ struct ChatColumn: View {
     /// for filming the two side by side (evals/chat-switch).
     static let oldTrade = ProcessInfo.processInfo.environment["YAB_CHAT_FADE"] == "1"
     /// The ⋯ menu over the head (ChatMoreMenu).
-    @StateObject private var more = ChatMore()
+    @State private var more = ChatMore()
     /// Which of the list and the chat is up, and a chat on its way between.
-    @StateObject private var zoom: ChatZoom
+    @State private var zoom: ChatZoom
     @Environment(\.accessibilityReduceMotion) private var still
 
     init(browser: Browser, corner: CGFloat, width: CGFloat = ChatLook.normal, feed: ChatFeed) {
         self.browser = browser
         self.corner = corner
         self.width = width
-        _feed = ObservedObject(wrappedValue: feed)
+        self.feed = feed
         _history = State(initialValue: browser.chatHistory)
         _projectShown = State(initialValue: browser.chatProject)
-        _zoom = StateObject(wrappedValue: ChatZoom(browser: browser, feed: feed, list: browser.chatHistory, width: width))
+        _zoom = State(initialValue: ChatZoom(browser: browser, feed: feed, list: browser.chatHistory, width: width))
     }
 
     /// The turns and the chat's own screen trading places: what goes is
@@ -1119,13 +1130,13 @@ struct ChatColumn: View {
 /// after: it watches what it shows itself.
 struct ChatPane: View {
     let browser: Browser
-    @ObservedObject var feed: ChatFeed
-    @ObservedObject var look: ChatPaneLook
+    var feed: ChatFeed
+    var look: ChatPaneLook
     let zoom: ChatZoom
     let more: ChatMore
     /// A payment's sheet outlives its question (PayFlow): watched here so
     /// it stays in the field's place until the site has said.
-    @ObservedObject private var payments = Payments.shared
+    private var payments = Payments.shared
     /// The chat's own screen, grown out of its face (ChatInfo).
     @State private var info = false
     /// The turns scrolled away from their top: the face shrinks.
@@ -1134,7 +1145,7 @@ struct ChatPane: View {
     /// the turns' foot (ChatTranscript.foot).
     @State private var foot: CGFloat = 0
     /// A question's choices over the field: which is lit, picked, put away.
-    @ObservedObject private var choices = ChatChoosing.shared
+    private var choices = ChatChoosing.shared
     @Environment(\.accessibilityReduceMotion) private var still
 
     /// The chat's own space: where its head's name is measured (ChatZoom.heads).
@@ -1288,7 +1299,7 @@ struct ChatHead: View {
     var openInfo: () -> Void = {}
     /// The way to the kept chats on its left.
     var chats = true
-    @ObservedObject private var keptChats = Chats.shared
+    private var keptChats = Chats.shared
 
     /// New answers in the other chats, as the iPhone counts them.
     private var unread: Int {
@@ -1516,7 +1527,7 @@ private struct ChatFace: View {
     let asking: Bool
     /// Its project's circle on its shoulder, as a group's in Messages.
     var project: Project? = nil
-    @ObservedObject private var feed = AgentFeed.shared
+    private var feed = AgentFeed.shared
     /// Bumped when a step has shown its time, so the face is worked out
     /// again then, rather than polled.
     @State private var clock = 0
@@ -1742,7 +1753,6 @@ enum ChatQuestions {
             // Its own now: the model on this Mac won't name it again (ChatTitles).
                 if let session = Agents.shared.session(chat.id) { session.title = field.trimmed }
                 Chats.shared.rename(chat.id, field.trimmed)
-            Agents.shared.objectWillChange.send()
         }
     }
 }
@@ -1751,9 +1761,9 @@ enum ChatQuestions {
 
 /// The ⋯ menu is out; a click anywhere but on it or on ⋯ puts it away.
 @MainActor
-final class ChatMore: ObservableObject {
-    @Published var open = false { didSet { if open != oldValue { away.watch(open) } } }
-    lazy var away = ClickAway { [weak self] in self?.open = false }
+@Observable final class ChatMore {
+    var open = false { didSet { if open != oldValue { away.watch(open) } } }
+    @ObservationIgnored lazy var away = ClickAway { [weak self] in self?.open = false }
 }
 
 /// What can be done from the head, as ⌘K's actions and the + menu are
@@ -1764,7 +1774,7 @@ struct ChatMoreMenu: View {
     let browser: Browser
     let chat: Chat?
     let live: Bool
-    @ObservedObject var more: ChatMore
+    var more: ChatMore
     let width: CGFloat
     /// Over the list of chats: the list's own commands.
     var list = false
@@ -2179,7 +2189,7 @@ struct ChatInfo: View {
 struct ChatModelLine: View {
     let browser: Browser
     let chat: Chat?
-    @ObservedObject private var defaults = ModelDefaults.shared
+    private var defaults = ModelDefaults.shared
 
     private var cli: String { chat?.cli ?? browser.chatAgent }
     private var model: String? { chat.map { Agents.shared.session($0.id)?.model ?? $0.model } ?? browser.chatChoice.model }
@@ -2228,7 +2238,6 @@ struct ChatModelLine: View {
         session?.model = picked.model
         session?.effort = picked.effort
         if let session { Chats.shared.keep(Agents.shared.chat(of: session)) }
-        Agents.shared.objectWillChange.send()
     }
 }
 
@@ -2324,8 +2333,8 @@ private struct ChatHistory: View {
     /// Only those with an answer not yet seen.
     var unreadOnly = false
     let done: () -> Void
-    @ObservedObject private var chats = Chats.shared
-    @ObservedObject private var projects = Projects.shared
+    private var chats = Chats.shared
+    private var projects = Projects.shared
     @State private var words = ""
     @State private var open = ChatCards.open
     @State private var place = ScrollPosition(point: CGPoint(x: 0, y: ChatCards.offset))
@@ -2719,7 +2728,7 @@ private struct ProjectListCard: View {
     let browser: Browser
     let project: Project
     let latest: Chat?
-    @ObservedObject private var chats = Chats.shared
+    private var chats = Chats.shared
     @State private var over = false
     @State private var dropping = false
 
@@ -2778,7 +2787,7 @@ struct ChatHistoryRow: View {
     /// Its project's circle on its face, where it shows outside it.
     var badge = false
     @State private var over = false
-    @ObservedObject private var swipe = ChatSwipe.shared
+    private var swipe = ChatSwipe.shared
     /// Its own view, for the fingers across it (ChatSwipe).
     @State private var anchor = ChatViewAnchor()
 
@@ -2917,7 +2926,6 @@ extension Agents {
         let words = session.saying.count - session.queue.count + index
         if session.saying.indices.contains(words) { session.saying.remove(at: words) }
         session.queue.remove(at: index)
-        objectWillChange.send()
     }
 
     /// Your words for a chat from its column: into the turn going on, or,
@@ -3020,7 +3028,6 @@ extension Agents {
         _ = run(prompt: message, cli: session.cli, model: session.model, effort: session.effort,
                 access: session.textOnly ? "text" : session.full ? "full" : "browser",
                 quiet: session.quiet, name: session.quiet ? session.name : nil, resume: session.id)
-        objectWillChange.send()
     }
 
     /// The composer checks before taking its draft, and other callers before

@@ -19,8 +19,8 @@ import SwiftUI
 // on the same page, Measure's stands above it (PageFoot).
 
 struct MeasureDock: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject var model: MeasureModel
+    var tab: Tab
+    var model: MeasureModel
     @Environment(\.accessibilityReduceMotion) private var still
     @FocusState private var noteFocus: Bool
     @State private var note = ""
@@ -234,8 +234,8 @@ struct MeasureDock: View {
 /// they are shown, the measurements kept and the notes.
 private struct MeasureSheet: View {
     @Environment(\.hudSurface) private var hud
-    @ObservedObject var tab: Tab
-    @ObservedObject var model: MeasureModel
+    var tab: Tab
+    var model: MeasureModel
     @State private var height: CGFloat = 0
 
     private var info: MeasureInfo { model.info }
@@ -487,7 +487,7 @@ private struct MeasureRuleCard: View {
 private struct MeasureMotionRow: View {
     @Environment(\.hudSurface) private var hud
     let tab: Tab
-    @ObservedObject var model: MeasureModel
+    var model: MeasureModel
     let index: Int
     let item: MeasureInfo.Motion
     @State private var speed = 1.0

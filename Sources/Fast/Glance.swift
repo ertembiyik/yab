@@ -32,29 +32,29 @@ import WebKit
 /// folder as the tab in front. It takes the pointer, and holds while the
 /// pointer is on its way from the folder to it or over it.
 @MainActor
-final class TabGlance: ObservableObject {
+@Observable final class TabGlance {
     /// The tab whose card is up.
-    @Published private(set) var shown: Tab.ID?
+    private(set) var shown: Tab.ID?
     /// A folder's contents, from its pill in the strip.
-    @Published private(set) var shownFolder: String?
+    private(set) var shownFolder: String?
     /// The card up is the agent's, from its face, not the tab's.
-    @Published private(set) var agent = false
+    private(set) var agent = false
     /// The folder's card up is its preview, a shut folder's tabs to search
     /// and pick from, not only its name.
-    @Published private(set) var searching = false
+    private(set) var searching = false
     /// The tab's card up has a button (TabGist): it takes the pointer, and
     /// holds while the pointer is on its way from the tab to it, as a
     /// folder's preview does.
-    @Published private(set) var holds = false
+    private(set) var holds = false
     /// A card up that the pointer may go onto: a preview, or a tab's card
     /// with a button.
     var taking: Bool { searching || holds }
     /// What has been typed into the preview, and the row picked in what it
     /// finds.
-    @Published private(set) var query = ""
-    @Published var lit = 0
+    private(set) var query = ""
+    var lit = 0
     /// Held for this opening, so filtering shortens the far end only.
-    @Published private(set) var previewFalls = true
+    private(set) var previewFalls = true
     private weak var searchField: NSSearchField?
     private weak var searchWindow: NSWindow?
     private weak var beforeSearch: NSResponder?
@@ -102,17 +102,17 @@ final class TabGlance: ObservableObject {
     }
     /// The folder of yours in the shut one whose card is up that the card
     /// shows the inside of, gone into from its row (nil: the card's own).
-    @Published private(set) var at: String?
+    private(set) var at: String?
     /// A pin's card, a list in place of the page's picture (PinCards.swift):
     /// its lines for the words typed. Its id is the pin's, "pin:" first.
-    @Published private(set) var pinItems: [PinItem] = []
+    private(set) var pinItems: [PinItem] = []
     /// A reply belongs to one opening or search, including when the same
     /// pin is closed and reopened before its first reply arrives.
     private var pinRequest: UUID?
     typealias PinLoader = @MainActor (Tab, Browser, String, @escaping @MainActor ([PinItem]) -> Void) -> Void
     var pinLoader: PinLoader = PinList.items
     /// A pointer supplied by an isolated test world, in the tabs' space.
-    var pointerLocation: (() -> CGPoint?)?
+    @ObservationIgnored var pointerLocation: (() -> CGPoint?)?
     /// Where the preview is in the window, counted from its top left as
     /// the folders' shapes are.
     var previewFrame: CGRect?
@@ -148,9 +148,9 @@ final class TabGlance: ObservableObject {
     private(set) var bookmarkChips: [String: BookmarkBar.Chip] = [:]
 
     func putBookmark(_ key: String, chip: BookmarkBar.Chip, frame: CGRect) {
-        if shownFolder == key, bookmarkChips[key] != chip { objectWillChange.send() }
-        bookmarkChips[key] = chip
-        folderFrames[key] = frame
+        // Reported from layout: written only when it changed.
+        if bookmarkChips[key] != chip { bookmarkChips[key] = chip }
+        if folderFrames[key] != frame { folderFrames[key] = frame }
     }
 
     func removeBookmark(_ key: String) {
@@ -176,8 +176,8 @@ final class TabGlance: ObservableObject {
     /// itself redrawn as the one in front or the next one sliding up into a
     /// closed one's place, was not rested on.
     private var hush: CGRect?
-    private var coming: DispatchWorkItem?
-    private var going: DispatchWorkItem?
+    @ObservationIgnored private var coming: DispatchWorkItem?
+    @ObservationIgnored private var going: DispatchWorkItem?
     /// Until when the next tab's card comes without the wait.
     private var warm = Date.distantPast
     /// Where the pointer last was in the window, and when it last moved
@@ -186,8 +186,8 @@ final class TabGlance: ObservableObject {
     private var brisk: TimeInterval = 0
     /// When the tab in front came to the front.
     private var since = CACurrentMediaTime()
-    private var watching: Set<AnyCancellable> = []
-    private var monitors: [Any] = []
+    @ObservationIgnored private var watching: Set<AnyCancellable> = []
+    @ObservationIgnored private var monitors: [Any] = []
 
     private static let dwell: TimeInterval = 0.5
     /// A face is small and pointed at on purpose: its card comes sooner,
@@ -267,12 +267,12 @@ final class TabGlance: ObservableObject {
             .sink { [weak self] _ in self?.drop() }
             .store(in: &watching)
         // The column put away, its rows gone past the edge.
-        browser.peek.$out
+        browser.peek.observed(\.out)
             .dropFirst()
             .sink { [weak self] out in if !out { self?.drop() } }
             .store(in: &watching)
         // And the strip put away, or gone back up past the top edge.
-        browser.topPeek.$out.combineLatest(browser.prefs.changes(\.stripShut))
+        browser.topPeek.observed(\.out).combineLatest(browser.prefs.changes(\.stripShut))
             .dropFirst()
             .sink { [weak self] out, shut in if shut && !out { self?.drop() } }
             .store(in: &watching)
@@ -1020,10 +1020,10 @@ struct GlanceLayer: View {
     /// publishes. A tab closing under its card puts the card away (see
     /// `TabGlance`), and the card watches its own tab's title.
     let browser: Browser
-    @ObservedObject var glance: TabGlance
+    var glance: TabGlance
     /// Watched: every window's folders tell the first window's; this
     /// window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser.folderBook }
 
     @State private var height: CGFloat = 0
@@ -1323,7 +1323,7 @@ private struct BookmarkGlanceCard: View {
 }
 
 private struct GlanceCard: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let still: NSImage?
     let act: (TabGist.Action) -> Void
     let holding: (Bool) -> Void
@@ -1570,10 +1570,10 @@ private struct FolderGlanceCard: View {
 /// you. Its native search takes the keyboard while the preview is up.
 struct FolderPreview: View {
     let browser: Browser
-    @ObservedObject var glance: TabGlance
+    var glance: TabGlance
     let id: String
     let title: String
-    @ObservedObject private var live = LiveFolders.shared
+    private var live = LiveFolders.shared
     @Environment(\.colorScheme) private var scheme
 
     static let field: CGFloat = 48
@@ -1868,7 +1868,7 @@ private struct FolderCrumb: View {
 /// A bare native search, as in Actions. Wait for attachment and a key
 /// window before taking focus; a single async attempt can run too early.
 struct FolderPreviewSearch: NSViewRepresentable {
-    @ObservedObject var glance: TabGlance
+    var glance: TabGlance
     let placeholder: String
     let scheme: ColorScheme
 
@@ -1960,7 +1960,7 @@ struct FolderPreviewSearch: NSViewRepresentable {
 /// A folder in the one the preview shows: its mark, its name, how many tabs
 /// are under it, and the chevron that says a click goes in.
 private struct PreviewFolderRow: View {
-    @ObservedObject var nest: Nest
+    var nest: Nest
     let count: Int
     let lit: Bool
 
@@ -2069,7 +2069,7 @@ struct PreviewLine<Lead: View>: View {
 
 /// One of a folder preview's tabs.
 private struct PreviewRow: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let detail: String
     let lit: Bool
 
@@ -2139,9 +2139,9 @@ enum AgentWords {
 /// moves on, and under them who it is and what it was asked. Nothing to
 /// press: the card never takes the pointer, and Stop is in the tab's menu.
 private struct AgentGlance: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var feed = AgentFeed.shared
+    var tab: Tab
+    private var agents = Agents.shared
+    private var feed = AgentFeed.shared
 
     var body: some View {
         if let session = agents.session(tab.worker) {
@@ -2200,9 +2200,9 @@ private struct AgentGlance: View {
 /// Under a tab's card, what its agent is doing, for the pointer that
 /// rested on the tab rather than on the face.
 private struct AgentLine: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var feed = AgentFeed.shared
+    var tab: Tab
+    private var agents = Agents.shared
+    private var feed = AgentFeed.shared
 
     var body: some View {
         if let session = agents.session(tab.worker) {
@@ -2230,7 +2230,7 @@ private struct AgentLine: View {
 /// A page shift-clicked open from the tab and waiting over it (LinkPeek):
 /// what it is, under the tab's own, as the mark on the tab only hints.
 private struct PeekLine: View {
-    @ObservedObject var page: Tab
+    var page: Tab
 
     var body: some View {
         HStack(spacing: 6) {

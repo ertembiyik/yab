@@ -1,3 +1,4 @@
+import YabDesign
 import AppKit
 import SwiftUI
 
@@ -80,7 +81,7 @@ final class SpaceWash {
 
         /// How opaque its coating is drawn (BackdropTransparency).
         var opacity: Float {
-            Float(BackdropTransparency.opacity(transparency, reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+            Float(BackdropTransparency.opacity(transparency, reduced: DisplayOptions.shared.reduceTransparency))
         }
     }
 
@@ -499,7 +500,7 @@ final class CardGroundView: NSView {
 
     private var alpha: Float {
         Float(BackdropTransparency.opacity(paint?.transparency ?? 0,
-                                                 reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+                                                 reduced: DisplayOptions.shared.reduceTransparency))
     }
 
     /// How opaque the color over it is (WindowBackdropView.overOpacity).

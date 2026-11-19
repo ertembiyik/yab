@@ -51,9 +51,9 @@ final class ExtensionWindowFrame: NSObject, NSWindowDelegate {
 
     /// The pins lit by an open window, by extension id (PlatePin).
     @MainActor
-    final class Hung: ObservableObject {
+    @Observable final class Hung {
         static let shared = Hung()
-        @Published private(set) var ids: Set<String> = []
+        private(set) var ids: Set<String> = []
         fileprivate func update() {
             let now = Set(ExtensionWindowFrame.open.map(\.owner.id))
             if now != ids { ids = now }
@@ -379,7 +379,7 @@ private struct ExtensionWindowRoom: View {
 
     private struct Painted: View {
         let model: ExtensionWindowFrame.Model
-        @ObservedObject var prefs: Preferences
+        var prefs: Preferences
 
         var body: some View {
             let backdrop = prefs.backdrop, custom = prefs.backdropColor, paint = SpacePaint(prefs)

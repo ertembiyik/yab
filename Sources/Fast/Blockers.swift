@@ -626,13 +626,13 @@ enum Blockers {
 /// on the right, selected. Return takes the selected one, the arrows move
 /// it, a press on a tile takes that one and closes the card.
 @MainActor
-final class BlockerChoice: ObservableObject {
+@Observable final class BlockerChoice {
     let latest: String
     let current: String?
     /// The right tile, the new one, unless the arrows moved it.
-    @Published var newSelected = true
+    var newSelected = true
     /// The answer, once given by a tile or a key.
-    var kept = false
+    @ObservationIgnored var kept = false
 
     init(latest: String, current: String?) {
         self.latest = latest
@@ -663,8 +663,8 @@ final class BlockerChoice: ObservableObject {
 /// Two tiles under the words, and the one line under them.
 @available(macOS 15.4, *)
 struct BlockerOptions: View {
-    @ObservedObject var choice: BlockerChoice
-    @ObservedObject private var extensions = Extensions.shared
+    var choice: BlockerChoice
+    private var extensions = Extensions.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

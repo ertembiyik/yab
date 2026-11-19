@@ -7,12 +7,12 @@ struct DevSnippet: Codable, Identifiable {
     var text: String
 }
 
-@MainActor final class DevSourcePrefs: ObservableObject {
+@MainActor @Observable final class DevSourcePrefs {
     static let shared = DevSourcePrefs()
-    @Published var snippets: [DevSnippet] {
+    var snippets: [DevSnippet] {
         didSet { if let data = try? JSONEncoder().encode(snippets) { Store.settings.set(data, forKey: "dev.snippets") } }
     }
-    @Published var ignorePatterns: String { didSet { Store.settings.set(ignorePatterns, forKey: "dev.ignorePatterns") } }
+    var ignorePatterns: String { didSet { Store.settings.set(ignorePatterns, forKey: "dev.ignorePatterns") } }
     init() {
         snippets = Store.settings.data(forKey: "dev.snippets").flatMap { try? JSONDecoder().decode([DevSnippet].self, from: $0) } ?? []
         ignorePatterns = Store.settings.string(forKey: "dev.ignorePatterns") ?? ""
@@ -35,7 +35,7 @@ enum DevSourceSymbols {
 
 struct DevIgnoreSettings: View {
     let browser: Browser
-    @ObservedObject private var prefs = DevSourcePrefs.shared
+    @Bindable private var prefs = DevSourcePrefs.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Ignore list").font(.system(size: 15, weight: .medium))

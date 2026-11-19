@@ -472,7 +472,6 @@ extension SyncCenter {
                         if let model = fitted.model { session.model = model }
                         if let effort = fitted.effort { session.effort = effort }
                         Chats.shared.keep(agents.chat(of: session))
-                        agents.objectWillChange.send()
                     }
                 }
                 // Asked to pick: a pick or words of its own answer it, as

@@ -8,7 +8,7 @@ import YabStore
 /// As many of each as you like: tasks try them top to bottom, and one
 /// turned away sits out a minute while the next takes over.
 @MainActor
-final class APIKeys: ObservableObject {
+@Observable final class APIKeys {
     static let shared = APIKeys()
 
     enum Provider: String, CaseIterable, Identifiable {
@@ -53,10 +53,10 @@ final class APIKeys: ObservableObject {
         var replacing: String?
     }
 
-    @Published var page: Page?
+    var page: Page?
     /// OpenRouter's keys, by id, in the order Jev tries them.
-    @Published private(set) var openRouter: [String] = OpenRouterKey.ids
-    @Published var on = OpenRouterKey.on {
+    private(set) var openRouter: [String] = OpenRouterKey.ids
+    var on = OpenRouterKey.on {
         didSet { Store.settings.set(on, forKey: OpenRouterKey.onKey) }
     }
 
@@ -107,8 +107,8 @@ final class APIKeys: ObservableObject {
 /// what it runs, whether Jev reads on it now, and the rest behind ···.
 struct OpenRouterKeyRow: View {
     let id: String
-    @ObservedObject var browser: Browser
-    @ObservedObject private var keys = APIKeys.shared
+    var browser: Browser
+    private var keys = APIKeys.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -169,9 +169,9 @@ struct OpenRouterKeyRow: View {
 /// provider and keeps it. Taken, it is back to Models, where its row says
 /// so; turned down, why, under the field, the key kept there to fix.
 struct APIKeyPage: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let page: APIKeys.Page
-    @ObservedObject private var keys = APIKeys.shared
+    private var keys = APIKeys.shared
     @State private var key = ""
     @State private var checking = false
     @State private var trouble: String?

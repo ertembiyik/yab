@@ -13,7 +13,7 @@ import WebKit
 // typed: the recording can go anywhere, and whoever plays it types it.
 
 @MainActor
-final class Recorder: ObservableObject {
+@Observable final class Recorder {
     struct Step: Identifiable, Equatable {
         enum Kind: String, CaseIterable { case navigate, click, doubleClick, hover, change, key, scroll, waitForElement, waitForExpression, setViewport }
         let id = UUID()
@@ -38,23 +38,23 @@ final class Recorder: ObservableObject {
         var breakpoint = false
     }
 
-    @Published private(set) var steps: [Step] = []
-    @Published private(set) var recording = false
+    private(set) var steps: [Step] = []
+    private(set) var recording = false
     /// Stop drains the page's already-posted events before sealing the recording.
-    @Published private(set) var stopping = false
-    private var recordingSession = UUID().uuidString
+    private(set) var stopping = false
+    @ObservationIgnored private var recordingSession = UUID().uuidString
     /// The step being played now.
-    @Published private(set) var playing: Int?
+    private(set) var playing: Int?
     /// The step that couldn't be played, and why.
-    @Published private(set) var failed: (step: UUID, why: String)?
-    weak var tab: Tab?
-    @Published var speed = 250
-    @Published var paused = false
-    @Published var importError = ""
-    @Published var recordingTitle = "Recording"
-    private var singleStep = false
-    private var plays = 0
-    var onFinish: (() -> Void)?
+    private(set) var failed: (step: UUID, why: String)?
+    @ObservationIgnored weak var tab: Tab?
+    var speed = 250
+    var paused = false
+    var importError = ""
+    var recordingTitle = "Recording"
+    @ObservationIgnored private var singleStep = false
+    @ObservationIgnored private var plays = 0
+    @ObservationIgnored var onFinish: (() -> Void)?
 
     func update(_ step: Step) { if let i = steps.firstIndex(where: { $0.id == step.id }) { steps[i] = step } }
     func insert(_ step: Step, after id: UUID? = nil) {
@@ -514,8 +514,8 @@ final class RecordRelay: NSObject, PageScriptReceiving {
 /// The panel: record, play, copy, and the steps.
 struct DevRecorder: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var recorder: Recorder
+    var tab: Tab
+    @Bindable var recorder: Recorder
     @State private var editing: Recorder.Step?
     @State private var code = false
 

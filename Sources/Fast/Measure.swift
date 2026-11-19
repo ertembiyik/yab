@@ -173,17 +173,17 @@ struct MeasureInfo: Decodable, Equatable {
 /// The dock's side of Measure, apart from the Tab so that what the page
 /// says many times a second redraws the dock and nothing else.
 @MainActor
-final class MeasureModel: ObservableObject {
-    @Published private(set) var info = MeasureInfo.idle
+@Observable final class MeasureModel {
+    private(set) var info = MeasureInfo.idle
     /// The picked box's animations' times while they run.
-    @Published var times: [Double] = []
+    var times: [Double] = []
     /// The sheet out over the dock, kept for the next time (Measure.details).
-    @Published private(set) var details = Measure.details
+    private(set) var details = Measure.details
     /// The dock's words a field for a note.
-    @Published var noting = false
+    var noting = false
     /// Copy for Agent saying Copied, for a moment.
-    @Published private(set) var copiedNow = false
-    private var copiedTask: Task<Void, Never>?
+    private(set) var copiedNow = false
+    @ObservationIgnored private var copiedTask: Task<Void, Never>?
 
     func heard(_ new: MeasureInfo) {
         guard new != info else { return }

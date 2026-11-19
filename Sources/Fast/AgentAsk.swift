@@ -16,7 +16,7 @@ import UserNotifications
 // click on that brings you to the tab.
 
 struct AgentPlaque: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var embedded = false
     /// Its width when it stands in a chat's column, in the field's place:
     /// the whole card's, its frame's inset included, as wide as the field.
@@ -25,8 +25,8 @@ struct AgentPlaque: View {
     private var inner: CGFloat? { fitted.map { $0 - 2 * CardFrame.inset } }
     /// What opens upward: a little short of the line under it.
     private var aboveWidth: CGFloat { inner.map { $0 - 12 } ?? 460 }
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var confirmation = Keymap.shared.slot(.confirmDanger)
+    private var agents = Agents.shared
+    private var confirmation = Keymap.shared.slot(.confirmDanger)
     @State private var open = false
     @State private var other = ""
     @State private var writing = false

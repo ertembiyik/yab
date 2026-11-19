@@ -955,15 +955,15 @@ enum ApplePasswordsPairing {
         )
     }
 
-    final class CodeModel: ObservableObject {
-        @Published var code = ""
-        @Published var wrong = false
-        @Published var checking = false
-        var done: (String) -> Void = { _ in }
+    @Observable final class CodeModel {
+        var code = ""
+        var wrong = false
+        var checking = false
+        @ObservationIgnored var done: (String) -> Void = { _ in }
     }
 
     struct PairingField: View {
-        @ObservedObject var model: CodeModel
+        var model: CodeModel
 
         var body: some View {
             VStack(alignment: .leading, spacing: 6) {

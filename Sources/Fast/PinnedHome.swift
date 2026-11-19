@@ -173,7 +173,7 @@ extension Browser {
 /// from it: back there, first in the menu.
 struct HomeItems: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         if tab.awayFromHome {
@@ -186,7 +186,7 @@ struct HomeItems: View {
 /// or Edit… to type one, for every pin and kept tab.
 struct HomeEditItems: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         if tab.pin != nil || tab.kept {
@@ -210,7 +210,7 @@ struct HomeSlash: View {
     let size: CGFloat
     let tint: Color
 
-    @ObservedObject private var hover = HomeHover.shared
+    private var hover = HomeHover.shared
 
     var body: some View {
         Text("/")
@@ -222,9 +222,9 @@ struct HomeSlash: View {
 
 /// Which kept tab's way home the pointer is on, for its slash to go.
 @MainActor
-final class HomeHover: ObservableObject {
+@Observable final class HomeHover {
     static let shared = HomeHover()
-    @Published var tab: UUID?
+    var tab: UUID?
 }
 
 /// A kept tab away from home: its mark is the way back, as Arc's pinned
@@ -235,7 +235,7 @@ final class HomeHover: ObservableObject {
 /// nothing moves for it.
 struct HomeMark: ViewModifier {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let away: Bool
     /// A tab's across the top, or a row's in the column.
     let plate: RowPlate
@@ -277,8 +277,8 @@ struct HomeMark: ViewModifier {
 /// pins under it don't show through. It shakes at words that are no
 /// address.
 struct PinHomeField: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
     /// The grid's cell height: the row it covers, exactly.
     let height: CGFloat
 

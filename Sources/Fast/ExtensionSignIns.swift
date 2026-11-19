@@ -376,20 +376,18 @@ extension Extensions {
 
 /// The extensions of the window in front, for what draws them: the buttons
 /// beside the address, the puzzle's list, Settings. It changes with the
-/// space on screen and the window in front, and says so for whichever
-/// sign-in's extensions it is, as they change.
+/// space on screen and the window in front; what draws reads the current
+/// one's state through it.
 @available(macOS 15.4, *)
 @MainActor
-final class ExtensionsHere: ObservableObject {
+@Observable final class ExtensionsHere {
     static let shared = ExtensionsHere()
 
-    @Published private(set) var current: Extensions = .shared
-    private var following: AnyCancellable?
-    private var focus: AnyCancellable?
+    private(set) var current: Extensions = .shared
+    @ObservationIgnored private var focus: AnyCancellable?
 
     private init() {
-        following = current.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
-        focus = BrowserWindows.shared.$focusedID.removeDuplicates().sink { _ in
+        focus = BrowserWindows.shared.observed(\.focusedID).removeDuplicates().sink { _ in
             DispatchQueue.main.async { ExtensionsHere.shared.refresh() }
         }
     }
@@ -400,6 +398,5 @@ final class ExtensionsHere: ObservableObject {
         let now = Extensions.here
         guard now !== current else { return }
         current = now
-        following = now.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 }

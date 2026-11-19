@@ -48,7 +48,7 @@ import YabUpdate
 // still gets the next. The app enrolls it with SMAppService (Agent below).
 
 @MainActor
-final class Updater: ObservableObject {
+@Observable final class Updater {
     static let shared = Updater()
 
     // The feed, the rules and the swap live in YabUpdate (Update.swift), so
@@ -117,17 +117,17 @@ final class Updater: ObservableObject {
         return Failure.lasting.contains(failure) ? .offered(release) : .none
     }
 
-    @Published private(set) var stage: Stage = .none
+    private(set) var stage: Stage = .none
     /// True while the file is being fetched.
-    @Published private(set) var checking = false
+    private(set) var checking = false
     /// When the file was last read, for the line in Settings.
-    @Published private(set) var lastChecked: Date?
+    private(set) var lastChecked: Date?
     /// The newer build whose last try to go in place failed for a reason
     /// that may pass (`landing`): Settings names it, with Check Now, rather
     /// than calling this one up to date.
-    @Published private(set) var missed: Release?
+    private(set) var missed: Release?
     /// Where a line goes when there is one to say, handed over at launch.
-    private var say: ((String) -> Void)?
+    @ObservationIgnored private var say: ((String) -> Void)?
 
     private init() {
         // A normal quit installs too, after the engine has gone. The helper
@@ -166,7 +166,7 @@ final class Updater: ObservableObject {
         checkIfDue()
     }
 
-    private var clock: Timer?
+    @ObservationIgnored private var clock: Timer?
 
     private func checkIfDue() {
         guard Updater.overridden || Updater.due(now: Date(), in: Store.settings) else { return }
@@ -298,7 +298,7 @@ final class Updater: ObservableObject {
     }
 
     /// The newer build on its way to take the place of the one in place.
-    private var replacing: Release?
+    @ObservationIgnored private var replacing: Release?
 
     private func landed(_ release: Release, failure: String?) {
         if replacing == release {
@@ -333,7 +333,7 @@ final class Updater: ObservableObject {
     /// for it (Away.restarts): a critical one once nobody is using Yab, any
     /// other once nobody is at the Mac, as Arc does. Then it restarts, as
     /// Update would.
-    private var awayClock: Timer?
+    @ObservationIgnored private var awayClock: Timer?
 
     private func restartWhenAway(every tick: TimeInterval = 60) {
         guard awayClock == nil else { return }
@@ -375,7 +375,7 @@ final class Updater: ObservableObject {
         NSApp.terminate(nil)
     }
 
-    private var finishing = false
+    @ObservationIgnored private var finishing = false
 
     private func installOnQuit() {
         guard !finishing, let waiting = Swap.prepared,

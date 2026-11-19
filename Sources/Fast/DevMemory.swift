@@ -3,7 +3,7 @@ import SwiftUI
 
 struct DevMemoryPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     @State private var filter = ""
     @State private var selected = ""
     @State private var snapshot = 0

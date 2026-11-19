@@ -127,7 +127,7 @@ struct PhoneBetaCode: View {
 
 /// Which phone's code shows: the same switch in ⌘T and in Settings.
 struct PhoneBetaTrack: View {
-    @ObservedObject private var state = PhoneBetaState.shared
+    @Bindable private var state = PhoneBetaState.shared
 
     var body: some View {
         GlassTrack(title: "Phone", options: [(YabPhone.iPhone.name, YabPhone.iPhone), (YabPhone.android.name, YabPhone.android)],
@@ -139,7 +139,7 @@ struct PhoneBetaTrack: View {
 /// Beside ⌘T's list while the row is chosen: the code and what follows it.
 struct PhoneBetaPreview: View {
     let chosen: Bool
-    @ObservedObject private var state = PhoneBetaState.shared
+    @Bindable private var state = PhoneBetaState.shared
     private var phone: YabPhone { state.phone }
 
     var body: some View {
@@ -171,7 +171,7 @@ struct PhoneBetaPreview: View {
 /// Settings › Sync, among the devices while no phone is: a device's row,
 /// its well the app's icon, and Get It opening the code under it.
 struct PhoneBetaRow: View {
-    @ObservedObject private var state = PhoneBetaState.shared
+    @Bindable private var state = PhoneBetaState.shared
     private var open: Bool { state.open }
     private var phone: YabPhone { state.phone }
 
@@ -231,10 +231,10 @@ struct PhoneBetaRow: View {
 /// Whether Settings' row shows its code, and whose: kept while Yab runs, and
 /// set by the bench for its pictures (`sync action=phonebeta`).
 @MainActor
-final class PhoneBetaState: ObservableObject {
+@Observable final class PhoneBetaState {
     static let shared = PhoneBetaState()
-    @Published var open = false
-    @Published var phone = YabPhone.iPhone
+    var open = false
+    var phone = YabPhone.iPhone
 
     func turn() {
         withAnimation(Motion.settle) { phone = phone.other }

@@ -11,8 +11,8 @@ struct AssistantBotNotice: View {
     let browser: Browser
     let tab: Tab?
     let top: CGFloat
-    @ObservedObject private var assistants = Assistants.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    private var assistants = Assistants.shared
+    private var setup = AgentSetupModel.shared
     @State private var dismissedSite: String?
 
     private var bot: String? {

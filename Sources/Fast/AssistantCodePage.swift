@@ -23,8 +23,8 @@ enum AssistantCodeHandoff {
 }
 
 struct AssistantCodePage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var model: SettingsModel
     @State private var code = ""
     @State private var nonce: String?
     @State private var client: String?

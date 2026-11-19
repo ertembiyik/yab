@@ -134,12 +134,12 @@ struct FieldMark: View {
 /// and beside it all of the chosen one and where it came from.
 struct ClipPlace: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     /// As tall as the window leaves room for (Omnibox.placeRoom).
     var height: CGFloat = Omnibox.placeHeight
     /// The card's ground, which the list fades into at its foot.
     var ground: Color = Palette.ground
-    @ObservedObject private var clips = Clips.shared
+    private var clips = Clips.shared
     @State private var visibleCount = 80
 
     var body: some View {
@@ -504,19 +504,22 @@ final class ClipImages {
 /// what they find. The chosen one is lit and ringed.
 struct EmojiPlace: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     var height: CGFloat = Omnibox.placeHeight
     var ground: Color = Palette.ground
 
     /// Between tiles, across and down.
     static let gap: CGFloat = 8
+    /// Emoji's meaning is kept unobserved: told here once it is made.
+    @State private var settled = Emoji.settled
 
     var body: some View {
+        let ready = settled
         let sections = browser.emojiSections
         let words = browser.emojiWords ?? ""
         // No name found them and the meaning is still being made: one slot
         // says more may come, where "No emoji for that" would be wrong.
-        let waiting = sections.isEmpty && !words.isEmpty && !Emoji.settled
+        let waiting = sections.isEmpty && !words.isEmpty && !ready
         let starts = sections.indices.map { index in sections.prefix(index).reduce(0) { $0 + $1.list.count } }
         if let empty = browser.emojiEmpty {
             PlaceEmptyView(browser: browser, query: query, empty: empty)
@@ -572,7 +575,7 @@ struct EmojiPlace: View {
         .transaction { $0.animation = nil }
         // What the emoji mean is made the first time the grid shows; then
         // the words typed find again, by meaning too.
-        .onAppear { Emoji.warm { query.objectWillChange.send() } }
+        .onAppear { Emoji.warm { settled = true } }
     }
 
     private func tile(_ one: Emoji.One, chosen: Bool) -> some View {
@@ -621,9 +624,9 @@ struct EmojiWaiting: View {
 /// ⌘K's list rises out of its corner (FieldActionsPanel).
 struct FieldFoot: View {
     let browser: Browser
-    @ObservedObject var query: Query
-    @ObservedObject private var actionsKey = Keymap.shared.slot(.fieldActions)
-    @ObservedObject private var aboutKey = Keymap.shared.slot(.fieldAbout)
+    var query: Query
+    private var actionsKey = Keymap.shared.slot(.fieldActions)
+    private var aboutKey = Keymap.shared.slot(.fieldAbout)
     let place: FieldPlace?
     /// A site's or an extension's search: its mark and name at the left,
     /// the way back, as a place's name is.
@@ -874,7 +877,7 @@ struct FieldGlass<S: InsettableShape>: View {
 /// Observes the draft directly so Save follows validation and owner-proof state.
 private struct PasswordEditFoot: View {
     let browser: Browser
-    @ObservedObject var model: PasswordEditModel
+    var model: PasswordEditModel
 
     var body: some View {
         HStack(spacing: 0) {
@@ -1052,8 +1055,8 @@ private struct BelowField: ViewModifier {
 /// does what is chosen, Escape and ⌘K put it away.
 struct FieldActionsPanel: View {
     let browser: Browser
-    @ObservedObject var query: Query
-    @ObservedObject private var hotkeys = Hotkeys.shared
+    var query: Query
+    private var hotkeys = Hotkeys.shared
     @Environment(\.colorScheme) private var scheme
 
     static let width: CGFloat = 350
@@ -1269,7 +1272,7 @@ struct FieldActionsPanel: View {
 /// as the list goes (Query.acting).
 private struct ActionSearch: NSViewRepresentable {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
 
     func makeCoordinator() -> Coordinator { Coordinator(browser: browser, query: query) }
 

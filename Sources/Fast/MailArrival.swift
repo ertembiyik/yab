@@ -15,7 +15,7 @@ import WebKit
 /// them to its own pages (the account menu's list), read with each space's
 /// cookies. Only this Mac asks, and only Settings › Mail shows it.
 @MainActor
-final class MailFound: ObservableObject {
+@Observable final class MailFound {
     static let shared = MailFound()
 
     struct Account: Identifiable, Equatable {
@@ -28,10 +28,10 @@ final class MailFound: ObservableObject {
         var id: String { email }
     }
 
-    @Published private(set) var accounts: [Account] = []
-    @Published private(set) var looked = false
+    private(set) var accounts: [Account] = []
+    private(set) var looked = false
     /// The one picked; "" for another account, nil for the first found.
-    @Published var chosen: String?
+    var chosen: String?
     /// A test world's accounts, in place of Google's list.
     static var fake: [Account]?
 
@@ -122,10 +122,10 @@ final class MailFound: ObservableObject {
 // MARK: - the way in
 
 struct MailArrival: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var center = MailCenter.shared
-    @ObservedObject private var found = MailFound.shared
+    var browser: Browser
+    var prefs: Preferences
+    private var center = MailCenter.shared
+    private var found = MailFound.shared
     @MailStill private var still
     /// The rest of a long list of accounts, opened.
     @State private var more = false
@@ -345,9 +345,9 @@ struct MailArrival: View {
 /// Said once, right after Connect, as Agents' How to Ask is: where mail is
 /// now, since nothing of it shows in Settings. Open Mail goes there.
 struct MailLanding: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let account: String
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
 
     var body: some View {
         VStack(spacing: 0) {

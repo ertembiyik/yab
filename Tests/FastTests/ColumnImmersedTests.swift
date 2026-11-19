@@ -26,7 +26,7 @@ struct ColumnImmersedTests {
         }
         browser.activeID = tabs[1].id
         var told = 0
-        let hearing = browser.objectWillChange.sink { told += 1 }
+        let hearing = ObservedWrites({ _ = browser.frontImmersed }, told: { told += 1 })
         defer { hearing.cancel() }
 
         tabs[1].immersed = true

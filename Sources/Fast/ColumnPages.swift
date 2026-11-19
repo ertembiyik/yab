@@ -82,17 +82,13 @@ final class ColumnPages: NSView {
         super.init(frame: .zero)
         wantsLayer = true
         layer?.masksToBounds = false
-        // Anything the rows are drawn from: laid again once, before the
-        // frame is committed, however many things said so.
+        // `sync` observes the rows; the extensions' lists still need this sink.
         watching = [
-            browser.objectWillChange.sink { [weak self] _ in self?.soon() },
-            Folders.shared.objectWillChange.sink { [weak self] _ in self?.soon() },
-            browser.prefs.objectWillChange.sink { [weak self] _ in self?.soon() },
             Extensions.listsChanged.sink { [weak self] _ in self?.soon() },
             // The put-away column out over the page or back past the edge:
             // SwiftUI moves it (Column's offset) and nothing in it is laid
             // again, so where its rows are is said anew once that move is in.
-            browser.peek.$out.dropFirst().removeDuplicates().sink { [weak self] _ in self?.movedSoon() },
+            browser.peek.observed(\.out).dropFirst().removeDuplicates().sink { [weak self] _ in self?.movedSoon() },
             // The column to the window's other side: moved, every row laid
             // as it was, and their places went on saying the left (tear-off's
             // rows, Clear's dust, the bench's rowframes).
@@ -239,8 +235,8 @@ final class ColumnPages: NSView {
     /// The space on screen's page shown and laid as the column stands now,
     /// the others hidden as they were left. Laid again, once, before the
     /// frame after anything it read changes: the tab in front, the tabs,
-    /// the pairs, a tab's place. The browser is @Observable and its
-    /// objectWillChange no longer says any of that; the rows followed a
+    /// the pairs, a tab's place. The browser is @Observable and tells
+    /// only the readers of what changed; the rows followed a
     /// switch only when SwiftUI happened to lay this host out in the same
     /// pass, which it did on macOS 26 and not on 15, where the page changed
     /// and the old row stayed lit (feedback #298).

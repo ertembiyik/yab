@@ -5,7 +5,7 @@ import WebKit
 /// The link under the pointer, said at the page's bottom left as Arc and
 /// Safari say it; with keys held, what a click would do with it.
 @MainActor
-final class LinkStatus: ObservableObject {
+@Observable final class LinkStatus {
     static let shared = LinkStatus()
 
     struct Pointed: Equatable {
@@ -16,20 +16,21 @@ final class LinkStatus: ObservableObject {
         var label: String? = nil
     }
 
-    @Published private(set) var pointed: Pointed?
+    private(set) var pointed: Pointed?
     /// The keys that change a click on a link, as held now.
-    @Published private(set) var keys: NSEvent.ModifierFlags = []
-    private var watch: Any?
+    private(set) var keys: NSEvent.ModifierFlags = []
+    @ObservationIgnored private var watch: Any?
     /// The pointer's own moves, every one the app is given: WebKit hears
     /// them from a tracking area of its own, not through the page view.
-    private var moves: Any?
+    @ObservationIgnored private var moves: Any?
     /// For the bench (pointer op=pictures): WebKit's words on what is under
     /// the pointer, and how many changed the link.
-    private(set) var told = 0, changed = 0
+    @ObservationIgnored private(set) var told = 0
+    @ObservationIgnored private(set) var changed = 0
     /// What WebKit last said is under the pointer, shown or not: the words
     /// of a link a click opens (`label(of:in:)`).
-    private var under: Pointed?
-    private var rule = Rule()
+    @ObservationIgnored private var under: Pointed?
+    @ObservationIgnored private var rule = Rule()
 
     /// When the pill speaks. WebKit says what is under the pointer as the
     /// pointer moves, and again as a scroll carries the page under a
@@ -136,7 +137,7 @@ final class LinkStatus: ObservableObject {
 
 /// The pill at a page's bottom left for the link under the pointer.
 struct LinkStatusPill: View {
-    @ObservedObject var status = LinkStatus.shared
+    var status = LinkStatus.shared
     let tab: Tab.ID
 
     var body: some View {

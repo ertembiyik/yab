@@ -20,7 +20,7 @@ import Security
 /// history is written encrypted, with a key kept in the keychain, and what
 /// isn't pinned goes after a month.
 @MainActor
-final class Clips: ObservableObject {
+@Observable final class Clips {
     static let shared = Clips()
 
     struct Clip: Codable, Identifiable, Equatable {
@@ -60,7 +60,7 @@ final class Clips: ObservableObject {
         var title: String { kind == .link ? (pageTitle ?? line) : line }
     }
 
-    @Published private(set) var items: [Clip] = []
+    private(set) var items: [Clip] = []
     /// The last link copied, in any app, while it is still what is on the
     /// clipboard: only in memory, never written anywhere (Noticing).
     var copied: CopiedLink?
@@ -72,7 +72,7 @@ final class Clips: ObservableObject {
         Hints.shared.compose()
     }
     /// Bumped when anything is added, so a list watching this redraws.
-    @Published private(set) var version = 0
+    private(set) var version = 0
 
     /// Kinds of clipboard data password managers use to say "don't keep".
     static let secret: Set<String> = [
@@ -111,7 +111,7 @@ final class Clips: ObservableObject {
             worstMs = max(worstMs, lastMs)
         }
     }
-    private var timer: Timer?
+    @ObservationIgnored private var timer: Timer?
     /// The count the clipboard had after Fast itself put a clip back on it:
     /// that change is not a new copy.
     private var ours: Int?
@@ -121,10 +121,13 @@ final class Clips: ObservableObject {
     /// An isolated history can supply retained bytes without disk or keychain
     /// access. The shared history keeps its existing encrypted disk reader.
     private let readClipData: ((UUID) -> [(String, Data)])?
-    private var previews: [UUID: ClipText] = [:]
+    /// Filled while drawing, so unobserved; `previewsGone` tells of a drop.
+    @ObservationIgnored private var previews: [UUID: ClipText] = [:]
+    private var previewsGone = 0
 
     /// The kept words and formatting, opened once for the chosen clip.
     func preview(_ clip: Clip) -> ClipText {
+        _ = previewsGone
         if let hit = previews[clip.id] { return hit }
         let value = ClipText(clip: clip, data: readClipData?(clip.id) ?? read(clip.id))
         if previews.count >= 8 { previews.removeAll() }
@@ -430,7 +433,7 @@ final class Clips: ObservableObject {
 
         if let index = items.firstIndex(where: { $0.digest == digest && $0.kind == kind }) {
             var clip = items.remove(at: index)
-            previews[clip.id] = nil
+            if previews.removeValue(forKey: clip.id) != nil { previewsGone += 1 }
             clip.last = now
             clip.times += 1
             if clip.page == nil, let page { clip.page = page; clip.pageTitle = pageTitle }
@@ -783,7 +786,7 @@ final class Clips: ObservableObject {
                 // The preview may have opened while its data was still
                 // being saved, or while a fresh copy replaced the same row.
                 self.previews[id] = nil
-                self.objectWillChange.send()
+                self.previewsGone += 1
             }
         }
     }
@@ -812,7 +815,7 @@ final class Clips: ObservableObject {
 
     private func drop(_ id: UUID) {
         hays[id] = nil
-        previews[id] = nil
+        if previews.removeValue(forKey: id) != nil { previewsGone += 1 }
         disk.async { try? FileManager.default.removeItem(at: Clips.folder.appendingPathComponent(id.uuidString)) }
     }
 

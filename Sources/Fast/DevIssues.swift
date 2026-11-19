@@ -218,8 +218,8 @@ extension Browser {
 
 struct DevIssues: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: DevLog
+    var tab: Tab
+    var log: DevLog
     let filter: IssueFilter
     let wide: Bool
     @State private var words = ""

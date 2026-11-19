@@ -4,12 +4,12 @@ import SwiftUI
 /// top, the few switches, then a table of every site Tab can search, its
 /// keyword typed straight into its row and a box to turn it off.
 struct SearchPage: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
     /// Bumped on every change to the sites, so the table reads them again.
     @State private var tick = 0
     @State private var filter = ""
     /// The card over the page, adding or changing a site (see SiteCard).
-    @ObservedObject private var card = SiteEditing.shared
+    private var card = SiteEditing.shared
     /// The site whose alias has the keys. Each row's alias is its words
     /// alone until it is wanted (SiteRow), so the field is found by the
     /// site's id rather than by AppKit's key view loop, which has only the
@@ -303,7 +303,7 @@ private struct SiteRow: View {
 /// if one is. Held apart from the page, since the card is laid over the
 /// whole of the settings, not inside the list.
 @MainActor
-final class SiteEditing: ObservableObject {
+@Observable final class SiteEditing {
     static let shared = SiteEditing()
 
     struct Draft: Identifiable {
@@ -311,14 +311,14 @@ final class SiteEditing: ObservableObject {
         let scope: Scope?
     }
 
-    @Published private(set) var draft: Draft?
+    private(set) var draft: Draft?
     /// Bumped as the card goes, so the list reads the sites again.
-    @Published private(set) var closed = 0
+    private(set) var closed = 0
     /// The bench: a site's alias drawn as if pointed at, or given the keys.
-    @Published var pointed: String?
-    @Published var typing: String?
+    var pointed: String?
+    var typing: String?
     /// What an alias typed came to, for the bench to read back.
-    var said = ""
+    @ObservationIgnored var said = ""
 
     func open(_ scope: Scope?) { draft = Draft(scope: scope) }
 
@@ -332,7 +332,7 @@ final class SiteEditing: ObservableObject {
 /// dimmed and the card in the middle, coming up the way a page's question
 /// does over a page (Asks.swift), from a touch smaller, and gone at once.
 struct SiteCardLayer: View {
-    @ObservedObject var editing = SiteEditing.shared
+    var editing = SiteEditing.shared
 
     var body: some View {
         ZStack {

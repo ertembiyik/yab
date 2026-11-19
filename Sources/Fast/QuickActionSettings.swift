@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Settings › Search, in the same table language as site aliases and hotkeys.
 struct QuickActionSettings: View {
-    @ObservedObject private var actions = QuickActions.shared
-    @ObservedObject private var editing = QuickActionEditing.shared
+    private var actions = QuickActions.shared
+    private var editing = QuickActionEditing.shared
     @State private var enableError: String?
     @State private var hovered: String?
 
@@ -180,16 +180,16 @@ private struct QuickActionAlias: View {
 }
 
 @MainActor
-final class QuickActionEditing: ObservableObject {
+@Observable final class QuickActionEditing {
     static let shared = QuickActionEditing()
-    @Published var action: QuickAction?
+    var action: QuickAction?
 
     func open(_ action: QuickAction) { self.action = action }
     func close() { action = nil }
 }
 
 struct QuickActionCardLayer: View {
-    @ObservedObject private var editing = QuickActionEditing.shared
+    private var editing = QuickActionEditing.shared
 
     var body: some View {
         ZStack {

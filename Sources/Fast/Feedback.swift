@@ -418,12 +418,12 @@ enum FeedbackSheet {
 
 /// What is being written, kept between openings of the sheet.
 @MainActor
-final class FeedbackModel: ObservableObject {
+@Observable final class FeedbackModel {
     static let shared = FeedbackModel()
-    @Published var draft = FeedbackSheet.Draft()
+    var draft = FeedbackSheet.Draft()
     /// Files given to the card that could not be read, said under the
     /// field until the next file comes on.
-    @Published private(set) var unreadNote: String?
+    private(set) var unreadNote: String?
 
     func add(_ files: [FeedbackFile]) {
         let room = FeedbackFile.most - draft.files.count
@@ -616,18 +616,18 @@ final class FeedbackFrame: NSWindow {
 }
 
 @MainActor
-final class FeedbackStage: ObservableObject {
-    @Published var up = false
-    @Published var sendRequests = 0
+@Observable final class FeedbackStage {
+    var up = false
+    var sendRequests = 0
     /// The page in front, from the window's top left; nil for none.
-    @Published var page: CGRect?
+    var page: CGRect?
 }
 
 /// The card where a question would stand: in the middle of the window, over
 /// all of it dimmed on a browser's window (Question.swift), undimmed in
 /// Settings or on a window with no page open.
 private struct FeedbackLayer: View {
-    @ObservedObject var stage: FeedbackStage
+    var stage: FeedbackStage
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -679,8 +679,8 @@ private struct FeedbackDrop: DropDelegate {
 }
 
 private struct FeedbackForm: View {
-    @ObservedObject var model: FeedbackModel
-    @ObservedObject var stage: FeedbackStage
+    @Bindable var model: FeedbackModel
+    var stage: FeedbackStage
     @State private var state = Sending.idle
     @State private var error: String?
     @State private var dropping = false

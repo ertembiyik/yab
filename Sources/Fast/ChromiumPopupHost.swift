@@ -5,29 +5,29 @@ import YabCoreClient
 /// Uses the same popover and button anchor as WebKit's extension popup,
 /// while the content and input remain owned by Chromium's native widget.
 @MainActor
-final class ChromiumPopupHost: NSObject, ObservableObject, NSPopoverDelegate {
+@Observable final class ChromiumPopupHost: NSObject, NSPopoverDelegate {
     static let shared = ChromiumPopupHost()
-    private var popover: NSPopover?
-    private var popup: ChromiumExtensionPopup?
-    private weak var pendingPopup: ChromiumExtensionPopup?
-    private weak var pendingPage: ChromiumPage?
-    private weak var page: ChromiumPage?
-    private weak var anchor: ChromiumPopupAnchor.View?
-    private var following: Timer?
-    private var closedOnButton: (String, Date)?
+    @ObservationIgnored private var popover: NSPopover?
+    @ObservationIgnored private var popup: ChromiumExtensionPopup?
+    @ObservationIgnored private weak var pendingPopup: ChromiumExtensionPopup?
+    @ObservationIgnored private weak var pendingPage: ChromiumPage?
+    @ObservationIgnored private weak var page: ChromiumPage?
+    @ObservationIgnored private weak var anchor: ChromiumPopupAnchor.View?
+    @ObservationIgnored private var following: Timer?
+    @ObservationIgnored private var closedOnButton: (String, Date)?
     /// The sliders' list, up until the popup pressed in it can take it over,
     /// as WebKit's does (ExtensionPanel.handOver).
-    private var taken: (id: String, popover: NSPopover?)?
-    private weak var pressedAnchor: ChromiumPopupAnchor.View?
-    private var edgeAnchor: ChromiumPopupAnchor.View?
+    @ObservationIgnored private var taken: (id: String, popover: NSPopover?)?
+    @ObservationIgnored private weak var pressedAnchor: ChromiumPopupAnchor.View?
+    @ObservationIgnored private var edgeAnchor: ChromiumPopupAnchor.View?
     /// The popover of a popup Chrome closed for its own replacement, up
     /// until the replacement's first frame takes it over (`replace`).
-    private var heldOver: (popover: NSPopover, extensionID: String, fromDoor: Bool)?
-    private weak var heldPage: ChromiumPage?
-    private var buttonMonitor: Any?
-    private var followedRect: CGRect?
-    @Published private(set) var shownExtensionID: String?
-    @Published private(set) var fromDoor = false
+    @ObservationIgnored private var heldOver: (popover: NSPopover, extensionID: String, fromDoor: Bool)?
+    @ObservationIgnored private weak var heldPage: ChromiumPage?
+    @ObservationIgnored private var buttonMonitor: Any?
+    @ObservationIgnored private var followedRect: CGRect?
+    private(set) var shownExtensionID: String?
+    private(set) var fromDoor = false
     var isShown: Bool { popover?.isShown == true }
 
     /// The sliders hold a popup of this tab, pressed in their list.
@@ -253,8 +253,8 @@ final class ChromiumPopupHost: NSObject, ObservableObject, NSPopoverDelegate {
         old?.close()
     }
 
-    private weak var identityProvider: Tab?
-    private var identityCallerToken: String?
+    @ObservationIgnored private weak var identityProvider: Tab?
+    @ObservationIgnored private var identityCallerToken: String?
 
     /// Only the exact native identity creation receipt can preserve a caller.
     /// Chrome's action popup stays alive while another browser window is used.
@@ -269,7 +269,7 @@ final class ChromiumPopupHost: NSObject, ObservableObject, NSPopoverDelegate {
 
     /// Passkey requests of the popup up now: the Mac's sheet takes the focus,
     /// and the popover stays for the answer, as WebKit's does (ExtensionPopup.hold).
-    private var passkeyHolds: (token: String, count: Int)?
+    @ObservationIgnored private var passkeyHolds: (token: String, count: Int)?
 
     func holdForPasskey(_ token: String) -> (() -> Void)? {
         guard let popup, popup.token == token, popover != nil else { return nil }

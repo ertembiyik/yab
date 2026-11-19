@@ -958,15 +958,15 @@ private struct Holding: NSViewRepresentable {
 /// The bar's own state: the field being typed in, and the copies made
 /// from it, counted so the tick knows when to show.
 @MainActor
-final class LinkBarState: ObservableObject {
+@Observable final class LinkBarState {
     /// A probe's pointer over the field (Bench `fieldhover`).
-    @Published var pointed = false
+    var pointed = false
     /// This window's own corner: a copy says so here, as the browser's
     /// corner says it there (Toast.swift), and in no other window.
     let toaster = Toaster()
     let tidier = Tidier()
     /// The browser's field, raised over this window's page (LinkWindow).
-    var raise: () -> Void = {}
+    @ObservationIgnored var raise: () -> Void = {}
 
     /// The page's address, to paste anywhere.
     func copy(_ url: URL?) {
@@ -997,10 +997,10 @@ private struct LinkRoom: View {
     static let inset: CGFloat = Backdrop.inset
 
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var finder: Finder
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var bar: LinkBarState
+    var tab: Tab
+    var finder: Finder
+    var prefs: Preferences
+    var bar: LinkBarState
     let steer: HelmSteer
     let holder: PageHolder
     let home: UUID?
@@ -1090,8 +1090,8 @@ private struct LinkRoom: View {
 /// in its left end, and the one thing to press.
 private struct LinkBar: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var bar: LinkBarState
+    var tab: Tab
+    var bar: LinkBarState
     let steer: HelmSteer
     let home: UUID?
     let keep: () -> Void
@@ -1204,9 +1204,9 @@ struct LinkFieldHandle: NSViewRepresentable {
 /// either way, so the site never moves.
 private struct LinkField: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var bar: LinkBarState
-    @ObservedObject var steer: HelmSteer
+    var tab: Tab
+    var bar: LinkBarState
+    var steer: HelmSteer
     @Environment(\.tone) private var tone
     @State private var hovering = false
     @State private var flashing = false
@@ -1316,9 +1316,9 @@ private struct LinkField: View {
 /// names the one on screen, and a chevron on its right end, a second
 /// press on the same card, opens the list of spaces to keep it in.
 private struct OpenButton: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var hotkeys = Hotkeys.shared
-    @ObservedObject private var spaceKey = Keymap.shared.slot(.smallSpace)
+    var browser: Browser
+    private var hotkeys = Hotkeys.shared
+    private var spaceKey = Keymap.shared.slot(.smallSpace)
     let bar: LinkBarState
     /// The space a route sent the link to, named rather than the one on screen.
     let home: UUID?

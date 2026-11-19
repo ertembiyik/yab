@@ -6,7 +6,7 @@ import WebKit
 /// Native Chrome extensions belong to a CEF profile, never a WebKit controller.
 /// The management document is temporary and never replaces the selected page.
 @MainActor
-final class ChromiumExtensions: ObservableObject {
+@Observable final class ChromiumExtensions {
     private(set) static var profiles: [String: ChromiumExtensions] = [:]
     static func shared(profile: String, privateMode: Bool = false, store: WKWebsiteDataStore? = nil) -> ChromiumExtensions {
         let key = (privateMode ? "private:" : "regular:") + profile + ":" + scope(of: store)
@@ -164,11 +164,11 @@ final class ChromiumExtensions: ObservableObject {
     /// What the Settings list and the column read: the one list's entries in
     /// its order, with Chrome's facts where this profile has them
     /// (ChromiumExtensionSync).
-    @Published private(set) var items: [Item] = []
+    private(set) var items: [Item] = []
     /// This profile's own list, as Chromium last said.
     private(set) var rows: [Item] = []
-    @Published var failure: String?
-    @Published var busy = false
+    var failure: String?
+    var busy = false
     var importing = false
     /// The one list's join has run in this profile this launch.
     var adopting = false
@@ -185,8 +185,8 @@ final class ChromiumExtensions: ObservableObject {
     struct Queued { let id: String; let name: String; let beyond: Set<String>; let folder: URL }
     var questions: [Queued] = []
     var questioning = false
-    var following: AnyCancellable?
-    var sweeper: Task<Void, Never>?
+    @ObservationIgnored var following: AnyCancellable?
+    @ObservationIgnored var sweeper: Task<Void, Never>?
     /// Packages that couldn't be fetched this launch, tried again next launch.
     var unfetched: Set<String> = []
     var loadFailures: [String: String] = [:]
@@ -203,11 +203,12 @@ final class ChromiumExtensions: ObservableObject {
     var updateAsks: Set<String> = []
     var followed: Set<String> = []
     /// The column's pin order (ChromiumExtensionImport), cached off disk.
-    /// Filled silently on first read; saveMigration announces changes.
-    var pinCache: [String]?
+    /// Filled silently on first read; saveMigration bumps pinRevision, which readers read.
+    @ObservationIgnored var pinCache: [String]?
+    var pinRevision = 0
     /// The enabled set the other browsers' host files were last adopted for.
     var hostsAdoptedFor: Set<String> = []
-    private var tail: Task<JSONValue, Error>?
+    @ObservationIgnored private var tail: Task<JSONValue, Error>?
 
     init(profile: String, privateMode: Bool) {
         self.profile = profile; self.privateMode = privateMode
@@ -319,11 +320,7 @@ final class ChromiumExtensions: ObservableObject {
             next = composed(rows, list: list.installed)
         }
         guard items != next else { return }
-        // Settings › Shortcuts draws the commands Chrome lists here from the
-        // sign-in's list: it hears a change of them through that list.
-        let commandsChanged = items.map(\.commands) != next.map(\.commands)
         items = next
-        if commandsChanged, #available(macOS 15.4, *) { oneList?.objectWillChange.send() }
     }
 
     /// Chrome computes its own install warnings before the package is loaded.

@@ -205,7 +205,7 @@ final class DoorHold {
 /// alike. "Search History" opens the tab's history (HistoryPanel) in the
 /// same place, its top where the list's was.
 @MainActor
-final class DoorList: ObservableObject {
+@Observable final class DoorList {
     static let shared = DoorList()
 
     /// Past this many rows, the rest scroll.
@@ -215,29 +215,29 @@ final class DoorList: ObservableObject {
     /// The rows' coordinate space: the host's own, top down.
     static let space = "door-list"
 
-    @Published private(set) var stops: [Stop] = []
+    private(set) var stops: [Stop] = []
     /// The row the pointer or the arrows are on.
-    @Published var lit: Int?
+    var lit: Int?
     /// The tab's whole history, once "Search History" is picked.
-    @Published private(set) var history: TabHistory?
+    private(set) var history: TabHistory?
     let seen = HistoryPanelModel()
     /// Where each row stands in the host, top down, for a press still held
     /// on the door.
-    var rows: [Int: CGRect] = [:]
+    @ObservationIgnored var rows: [Int: CGRect] = [:]
 
-    private var navigation: PageNavigationList?
-    private var opening: UUID?
-    private var openingMonitor: Any?
-    private var own = false
-    private weak var tab: Tab?
-    private weak var browser: Browser?
-    private weak var anchor: NSView?
+    @ObservationIgnored private var navigation: PageNavigationList?
+    @ObservationIgnored private var opening: UUID?
+    @ObservationIgnored private var openingMonitor: Any?
+    @ObservationIgnored private var own = false
+    @ObservationIgnored private weak var tab: Tab?
+    @ObservationIgnored private weak var browser: Browser?
+    @ObservationIgnored private weak var anchor: NSView?
     /// The door, in its window, and which of its edges the card keeps to.
-    private var door: NSRect = .zero
-    private var leading = true
-    private var host: DoorHost?
-    private var monitors: [Any] = []
-    private var away: NSObjectProtocol?
+    @ObservationIgnored private var door: NSRect = .zero
+    @ObservationIgnored private var leading = true
+    @ObservationIgnored private var host: DoorHost?
+    @ObservationIgnored private var monitors: [Any] = []
+    @ObservationIgnored private var away: NSObjectProtocol?
 
     func isOpen(from view: NSView) -> Bool { (host != nil || opening != nil) && anchor === view }
 
@@ -499,7 +499,7 @@ final class DoorList: ObservableObject {
 /// The rows, the swipe's own on the swipe's card, lit where the pointer or
 /// the arrows are; or, once picked, the tab's history.
 struct DoorListView: View {
-    @ObservedObject var list: DoorList
+    var list: DoorList
 
     var body: some View {
         if let history = list.history {

@@ -162,7 +162,7 @@ enum PageAppearance {
 /// Pages' size, three Aa; and their fonts, set
 /// once and seldom again, in a sheet behind Customize….
 struct PageAppearanceSettings: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
     /// For the row to Reading Mode's page.
     var model: SettingsModel? = nil
     @State private var fonts = false
@@ -205,7 +205,7 @@ struct PageAppearanceSettings: View {
 /// The type pages are set in when they don't choose their own: its size,
 /// the four families and the least size any text may be.
 private struct PageFontsSheet: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
     let close: () -> Void
     private let families = NSFontManager.shared.availableFontFamilies.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 

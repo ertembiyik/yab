@@ -80,15 +80,15 @@ struct MemoryNote: Identifiable, Equatable {
 
 /// The notes on disk, read for the page, and what the page does to them.
 @MainActor
-final class MemoryShelf: ObservableObject {
+@Observable final class MemoryShelf {
     static let shared = MemoryShelf()
 
     /// Every note that says something, the seeds and the taxonomy left out.
-    @Published private(set) var notes: [MemoryNote] = []
-    @Published private(set) var keepsAddresses = false
-    @Published private(set) var keepsSyncReview = false
+    private(set) var notes: [MemoryNote] = []
+    private(set) var keepsAddresses = false
+    private(set) var keepsSyncReview = false
     var hasRetainedContext: Bool { !notes.isEmpty || KnowReport.exists || !Profile.load().isEmpty || keepsAddresses || keepsSyncReview }
-    private var contextChanges: AnyCancellable?
+    @ObservationIgnored private var contextChanges: AnyCancellable?
 
     private init() {
         reload()
@@ -275,12 +275,12 @@ final class MemoryShelf: ObservableObject {
 // MARK: - the page
 
 struct AgentMemoryPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var shelf = MemoryShelf.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
-    @ObservedObject private var days = DaysModel.shared
+    var browser: Browser
+    var prefs: Preferences
+    var model: SettingsModel
+    private var shelf = MemoryShelf.shared
+    private var setup = AgentSetupModel.shared
+    private var days = DaysModel.shared
 
     var body: some View {
         if let opened = model.opened {
@@ -387,9 +387,9 @@ enum MemoryKnowing {
 /// its chat and Stop. Its own view, watching the agents, so only it is
 /// drawn again as the step changes.
 private struct MemoryKnowingSection: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    var browser: Browser
+    private var agents = Agents.shared
+    private var setup = AgentSetupModel.shared
 
     var body: some View {
         if let session = setup.knowingNow {
@@ -414,9 +414,9 @@ private struct MemoryKnowingSection: View {
 /// Get to Know Me, offered while nothing runs: what it does beside it, and
 /// with agents paused, why it can't start.
 private struct MemoryGetToKnowRow: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    var prefs: Preferences
+    private var agents = Agents.shared
+    private var setup = AgentSetupModel.shared
 
     var body: some View {
         if prefs.agentsRemember, setup.anyConnected, setup.knowingNow == nil {
@@ -518,15 +518,15 @@ private struct MemoryNotePage: View {
     let path: String
     @State private var contextEpoch = ContextPrivacy.shared.epoch
     @State private var firstNote: MemoryNote?
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
     let browser: Browser?
-    @ObservedObject private var shelf = MemoryShelf.shared
+    private var shelf = MemoryShelf.shared
 
     @State private var text: String
     @State private var trouble: String?
     @State private var pending: DispatchWorkItem?
     /// A day's page shows its timeline until Edit as Markdown (⌘E).
-    @ObservedObject private var days = DaysModel.shared
+    private var days = DaysModel.shared
 
     init(path: String, model: SettingsModel, browser: Browser? = nil) {
         self.path = path
@@ -628,12 +628,12 @@ private struct MemoryNotePage: View {
 /// as Spaces is while off. What it is, and Get to Know Me once an agent
 /// is connected and may remember.
 struct MemoryArrival: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var setup = AgentSetupModel.shared
-    @ObservedObject private var shelf = MemoryShelf.shared
+    var browser: Browser
+    var prefs: Preferences
+    private var setup = AgentSetupModel.shared
+    private var shelf = MemoryShelf.shared
     /// Get to Know started anywhere shows here, and its step moves on.
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         ArrivalPage(page: .agentMemory, title: "Memory", blurb: words) {

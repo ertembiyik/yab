@@ -11,9 +11,16 @@ import WebKit
 // has a page; a tab on a site never seen before shows a letter until the icon
 // arrives, which is a second or so.
 
+/// Bumped when a kept icon arrives or goes; Favicons' readers read it.
+@MainActor @Observable
+private final class FaviconsSeen {
+    var revision = 0
+}
+
 @MainActor
 final class Favicons {
     static let shared = Favicons()
+    private let seen = FaviconsSeen()
 
     /// Called with a host and its icon whenever one arrives, so every tab on
     /// that host can put it on at once.
@@ -194,6 +201,7 @@ final class Favicons {
     /// The icon a page last wore, nil for one never seen (or seen only in a
     /// private tab). In the dark, its dark variant when it wore one.
     func pageIcon(_ url: URL) -> NSImage? {
+        _ = seen.revision
         guard let page = Favicons.page(url) else { return nil }
         if Favicons.dark, let hit = pagePicture(Favicons.key(page, dark: true)) { return hit }
         return pagePicture(page)
@@ -343,6 +351,7 @@ final class Favicons {
     /// What is already known, and nothing fetched. In the dark, the dark
     /// variant when there is one, the ordinary icon otherwise.
     func cached(_ host: String) -> NSImage? {
+        _ = seen.revision
         if Favicons.dark, let hit = known(Favicons.key(host, dark: true)) { return hit }
         return known(host)
     }
@@ -458,6 +467,7 @@ final class Favicons {
         Favicons.keep(image, for: host)
         arrived?(host, image)
         changes.send(host)
+        seen.revision &+= 1
     }
 
     /// An async icon answer belongs to the document that requested it.
@@ -819,6 +829,7 @@ final class Favicons {
     func tidy(settings: UserDefaults = Store.settings) -> Set<String> {
         guard !settings.bool(forKey: Favicons.tidied) else { return [] }
         settings.set(true, forKey: Favicons.tidied)
+        defer { seen.revision &+= 1 }
         var gone: Set<String> = []
         for key in Favicons.sharedG(in: Favicons.folder) {
             try? FileManager.default.removeItem(at: Favicons.file(key))
@@ -845,6 +856,7 @@ final class Favicons {
     func prune(keep: [URL], visited: [String: Date], settings: UserDefaults = Store.settings, now: Date = Date()) async -> Int {
         if let last = settings.object(forKey: Favicons.pruned) as? Date, now.timeIntervalSince(last) < 86_400 { return 0 }
         settings.set(now, forKey: Favicons.pruned)
+        defer { seen.revision &+= 1 }
         let hosts = Set(keep.compactMap(Favicons.site) + History.knownHosts)
         let folder = Favicons.folder
         let gone = await Task.detached(priority: .utility) { () -> [String] in
@@ -1008,6 +1020,7 @@ final class Favicons {
         Favicons.keep(image, for: key, from: source)
         arrived?(host, image)
         changes.send(host)
+        seen.revision &+= 1
     }
 
     private static func first(of candidates: [URL], page: (any PageHandle)? = nil, refresh: Bool = false) async -> NSImage? {
@@ -1132,6 +1145,7 @@ final class Favicons {
     func unblank(settings: UserDefaults = Store.settings) async -> Set<String> {
         guard !settings.bool(forKey: Favicons.unblanked) else { return [] }
         settings.set(true, forKey: Favicons.unblanked)
+        defer { seen.revision &+= 1 }
         let folder = Favicons.folder
         let gone = await Task.detached(priority: .utility) { () -> [String] in
             let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []

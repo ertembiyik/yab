@@ -340,9 +340,9 @@ extension Browser {
 /// band says left of it when something is off: as Developer Mode's doors
 /// say "1 error" (DevBandDoors).
 struct JSONBandDoor: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var card = JSONCardState.shared
+    var browser: Browser
+    var tab: Tab
+    private var card = JSONCardState.shared
     @Environment(\.tone) private var tone
 
     /// A word in the band: said, red, or a button.
@@ -412,17 +412,17 @@ struct JSONBandDoor: View {
 
 /// Which tab's card is out, one at a time, for the door and the bench.
 @MainActor
-final class JSONCardState: ObservableObject {
+@Observable final class JSONCardState {
     static let shared = JSONCardState()
-    @Published var open: Tab.ID?
+    var open: Tab.ID?
 }
 
 /// The door's card: Tree or Text, the JSON copied or saved, every box
 /// opened, and the server's answer.
 struct JSONCard: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var tab: Tab
+    var prefs: Preferences
     let done: () -> Void
     @State private var copied = false
 

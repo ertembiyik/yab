@@ -759,7 +759,7 @@ extension Browser {
 /// one in the warning's color. ↩ saves, esc cancels, ⇥ and ⇧⇥ step.
 struct EditLine: NSViewRepresentable {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     let index: Int
 
     func makeCoordinator() -> Coordinator { Coordinator(browser: browser, query: query, index: index) }
@@ -863,7 +863,7 @@ struct EditLine: NSViewRepresentable {
 /// so far, then its fields under what they are, and why one can't be kept.
 struct EditForm: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     let edit: PlaceEdit
 
     var body: some View {
@@ -987,7 +987,7 @@ struct LiveCode: View {
 /// as soon as it is a key, before anything is kept.
 struct CodeEditLine: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
 
     var body: some View {
         if let edit = query.edit, let line = edit.lines.first {
@@ -1053,7 +1053,7 @@ struct CodeEditLine: View {
 struct ProfileSource: View {
     let browser: Browser
     let fallback: String
-    @ObservedObject var agents = Agents.shared
+    var agents = Agents.shared
 
     var body: some View {
         let session = browser.knowingSession

@@ -13,7 +13,7 @@ struct ChatNewProjectSheet: View {
     @MainActor static var preset: Set<String> = []
     /// The emoji picker out as it opens: the bench's photo of it.
     @MainActor static var presetChoosing = false
-    @ObservedObject private var chats = Chats.shared
+    private var chats = Chats.shared
     @State private var name = ""
     @State private var emoji = Self.faces[0]
     @State private var tint = Projects.nextTint(Projects.shared.all)

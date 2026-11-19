@@ -416,7 +416,7 @@ enum PasswordManagers {
 // MARK: - the connections
 
 extension PasswordManagers {
-    @MainActor final class Connections: ObservableObject {
+    @MainActor @Observable final class Connections {
         static let shared: Connections = {
             let connections = Connections()
             // Not in init: Extensions.shared may be what is building this.
@@ -426,20 +426,20 @@ extension PasswordManagers {
         static let key = "passwords.managers"
         static let lastKey = "passwords.lastUnlock"
 
-        @Published private(set) var list: [Connection]
+        private(set) var list: [Connection]
         /// Managers whose last unlock by Yab left the password box there.
-        @Published private(set) var failed: Set<String>
+        private(set) var failed: Set<String>
         /// Managers whose unlock password Yab can find now.
-        @Published private(set) var kept: Set<String> = []
+        private(set) var kept: Set<String> = []
         /// The row that just changed, lit for a moment.
-        @Published var flash: String?
+        var flash: String?
         /// The card over Settings: an unlock password, or Disconnect's
         /// question. Connect is a page under Passwords, the managers not
         /// on this Mac another (PasswordManagersPlace).
         enum Card: Hashable {
             case password(String), disconnect(String)
         }
-        @Published var card: Card? {
+        var card: Card? {
             didSet {
                 guard card != oldValue else { return }
                 askedAt = card == nil ? nil : Date()
@@ -448,16 +448,16 @@ extension PasswordManagers {
         }
         /// When the card was asked for, and how long after that it first
         /// appeared, for the bench (password_connect_timing.py).
-        private var askedAt: Date?
-        private(set) var shownMs: Int?
+        @ObservationIgnored private var askedAt: Date?
+        @ObservationIgnored private(set) var shownMs: Int?
         func cardShown() {
             if shownMs == nil, let askedAt { shownMs = Int(Date().timeIntervalSince(askedAt) * 1000) }
         }
         /// The manager a card opens on, set before `connecting`: the corner
         /// card's Connect, the bench.
-        var opensOn: String?
+        @ObservationIgnored var opensOn: String?
         /// Kept for the bench; Connect's card shows what is left to set up.
-        var opensSetUp = false
+        @ObservationIgnored var opensSetUp = false
         /// A Connect page is open: one manager's, or the list of the others.
         var connecting: Bool {
             get { PasswordManagersPlace.connecting(SettingsWindow.shared.model?.opened) }
@@ -485,10 +485,10 @@ extension PasswordManagers {
         }
         /// Managers on this Mac outside Yab, by id: "App on this Mac" or
         /// "In Arc" (lookAround). Read by found(), filled off the main thread.
-        @Published private(set) var here: [String: String] = [:]
-        private var looking = false
-        private var lookAgain = false
-        private var watching: [AnyCancellable] = []
+        private(set) var here: [String: String] = [:]
+        @ObservationIgnored private var looking = false
+        @ObservationIgnored private var lookAgain = false
+        @ObservationIgnored private var watching: [AnyCancellable] = []
 
         init() {
             let data = Store.settings.data(forKey: Self.key)

@@ -11,7 +11,7 @@ import SyncKit
 
 /// Which pin, row or folder has the picker open: one at a time.
 @MainActor
-final class IconPicking: ObservableObject {
+@Observable final class IconPicking {
     static let shared = IconPicking()
 
     enum Target: Hashable {
@@ -19,9 +19,9 @@ final class IconPicking: ObservableObject {
         case nest(UUID)
     }
 
-    @Published var target: Target?
-    private(set) var pending: Target?
-    private var generation = 0
+    var target: Target?
+    @ObservationIgnored private(set) var pending: Target?
+    @ObservationIgnored private var generation = 0
     var isHolding: Bool { target != nil || pending != nil }
 
     /// From the menu's Change Icon…: once the menu has gone, so its own end
@@ -167,8 +167,7 @@ private struct IconPickerHang: ViewModifier {
                 })
             }
             // Every row hears it; only the one it names changes.
-            .onReceive(IconPicking.shared.$target) { picked in
-                let mine = picked == target
+            .onChange(of: IconPicking.shared.target == target, initial: true) { _, mine in
                 if mine != shown { shown = mine }
             }
             .onChange(of: shown) { _, now in
@@ -658,7 +657,7 @@ struct IconPicker: View {
 }
 
 private struct FolderCustomizeHeader: View {
-    @ObservedObject var folder: Nest
+    var folder: Nest
     @Environment(\.tone) private var tone
     @Environment(\.colorScheme) private var colorScheme
 

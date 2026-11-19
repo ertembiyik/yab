@@ -9,7 +9,7 @@ import SwiftUI
 /// happening and holds Stop, or Copy and Replace. Replace leaves the
 /// page's own words where these were and fades the wash off them.
 struct SelectionInk: View {
-    @ObservedObject var commands: SelectionCommands
+    var commands: SelectionCommands
     /// The selection it is drawn over; nil when there is nothing to draw.
     /// Always in the layer, so the words and the bar each go their own way.
     let snap: SelectionSnapshot?

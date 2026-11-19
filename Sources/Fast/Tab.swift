@@ -269,17 +269,10 @@ enum Web {
 
 @MainActor
 @Observable
-final class Tab: ObservableObject, Identifiable, Relaying {
+final class Tab: Identifiable, Relaying {
     /// Each formerly published property's new values for Combine (`changes(\.name)`), and any of
     /// them about to change (`relay.any`), as @Published told them (Observed.swift).
     @ObservationIgnored let relay = ChangeRelay<Tab>()
-    /// ObservableObject's publisher, kept here. With no @Published left
-    /// (the state is @Observable), Combine's own `objectWillChange` found
-    /// it by walking every stored property through reflection on each
-    /// read, and SwiftUI reads it for every @ObservedObject on every
-    /// update: about 0.1 ms a read of a Browser or a Tab (bench
-    /// willchange), many times over in every pass (feedback #120).
-    nonisolated let objectWillChange = ObservableObjectPublisher()
     let id: UUID
     /// Browser-specific observers are replaced when this live tab moves to
     /// another window and end with the tab when it closes.

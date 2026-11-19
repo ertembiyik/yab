@@ -128,17 +128,17 @@ struct ChatMoveMenu: View {
 /// A row slid open by two fingers across it, as Messages' rows are: Project,
 /// Pin and Archive under it. One row at a time; a press anywhere shuts it.
 @MainActor
-final class ChatSwipe: ObservableObject {
+@Observable final class ChatSwipe {
     static let shared = ChatSwipe()
 
     /// The row slid, and how far (negative: to the left).
-    @Published private(set) var id: String?
-    @Published private(set) var offset: CGFloat = 0
+    private(set) var id: String?
+    private(set) var offset: CGFloat = 0
     /// Each row's own view, to find the one under the fingers.
-    var rows: [String: ChatViewAnchor] = [:]
-    private var tracking: String?
-    private var monitor: Any?
-    private var watchers = 0
+    @ObservationIgnored var rows: [String: ChatViewAnchor] = [:]
+    @ObservationIgnored private var tracking: String?
+    @ObservationIgnored private var monitor: Any?
+    @ObservationIgnored private var watchers = 0
 
     static let button: CGFloat = 66
     static let width: CGFloat = button * 3

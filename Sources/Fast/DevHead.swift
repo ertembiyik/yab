@@ -20,8 +20,8 @@ struct DevHead: View {
     /// everything a tab says, a title, a load, a scroll.
     let tab: Tab
     let deviceOn: Bool
-    @ObservedObject var consoleCounts: ConsoleLog.Counts
-    @ObservedObject private var net = NetPrefs.shared
+    var consoleCounts: ConsoleLog.Counts
+    private var net = NetPrefs.shared
     let side: DevSide
     let pane: DevPane
     /// The panels extensions added to the inspector, React's Components and

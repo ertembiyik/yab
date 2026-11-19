@@ -3,18 +3,18 @@ import SwiftUI
 /// The existing Memory question owns this review. Opening it is passive;
 /// only its final enabled action revokes collection and changes storage.
 @MainActor
-final class MemoryClearReview: ObservableObject {
+@Observable final class MemoryClearReview {
     enum LegacyChoice: String, CaseIterable { case keep, remove, restore }
     enum SyncChoice: String { case keep, use }
     let privacy: ContextPrivacy
     let sync: ContextSyncReplay
     let enablement = Question.Enablement()
-    @Published private(set) var plan: ContextPrivacy.ClearPlan
-    @Published private(set) var syncItems: [ContextSyncReplay.Item]
-    @Published var legacyChoices: [String: LegacyChoice] = [:] { didSet { validate() } }
-    @Published var syncChoices: [String: SyncChoice] = [:] { didSet { validate() } }
-    @Published private(set) var message = ""
-    private(set) var result: ContextPrivacy.ClearResult?
+    private(set) var plan: ContextPrivacy.ClearPlan
+    private(set) var syncItems: [ContextSyncReplay.Item]
+    var legacyChoices: [String: LegacyChoice] = [:] { didSet { validate() } }
+    var syncChoices: [String: SyncChoice] = [:] { didSet { validate() } }
+    private(set) var message = ""
+    @ObservationIgnored private(set) var result: ContextPrivacy.ClearResult?
 
     init(privacy: ContextPrivacy = .shared, sync: ContextSyncReplay? = nil) {
         self.privacy = privacy
@@ -91,7 +91,7 @@ final class MemoryClearReview: ObservableObject {
 }
 
 struct MemoryClearReviewContent: View {
-    @ObservedObject var review: MemoryClearReview
+    var review: MemoryClearReview
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if !review.message.isEmpty { words(review.message).foregroundStyle(ButtonCSS.danger) }

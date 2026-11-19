@@ -25,16 +25,16 @@ import SwiftUI
 /// Agents on tasks), and what agents keep. Until a plan is connected the
 /// page is the way in instead (AgentsIntro), unless the welcome did it.
 struct AIPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var routines = Routines.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var memory = MemoryShelf.shared
-    @ObservedObject private var skills = SkillShelf.shared
-    @ObservedObject private var defaults = ModelDefaults.shared
-    @ObservedObject private var siteItems = SiteItems.shared
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
+    private var routines = Routines.shared
+    private var setup = AgentSetupModel.shared
+    private var agents = Agents.shared
+    private var memory = MemoryShelf.shared
+    private var skills = SkillShelf.shared
+    private var defaults = ModelDefaults.shared
+    private var siteItems = SiteItems.shared
 
     var body: some View {
         PageHero(page: .ai)
@@ -133,8 +133,8 @@ struct AIPage: View {
 /// Yab is a switch of its own: at the top of Settings › AI › Agents and on
 /// Settings › Developers, one setting (`bench`) in both places.
 struct AISwitchSettings: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var askKey = Keymap.shared.slot(.agentAsk)
+    @Bindable var prefs: Preferences
+    private var askKey = Keymap.shared.slot(.agentAsk)
 
     var body: some View {
         Section {
@@ -168,14 +168,14 @@ struct AISwitchSettings: View {
 /// they act on without asking, and where Connect put things. The agents
 /// themselves, and their plans, are in Models.
 struct AgentsPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var rules = AgentRules.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
+    @Bindable private var rules = AgentRules.shared
+    private var setup = AgentSetupModel.shared
     /// What macOS lets Yab say, read and never asked for (MailNotify).
-    @ObservedObject private var notify = MailNotify.shared
-    @ObservedObject private var sync = SyncCenter.shared
+    private var notify = MailNotify.shared
+    private var sync = SyncCenter.shared
     /// How long an untouched chat stays out of Archived Chats (Chat.archiveAfter).
     @AppStorage(Chat.archiveKey, store: Store.settings) private var archiveChats = Tidy.month
 
@@ -302,7 +302,7 @@ struct AgentsPage: View {
 /// sites: a group on the Agents page under a plain heading, there once a
 /// card has made one. Only taken back or turned round here, never made.
 private struct AgentSites: View {
-    @ObservedObject private var rules = AgentRules.shared
+    @Bindable private var rules = AgentRules.shared
     @State private var filter = ""
 
     var body: some View {
@@ -384,18 +384,18 @@ private struct AgentSiteRow: View {
 /// state is set before anything runs, and every running state has a word
 /// and the ring (docs/agents.md, "Connect, state by state").
 @MainActor
-final class AgentSetupModel: ObservableObject {
+@Observable final class AgentSetupModel {
     static let shared = AgentSetupModel()
 
     static let clis = AgentPlan.connectable.map(\.cli)
 
     let consent: ProviderConsent
-    @Published private(set) var status: AgentSetup.Status
-    @Published private(set) var found: Shell.Found?
+    private(set) var status: AgentSetup.Status
+    private(set) var found: Shell.Found?
     /// Whether each CLI is signed in to its plan, once asked.
-    @Published private(set) var signedIn: [String: Bool] = [:]
+    private(set) var signedIn: [String: Bool] = [:]
     /// The row being worked on.
-    @Published private(set) var working: String?
+    private(set) var working: String?
     private var disconnectWork: UUID?
     func beginDisconnectWork(_ name: String) -> UUID {
         let id = UUID(); disconnectWork = id; working = name; return id
@@ -405,35 +405,42 @@ final class AgentSetupModel: ObservableObject {
     }
     /// Where Connect is, while it is under way or has just finished; nil
     /// on the page itself.
-    @Published var flow: Flow?
+    var flow: Flow?
     /// The agents ticked on the way in.
-    @Published var picks: Set<String> = []
+    var picks: Set<String> = []
     /// When each agent last opened a tab of its own in yab.
-    @Published private(set) var lastUse: [String: Date] = [:]
+    private(set) var lastUse: [String: Date] = [:]
     /// The agent that opened its first tab while How to Ask was showing.
-    @Published private(set) var tried: String?
+    private(set) var tried: String?
     /// Get to Know Me's task, while it runs.
-    @Published private(set) var knowing: String?
+    private(set) var knowing: String?
     /// The install couldn't be done from here: the command is to paste.
-    @Published private(set) var installByHand = false
+    private(set) var installByHand = false
     /// Where the sign-in page is, while `.signingIn`: opening, in a Yab
     /// tab, or in another browser (Codex opens its own).
-    @Published private(set) var page: Agents.SignInPage?
+    private(set) var page: Agents.SignInPage?
     /// The last try's failure, in words, beside what was pressed until the
     /// next press.
-    @Published private(set) var trouble: Trouble?
+    private(set) var trouble: Trouble?
     /// The account id signing in again, from Models: its row shows the
     /// steps, and it ends quietly, with no tick, How to Ask or offer.
-    @Published private(set) var renewing: String?
+    private(set) var renewing: String?
     /// Installing for over two minutes.
-    @Published private(set) var slow = false
+    private(set) var slow = false
     /// The agent Connect is connecting with an API key of yours rather
     /// than a plan's sign-in, while it runs (AgentKey).
-    @Published private(set) var keying: String?
+    private(set) var keying: String?
     /// Use an API Key's field is open on the way in, for this agent.
-    @Published var keyFor: String?
+    var keyFor: String?
     /// A key waiting for its agent's install to finish.
     private var pendingKey: (cli: String, key: String)?
+    /// What `cursor models` last listed (CursorRunner.models).
+    private(set) var cursorModels = Store.settings.string(forKey: "agents.cursor.models") ?? ""
+
+    func keepCursorModels(_ text: String) {
+        Store.settings.set(text, forKey: "agents.cursor.models")
+        cursorModels = text
+    }
 
     /// Bumped by every press and by Cancel: a run that finds it has moved
     /// on stops where it is, so a late answer never undoes a Cancel.
@@ -466,18 +473,19 @@ final class AgentSetupModel: ObservableObject {
         let words: String
     }
 
-    private var geminiChanges: AnyCancellable?
+    @ObservationIgnored private var geminiChanges: ObservationLoop?
 
     init(status: AgentSetup.Status = AgentSetup.status(), consent: ProviderConsent = .shared) {
         self.consent = consent
         self.status = status
-        geminiChanges = GeminiAccount.shared.objectWillChange.sink { [weak self] _ in
-            self?.objectWillChange.send()
-            // Signed in after all (in Terminal, after Connect gave up): the
-            // words saying it wasn't go (#373). Read once the change landed.
+        // Signed in after all (in Terminal, after Connect gave up): the
+        // words saying it wasn't go (#373).
+        geminiChanges = ObservationLoop { [weak self] in
+            guard GeminiAccount.shared.ready else { return }
+            // Out of the tracked read: only the account's change clears it.
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
-                    guard let self, GeminiAccount.shared.ready, self.trouble?.clis.contains("gemini") == true else { return }
+                    guard let self, self.trouble?.clis.contains("gemini") == true else { return }
                     self.trouble = nil
                 }
             }
@@ -737,7 +745,7 @@ final class AgentSetupModel: ObservableObject {
     /// How long a "no" stands before an ask or an open surface looks again.
     var relookAfter: TimeInterval = 60
     /// What looking again runs; a test gives its own world's look.
-    var lookAgain: ((_ fresh: Bool) async -> Void)?
+    @ObservationIgnored var lookAgain: ((_ fresh: Bool) async -> Void)?
 
     private func again(fresh: Bool) async {
         if let lookAgain { await lookAgain(fresh) } else { await look(fresh: fresh) }

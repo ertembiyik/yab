@@ -31,7 +31,7 @@ extension Browser {
 /// A meeting's folder's row while it is on: "12m left", as the header of
 /// Dia's meeting group counts it.
 struct MeetingLeftWords: View {
-    @ObservedObject var nest: Nest
+    var nest: Nest
     @Environment(\.tone) private var tone
 
     var body: some View {

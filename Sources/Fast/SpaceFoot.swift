@@ -121,9 +121,9 @@ struct CapsulePlan: Equatable {
 
 /// The column's foot.
 struct SideFoot: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var hoard: Hoard
+    var browser: Browser
+    var prefs: Preferences
+    var hoard: Hoard
 
     var body: some View {
         tabsFoot
@@ -233,8 +233,8 @@ struct SpaceRowPlan: Equatable {
 /// it with its key. Dragged along the row, a space takes another place, as
 /// in Arc; a right click has its menu.
 struct SpaceRow: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var news = UpdateNews.shared
+    var browser: Browser
+    private var news = UpdateNews.shared
     /// The space in the hand, and how far it has come.
     @State private var lifted: UUID?
     @State private var lift: CGFloat = 0
@@ -329,7 +329,7 @@ struct SpaceSlot: View {
 
     @State private var hovering = false
     /// A tab or a folder held over it (SpaceDrop): let go, it goes here.
-    @ObservedObject private var drop = SpaceDrop.shared
+    private var drop = SpaceDrop.shared
     @Environment(\.tone) private var tone
     @Environment(\.colorScheme) private var scheme
 
@@ -502,7 +502,7 @@ struct FootPlus: View {
     /// When a press on the cross put the menu away: the press goes on to
     /// this button, whose release would raise the menu again.
     @State private var pressClosed: Date?
-    @ObservedObject private var drop = SpaceDrop.shared
+    private var drop = SpaceDrop.shared
     @Environment(\.tone) private var tone
     @Environment(\.accessibilityReduceMotion) private var still
 
@@ -623,17 +623,17 @@ enum FootPlusMenu {
 /// curve started then spends itself with nothing drawn. The strip's tabs start after the capsule, so
 /// they take their place from this too, and move with it.
 @MainActor
-final class SpaceShown: ObservableObject {
+@Observable final class SpaceShown {
     static let shared = SpaceShown()
-    @Published private(set) var id: UUID?
+    private(set) var id: UUID?
     /// Counts the switches whose rows come in on their own (SpaceTurn):
     /// not one two fingers brought, whose rows were already there.
-    @Published private(set) var arrivals = 0
+    private(set) var arrivals = 0
     /// The next switch is two fingers': its rows don't come in again.
-    var pulled = false
+    @ObservationIgnored var pulled = false
     /// How far along the strip's turn starts: 0 for a key or a pick, as far
     /// as two fingers had taken it for a swipe let go (SpacePull).
-    var handoff: CGFloat = 0
+    @ObservationIgnored var handoff: CGFloat = 0
 
     func follow(_ next: UUID, now: Bool = false) {
         let arrives = !pulled
@@ -667,11 +667,11 @@ final class SpaceShown: ObservableObject {
 /// the two cross after it. Apart from SpaceShown, whose space comes a frame
 /// later, so the strip isn't drawn again for that.
 @MainActor
-final class StripTurns: ObservableObject {
+@Observable final class StripTurns {
     static let shared = StripTurns()
-    @Published private(set) var left: UUID?
-    @Published private(set) var started = 0
-    private(set) var start: CGFloat = 0
+    private(set) var left: UUID?
+    private(set) var started = 0
+    @ObservationIgnored private(set) var start: CGFloat = 0
 
     func begin(from: UUID, start: CGFloat) {
         self.start = start
@@ -691,22 +691,22 @@ final class StripTurns: ObservableObject {
 /// against the capsule's own edge, not after the words, so no word can push
 /// it; and the words are clipped by the capsule, not by the emoji's box.
 struct SpaceCapsule: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let plan: CapsulePlan
     /// The tray comes up out of it in the column, down out of it in the strip.
     var up = true
 
     @State private var hovering = false
     /// The space it is drawn for, a frame behind the one on screen.
-    @ObservedObject private var shown = SpaceShown.shared
+    private var shown = SpaceShown.shared
     @Environment(\.tone) private var tone
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// A tab held over it: it opens in a moment.
-    @ObservedObject private var drop = SpaceDrop.shared
+    private var drop = SpaceDrop.shared
     /// Two fingers taking the space elsewhere: the words make way.
-    @ObservedObject private var pull = SpacePull.shared
+    private var pull = SpacePull.shared
     /// A change of space across the top under way (StripTurn).
-    @ObservedObject private var turns = StripTurns.shared
+    private var turns = StripTurns.shared
 
     /// Off at once, since a key or the fingers asked for it, and a long
     /// quiet landing: a spring's settle on an edge sliding a few points
@@ -1224,25 +1224,25 @@ enum StripTurn {
 /// once, the rest played out on the switch's spring from where the fingers
 /// left it; at an end the name gives a little and springs back.
 @MainActor
-final class SpacePull: ObservableObject {
+@Observable final class SpacePull {
     static let shared = SpacePull()
     /// The rows' slide.
-    @Published var x: CGFloat = 0
+    var x: CGFloat = 0
     /// How far toward `to`, 0 to 1; at an end, how far the name has given.
-    @Published var progress: CGFloat = 0
+    var progress: CGFloat = 0
     /// The space on screen and the one the fingers are taking it to, while
     /// they do. At an end `to` is nil and `edge` is set.
-    @Published var from: Space?
-    @Published var to: Space?
-    @Published private(set) var edge = false
+    var from: Space?
+    var to: Space?
+    private(set) var edge = false
     /// 1 to the next space, -1 to the one before.
-    private(set) var dir = 0
-    private var next: SpaceWash.Paint?
+    @ObservationIgnored private(set) var dir = 0
+    @ObservationIgnored private var next: SpaceWash.Paint?
 
     /// Where the fingers' switch is: following them, or the space come and
     /// only the words and rows handing over to the capsule's own.
     private enum Phase { case following, arrived }
-    private var phase = Phase.following
+    @ObservationIgnored private var phase = Phase.following
     /// Letting go has brought the space.
     var landing: Bool { phase != .following }
 
@@ -1352,10 +1352,10 @@ final class SpacePull: ObservableObject {
         handOver()
     }
 
-    private weak var browser: Browser?
+    @ObservationIgnored private weak var browser: Browser?
     /// Set for the pass the fingers' words hand over to the capsule's own:
     /// the same words, so nothing comes in or goes out.
-    @Published private(set) var quiet = false
+    private(set) var quiet = false
 
     /// The capsule and the rows are drawn for `id` now.
     func shown(_ id: UUID) {
@@ -1414,7 +1414,7 @@ final class SpacePull: ObservableObject {
 /// them in the strip.
 struct StripPull: ViewModifier {
     let space: UUID
-    @ObservedObject private var pull = SpacePull.shared
+    private var pull = SpacePull.shared
 
     func body(content: Content) -> some View {
         let mine = pull.from?.id == space
@@ -1429,12 +1429,12 @@ struct StripPull: ViewModifier {
 struct SpaceTurn: ViewModifier {
     let id: UUID
     let step: Int
-    @ObservedObject var pull: SpacePull = .shared
+    var pull: SpacePull = .shared
     /// The rows come in once the space is drawn (SpaceShown), a frame after
     /// the switch laid them out: started on that frame, the curve spent its
     /// first part with nothing drawn, and the rows landed half way in. Until
     /// then they wait where the curve starts.
-    @ObservedObject var shown: SpaceShown = .shared
+    var shown: SpaceShown = .shared
     /// Stays where it is while the space around it comes and goes: the
     /// pins every space shares, between two spaces that show them, the
     /// one two fingers are taking it to or the one it came from.

@@ -174,7 +174,7 @@ extension Browser {
 }
 
 private struct DevFloatingContent: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     var body: some View {
         if let tab = browser.toolsFront {
             DevSheet(browser: browser, tab: tab, log: tab.devLog, pane: browser.devPane, panels: browser.devPanels,

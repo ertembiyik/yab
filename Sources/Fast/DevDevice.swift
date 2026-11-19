@@ -234,7 +234,7 @@ struct DeviceGround: View {
 
 /// Over the page in device mode: which device, its size, how near, a turn.
 struct DeviceBar: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let device: DeviceMode
     let room: CGSize
 
@@ -335,7 +335,7 @@ struct DeviceBar: View {
 
 /// The handles round a device, on its gray ground, clear of the page.
 struct DeviceHandles: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let device: DeviceMode
     let room: CGSize
 
@@ -359,7 +359,7 @@ struct DeviceHandles: View {
 /// corner, a plate under the hand, the Mac's resize pointer. ⇧ held pulls
 /// it a tenth as far as the hand, for the exact point, as in Chromium.
 private struct DeviceGrip: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let handle: DeviceHandle
     let device: DeviceMode
     let room: CGSize

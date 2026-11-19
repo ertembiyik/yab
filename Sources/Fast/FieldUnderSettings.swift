@@ -7,8 +7,8 @@ import SwiftUI
 /// what Add Command added has a minus at its end. Its list is the settings'
 /// own (DropPopup), a search on top: Yab's places, then the sites.
 struct FieldUnderSettings: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var under = FieldUnder.shared
+    @Bindable var prefs: Preferences
+    @Bindable private var under = FieldUnder.shared
     @State private var hovered: String?
     @State private var anchor = DropAnchor.Place()
     @State private var listing = false

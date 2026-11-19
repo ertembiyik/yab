@@ -5,7 +5,7 @@ import WebKit
 /// Looking for a word on the page. A bar in the top corner, the same white and
 /// hairline as everything else that floats, and gone the moment it isn't wanted.
 struct FindBar: View {
-    @ObservedObject var finder: Finder
+    @Bindable var finder: Finder
     let close: () -> Void
 
     static let width: CGFloat = 300
@@ -102,36 +102,36 @@ struct FindBar: View {
 /// there itself (WebFind); so is a page in WebKit without
 /// highlights.
 @MainActor
-final class Finder: ObservableObject {
-    @Published private(set) var shown = false
-    @Published var needle = "" {
+@Observable final class Finder {
+    private(set) var shown = false
+    var needle = "" {
         didSet { if needle != oldValue, shown { find(reveal: true) } }
     }
     /// The current match, from 0, and how many there are, up to a thousand.
-    @Published private(set) var index = -1
-    @Published private(set) var total = 0
-    @Published private(set) var capped = false
+    private(set) var index = -1
+    private(set) var total = 0
+    private(set) var capped = false
     /// Looked for, and not on the page.
-    @Published private(set) var missed = false
+    private(set) var missed = false
     /// Whether what is in the field has been looked for yet.
-    @Published private(set) var asked = false
+    private(set) var asked = false
     /// Bumped to put the keys in the field and pick what is there.
-    @Published private(set) var focus = 0
+    private(set) var focus = 0
 
-    private weak var tab: Tab?
+    @ObservationIgnored private weak var tab: Tab?
     private let selectionRequest = FindSelectionRequest()
     /// WebKit's own find, for this page: a PDF, or WebKit that can't mark
     /// matches. Asked again of every page that comes in.
-    private var native = false
-    private lazy var webFind = WebFind()
-    private var loads: AnyCancellable?
-    private var looking = false
-    private var waiting = false
-    private var revealWaiting = false
+    @ObservationIgnored private var native = false
+    @ObservationIgnored private lazy var webFind = WebFind()
+    @ObservationIgnored private var loads: AnyCancellable?
+    @ObservationIgnored private var looking = false
+    @ObservationIgnored private var waiting = false
+    @ObservationIgnored private var revealWaiting = false
     /// Steps asked for while a look was under way, on and back netted.
-    private var steps = 0
+    @ObservationIgnored private var steps = 0
     /// Pictures whose words were asked for while the bar is up.
-    private var asking = Set<String>()
+    @ObservationIgnored private var asking = Set<String>()
 
     init(tab: Tab) {
         self.tab = tab

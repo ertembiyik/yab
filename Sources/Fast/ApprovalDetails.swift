@@ -361,7 +361,7 @@ final class ApprovalDetails {
         if flow.looked { write(record.id, built) }
         if shown[record.id]?.watch == nil {
             let id = record.id
-            shown[id]?.watch = flow.$model.combineLatest(flow.$looked).filter { $0.1 }
+            shown[id]?.watch = flow.observed(\.model).combineLatest(flow.observed(\.looked)).filter { $0.1 }
                 .map { ApprovalDetailBuilder.pay(id: id, $0.0) }.removeDuplicates()
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] detail in MainActor.assumeIsolated { self?.write(id, .init(detail: detail)) } }
@@ -428,7 +428,7 @@ final class ApprovalDetails {
         owed[id] = Owed(tab: tab?.id, session: permit.session, key: permit.key)
         if permit.isPayment, let tab, let flow = Payments.shared.flow(tab) {
             say(.init(id: id, phase: .paying))
-            owed[id]?.watch = flow.$model.map { ($0.phase, $0.order) }.removeDuplicates { $0 == $1 }
+            owed[id]?.watch = flow.observed(\.model).map { ($0.phase, $0.order) }.removeDuplicates { $0 == $1 }
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] phase, order in
                     MainActor.assumeIsolated {

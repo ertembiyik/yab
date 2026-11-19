@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import PDFKit
 import SwiftUI
 
@@ -14,7 +13,7 @@ import SwiftUI
 
 /// Everything Fill & Sign puts over a tab's page.
 struct PDFLayer: View {
-    @ObservedObject var paper: PDFPaper
+    var paper: PDFPaper
     let tab: Tab
     var corner: CGFloat = 0
     var flatTop = false
@@ -61,7 +60,7 @@ private func browser(of tab: Tab) -> Browser? {
 /// The plate at the foot of a PDF, and the bar it opens into: Fill, Text,
 /// Sign, and Done past a rule. On Capture's glass, as the mode bars are.
 struct PDFSignBar: View {
-    @ObservedObject var paper: PDFPaper
+    var paper: PDFPaper
     let tab: Tab
 
     var body: some View {
@@ -89,7 +88,7 @@ struct PDFSignBar: View {
 
 /// The bar's words while the mode is on.
 struct PDFDeskModes: View {
-    @ObservedObject var desk: PDFDesk
+    var desk: PDFDesk
     let paper: PDFPaper
     let tab: Tab
 
@@ -188,7 +187,7 @@ struct PDFFootWatch: NSViewRepresentable {
 
 /// Done's corner for a PDF from a mail: the file, and the reply with it.
 struct PDFSignedCorner: View {
-    @ObservedObject var paper: PDFPaper
+    var paper: PDFPaper
     let tab: Tab
     let name: String
 
@@ -219,7 +218,7 @@ struct PDFSignedCorner: View {
 
 /// The page dimmed under the sheet, while it is up.
 struct PDFSheetLayer: View {
-    @ObservedObject var desk: PDFDesk
+    var desk: PDFDesk
 
     var body: some View {
         if desk.sheet {
@@ -238,12 +237,12 @@ struct PDFSheetLayer: View {
 /// "Your Signature": a finger on the trackpad, the mouse in the box, or a
 /// name typed in a hand's font, as Preview makes one.
 struct PDFSignatureSheet: View {
-    @ObservedObject var desk: PDFDesk
-    @ObservedObject var pad: SignatureSheetModel
+    var desk: PDFDesk
+    @Bindable var pad: SignatureSheetModel
 
     init(desk: PDFDesk) {
-        _desk = ObservedObject(wrappedValue: desk)
-        _pad = ObservedObject(wrappedValue: desk.pad)
+        self.desk = desk
+        pad = desk.pad
     }
 
     var body: some View {
@@ -331,7 +330,7 @@ struct PDFSignatureSheet: View {
 /// The white box a signature is drawn in: with the mouse, or with a finger
 /// on the trackpad while the pointer stands still, until a key is pressed.
 struct SignaturePad: NSViewRepresentable {
-    @ObservedObject var pad: SignatureSheetModel
+    @Bindable var pad: SignatureSheetModel
 
     func makeNSView(context: Context) -> PadView {
         let view = PadView()
@@ -480,7 +479,7 @@ final class PDFDeskView: NSView, PDFPageOverlayViewProvider, NSTextFieldDelegate
     let desk: PDFDesk
     let pdf = DeskPDFView()
     private var overlays: [ObjectIdentifier: DeskOverlay] = [:]
-    private var watch: AnyCancellable?
+    private var watch: ObservationLoop?
     private var scaled: NSObjectProtocol?
     private var viewportWatches: [NSObjectProtocol] = []
     private var viewportReady = false
@@ -531,8 +530,12 @@ final class PDFDeskView: NSView, PDFPageOverlayViewProvider, NSTextFieldDelegate
         editor.textColor = PDFFill.ink
         editor.cell?.isScrollable = true
         editor.cell?.wraps = false
-        watch = desk.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.refresh() }
+        var first = true
+        watch = ObservationLoop { [weak self, desk] in
+            // What the overlays draw from, besides what refresh reads.
+            _ = (desk.mode, desk.current, desk.draft, desk.writing, desk.note, desk.selected,
+                 desk.sheet, desk.signature, desk.ghost, desk.version)
+            if first { first = false } else { self?.refresh() }
         }
         scaled = NotificationCenter.default.addObserver(forName: .PDFViewScaleChanged, object: pdf, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh(); self?.rememberViewport() }

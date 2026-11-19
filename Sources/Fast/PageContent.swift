@@ -3,10 +3,10 @@ import SwiftUI
 /// Keep the page's overlays outside ContentView's already large split layout.
 /// Separate view bodies bound the generic types SwiftUI initializes on first open.
 struct PageContent: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// Room made beside the page (SplitPreview): held, WebKit following.
-    @ObservedObject var preview: SplitPreview
-    @ObservedObject var tab: Tab
+    var preview: SplitPreview
+    var tab: Tab
     let corner: CGFloat
     let showBar: Bool
     let front: Bool
@@ -48,8 +48,8 @@ struct PageContent: View {
 /// outline, square under the address bar (the page steps in, see
 /// StageView.covered).
 private struct PageMail: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
     let corner: CGFloat
     let flatTop: Bool
 
@@ -64,10 +64,10 @@ private struct PageMail: View {
 }
 
 struct PageSuggestions: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let tab: Tab
     /// The snippets by the name typed after ";" (PageSnippets).
-    @ObservedObject var snippets = PageSnippets.shared
+    var snippets = PageSnippets.shared
     /// Native panels keep clicks outside the actual list on the page.
     var sized: ((CGSize) -> Void)? = nil
 
@@ -144,7 +144,7 @@ final class PageSuggestionsHost: NSHostingView<PageSuggestionsPane> {
 }
 
 struct PageSuggestionsPane: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let tab: Tab
     var sized: ((CGSize) -> Void)? = nil
 
@@ -199,7 +199,7 @@ extension Browser {
 /// page in front included (SplitPreview): watched here, so making room lays
 /// out only the half, not the window.
 struct Sided<Content: View>: View {
-    @ObservedObject var preview: SplitPreview
+    var preview: SplitPreview
     let laid: Side
     let alone: Bool
     /// The side, and whether the half's band is to be built ahead.
@@ -210,7 +210,7 @@ struct Sided<Content: View>: View {
 
 /// The paper under a page, carried with it while room is made beside it.
 struct RoomPaper: View {
-    @ObservedObject var preview: SplitPreview
+    var preview: SplitPreview
     let corner: CGFloat
     let dark: Bool
     let band: PaperBand?

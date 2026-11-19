@@ -131,10 +131,10 @@ enum AgentRow {
 /// ground a pin has at rest so it reads as a place and not one of your
 /// tabs. Its face holds still: only the hand moves, when one asks.
 struct AgentRowView: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var agents = Agents.shared
+    var browser: Browser
+    private var agents = Agents.shared
     @State private var hovering = false
-    @ObservedObject private var panel = AgentRowPanel.Model.shared
+    private var panel = AgentRowPanel.Model.shared
     /// The panel is up over this window's row (one window's at a time).
     private var open: Bool { panel.up == ObjectIdentifier(browser) }
     private var openBinding: Binding<Bool> {
@@ -257,10 +257,10 @@ struct AgentRowView: View {
 /// foot takes the keys at once; ↑↓ walk, Return opens, Escape goes.
 /// A right click on a line has Show Chat, Stop and Close.
 struct AgentRowPanel: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     @Binding var open: Bool
-    @ObservedObject private var model = Model.shared
-    @ObservedObject private var agents = Agents.shared
+    @Bindable private var model = Model.shared
+    private var agents = Agents.shared
     let away: ClickAway?
     @FocusState private var typing: Bool
     @State private var hovered: String?
@@ -269,12 +269,12 @@ struct AgentRowPanel: View {
     static let part: CGFloat = 26
 
     @MainActor
-    final class Model: ObservableObject {
+    @Observable final class Model {
         static let shared = Model()
-        @Published var query = ""
-        @Published var chosen = 0
+        var query = ""
+        var chosen = 0
         /// The window whose row it is up over, if any.
-        @Published var up: ObjectIdentifier?
+        var up: ObjectIdentifier?
         func reset() { query = ""; chosen = 0 }
     }
 

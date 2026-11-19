@@ -2287,7 +2287,7 @@ enum ExtensionShims {
             return ["value": value ?? NSNull(), "levelOfControl": mine[name] != nil ? "controlled_by_this_extension" : "controllable_by_this_extension"]
         }
         Extensions.setSettings(mine, for: id)
-        owner.objectWillChange.send()
+        owner.revision &+= 1
         if name == ExtensionProxy.settingName { ExtensionProxy.set(by: id, cleared: parts[0] == "setting.clear") }
         if name == ExtensionProxy.webRTCName { ExtensionProxy.refresh() }
         return nil

@@ -79,7 +79,7 @@ struct SidebarTypographyTests {
 }
 
 private struct PopoverFontProbe: View {
-    @ObservedObject var state: SidebarSizeProbe
+    var state: SidebarSizeProbe
 
     var body: some View {
         VStack {
@@ -93,13 +93,13 @@ private struct PopoverFontProbe: View {
     }
 }
 
-@MainActor private final class SidebarSizeProbe: ObservableObject {
-    @Published var size: SidebarRowSize = .medium
+@MainActor @Observable private final class SidebarSizeProbe {
+    var size: SidebarRowSize = .medium
 }
 
 private struct SidebarEditorProbe: View {
     let nest: Nest
-    @ObservedObject var state: SidebarSizeProbe
+    var state: SidebarSizeProbe
 
     var body: some View {
         VStack(spacing: 4) {

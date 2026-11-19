@@ -26,13 +26,13 @@ struct SecurityReport: Equatable {
 }
 
 @MainActor
-final class SecurityReader: ObservableObject {
-    @Published private(set) var report: SecurityReport?
-    private var page: URL?
+@Observable final class SecurityReader {
+    private(set) var report: SecurityReport?
+    @ObservationIgnored private var page: URL?
     /// The document read, by when it began (DevLog.since): a reload is
     /// read again at the same address.
-    private var document: Date?
-    private var session: URLSession?
+    @ObservationIgnored private var document: Date?
+    @ObservationIgnored private var session: URLSession?
 
     /// The page read again when it isn't the document last read.
     func read(_ tab: Tab) {
@@ -82,7 +82,7 @@ final class SecurityReader: ObservableObject {
     }
 
     /// The page's web view while it still shows `url`.
-    private weak var shown: WKWebView?
+    @ObservationIgnored private weak var shown: WKWebView?
     private func web(_ url: URL) -> WKWebView? { shown?.url == url ? shown : nil }
 
     /// Whether the certificate is trusted, judged off the main thread:
@@ -215,9 +215,9 @@ final class SecurityReader: ObservableObject {
 /// The panel: a row for each, its dot green when all is well.
 struct DevSecurity: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: DevLog
-    @StateObject private var reader = SecurityReader()
+    var tab: Tab
+    var log: DevLog
+    @State private var reader = SecurityReader()
 
     var body: some View {
         Group {

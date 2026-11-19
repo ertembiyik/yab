@@ -161,14 +161,14 @@ final class QuestionAnchorPanel: NSPanel {
 }
 
 @MainActor
-private final class QuestionAnchorRoom: ObservableObject {
-    @Published var height: CGFloat = 1000
+@Observable private final class QuestionAnchorRoom {
+    var height: CGFloat = 1000
 }
 
 private struct QuestionAnchorCard: View {
     let question: Question
     let questions: Questions
-    @ObservedObject var room: QuestionAnchorRoom
+    var room: QuestionAnchorRoom
 
     var body: some View {
         QuestionCard(questions: questions, question: question, room: room.height)

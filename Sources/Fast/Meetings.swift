@@ -19,28 +19,26 @@ import SwiftUI
 // screen you are on instead (MeetingFloat).
 
 @MainActor
-final class Meetings: ObservableObject {
+@Observable final class Meetings {
     static let shared = Meetings()
 
     /// Today's and tomorrow's, soonest first, gone ones left out.
-    @Published private(set) var list: [Meeting] = [] { didSet { refreshReminder() } }
-    @Published private(set) var reminder: Meeting?
+    private(set) var list: [Meeting] = [] { didSet { refreshReminder() } }
+    private(set) var reminder: Meeting?
     /// The card came ten minutes early, for what is open with its people.
-    @Published private(set) var reminderEarly = false
+    private(set) var reminderEarly = false
     /// What is open with its people: what you promised, what they owe you.
-    @Published private(set) var reminderOpen: [MailCenter.MeetingOpen] = []
+    private(set) var reminderOpen: [MailCenter.MeetingOpen] = []
     private var reminders = MeetingReminders()
     /// The minute, for everything that counts down by it.
-    @Published private(set) var now = Date() { didSet { refreshReminder() } }
+    private(set) var now = Date() { didSet { refreshReminder() } }
 
     /// Settings › Tabs: on unless turned off; it does nothing until the Mac
     /// lets yab read the calendars.
-    var wanted: Bool {
-        get { Store.settings.object(forKey: "meetings.show") as? Bool ?? true }
-        set {
-            objectWillChange.send()
-            Store.settings.set(newValue, forKey: "meetings.show")
-            if newValue { start() } else { stop() }
+    var wanted: Bool = Store.settings.object(forKey: "meetings.show") as? Bool ?? true {
+        didSet {
+            Store.settings.set(wanted, forKey: "meetings.show")
+            if wanted { start() } else { stop() }
         }
     }
 
@@ -49,9 +47,9 @@ final class Meetings: ObservableObject {
     /// main thread before the window's first frame, for a calendar read
     /// only once the launch is over (YAB_LAUNCH_EVENTSTORE_LAZY=0 makes it
     /// with Meetings, as before).
-    private lazy var store = EKEventStore()
-    private var ticking: Timer?
-    private var watch: NSObjectProtocol?
+    @ObservationIgnored private lazy var store = EKEventStore()
+    @ObservationIgnored private var ticking: Timer?
+    @ObservationIgnored private var watch: NSObjectProtocol?
     /// Meetings the bench made up, in place of the calendar's.
     private var made: [Meeting]?
 
@@ -436,6 +434,9 @@ final class Meetings: ObservableObject {
     static var benchCalendars: Set<String> = []
 
     /// Meetings of the bench's making, instead of the calendar's.
+    /// For the bench: the minute told again, as the clock tells it.
+    func benchTick() { now = Date() }
+
     func pretend(_ meetings: [Meeting]?) {
         busyKept = nil
         made = meetings
@@ -519,7 +520,7 @@ extension Browser {
 /// whole pin is the button. The mark stays where every other pin's is.
 struct PinMeeting: ViewModifier {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let calls: Calls
     /// The pin's own corners, the shape its click takes while it joins.
     let radius: CGFloat
@@ -537,9 +538,9 @@ struct PinMeeting: ViewModifier {
 
 private struct PinMeetingLive: ViewModifier {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var meetings = Meetings.shared
-    @ObservedObject var calls: Calls
+    var tab: Tab
+    var meetings = Meetings.shared
+    var calls: Calls
     let radius: CGFloat
 
     private var badge: Meetings.Badge? {

@@ -112,11 +112,11 @@ struct MailSnippet: Codable, Equatable, Identifiable {
 }
 
 @MainActor
-final class MailSnippets: ObservableObject {
+@Observable final class MailSnippets {
     static let shared = MailSnippets()
 
     /// Every snippet, in the order they were made.
-    @Published private(set) var all: [MailSnippet] = []
+    private(set) var all: [MailSnippet] = []
     /// mail/snippets.noindex/snippets.json; the files in the snippets
     /// folder beside it.
     let file: URL
@@ -832,7 +832,7 @@ extension MailStore {
 /// another ";" (MailDesk.take has the keys first). Read again at every
 /// change and caret move in the words (MailWords' `moved`).
 @MainActor
-final class MailSnippetPicker: ObservableObject {
+@Observable final class MailSnippetPicker {
     static let shared = MailSnippetPicker()
 
     struct Call: Equatable {
@@ -849,9 +849,9 @@ final class MailSnippetPicker: ObservableObject {
         let width: CGFloat
     }
 
-    @Published private(set) var call: Call?
+    private(set) var call: Call?
     /// Where the ";" esc put away stands: no list for it again.
-    private var dismissed: (draft: String, at: Int)?
+    @ObservationIgnored private var dismissed: (draft: String, at: Int)?
 
     private init() {
         // The words gave up the keyboard (a click in To, a send, the draft
@@ -977,7 +977,7 @@ struct MailSnippetPickerView: View {
 /// they go with it, so the card says so before it is sent as it is.
 struct MailSnippetFilesLine: View {
     let snippet: String
-    @ObservedObject private var snippets = MailSnippets.shared
+    private var snippets = MailSnippets.shared
 
     var body: some View {
         if let files = snippets.snippet(snippet)?.files, !files.isEmpty {

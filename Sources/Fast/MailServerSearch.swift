@@ -16,7 +16,7 @@ import Foundation
 // thread only it keeps opens with its words when Gmail can't be reached.
 
 @MainActor
-final class MailServerSearch: ObservableObject {
+@Observable final class MailServerSearch {
     static let shared = MailServerSearch()
 
     enum State: Equatable {
@@ -32,12 +32,12 @@ final class MailServerSearch: ObservableObject {
     nonisolated static let enough = 10
 
     /// By account and the search as Gmail reads it.
-    @Published private(set) var states: [String: State] = [:]
-    private var running: [String: Task<State, Never>] = [:]
+    private(set) var states: [String: State] = [:]
+    @ObservationIgnored private var running: [String: Task<State, Never>] = [:]
     /// Whether the Mac's own answer to a search wasn't the whole one,
     /// decided once for each account and search, not each time the list
     /// is read (Search All Mail asks Gmail whatever it was).
-    private var decided: [String: (wanted: Bool, answered: Bool)] = [:]
+    @ObservationIgnored private var decided: [String: (wanted: Bool, answered: Bool)] = [:]
 
     /// A thread of old mail the mail memory keeps, as its row says it.
     struct Recalled: Equatable {
@@ -49,8 +49,8 @@ final class MailServerSearch: ObservableObject {
     }
 
     /// What the mail memory found, by account and search, newest first.
-    @Published private(set) var recalled: [String: [Recalled]] = [:]
-    private var recalling: Set<String> = []
+    private(set) var recalled: [String: [Recalled]] = [:]
+    @ObservationIgnored private var recalling: Set<String> = []
 
     private func key(_ account: String, _ query: MailQuery) -> String { account + "|" + query.gmail }
 

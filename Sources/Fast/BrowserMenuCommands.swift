@@ -18,7 +18,7 @@ struct NumberedMenuButton: View {
 }
 
 struct AppearanceMenu: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         // Settings › Appearance's Theme, in its words.
@@ -41,7 +41,7 @@ struct AppearanceMenu: View {
 }
 
 struct BookmarksBarMenu: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     /// One switch, as Settings' Bookmarks bar and the menu's other bars.
     var body: some View {
@@ -53,7 +53,7 @@ struct BookmarksBarMenu: View {
 }
 
 struct NumberedTabsMenu: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         Menu("Go to Tab") {
@@ -71,7 +71,7 @@ struct NumberedTabsMenu: View {
 }
 
 struct SplitMenuCommands: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         Button(browser.pair(of: browser.activeID) != nil ? "Separate Split View" : "Split View") {
@@ -93,7 +93,7 @@ struct SplitMenuCommands: View {
 }
 
 struct DeveloperMenuCommands: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         Menu("Developer") {
@@ -124,7 +124,7 @@ struct DeveloperMenuCommands: View {
 }
 
 struct SpacesMenuCommands: Commands {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some Commands {
         CommandMenu("Spaces") {
@@ -166,7 +166,7 @@ struct SpacesMenuCommands: Commands {
 }
 
 private struct SpaceMenuButton: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let space: Space
     let number: Int
 

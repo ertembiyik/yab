@@ -11,11 +11,11 @@ import QuickLookThumbnailing
 /// beside it the chosen row.
 struct PlaceView: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     let place: FieldPlace
     var height: CGFloat = Omnibox.placeHeight
-    @ObservedObject private var loot: Loot
-    @ObservedObject private var hoard: Hoard
+    private var loot: Loot
+    private var hoard: Hoard
 
     init(browser: Browser, query: Query, place: FieldPlace, height: CGFloat) {
         self.browser = browser
@@ -39,15 +39,7 @@ struct PlaceView: View {
             }
         }
         // Chats change as their agents work: the rows made again, only here.
-        .onReceive(Chats.shared.$all.dropFirst()) { _ in
-            if place == .chats || place == .routines { query.stock.version += 1 }
-        }
-        .onReceive(Routines.shared.$all.dropFirst()) { _ in
-            if place == .routines { query.stock.version += 1 }
-        }
-        .onReceive(MailSnippets.shared.$all.dropFirst()) { _ in
-            if place == .snippets { query.stock.version += 1 }
-        }
+        .modifier(PlaceStockWatch(query: query, place: place))
         // A thread named, renamed or forgotten: By Thread asks again.
         .onReceive(NotificationCenter.default.publisher(for: Diary.threadsChanged)) { _ in
             if place == .history, query.placeFilter == FieldPlace.byThread { browser.askHistory() }
@@ -249,11 +241,24 @@ struct PlaceView: View {
     }
 }
 
+/// Reads the lists itself, so the place's body does not run when they change.
+private struct PlaceStockWatch: ViewModifier {
+    var query: Query
+    let place: FieldPlace
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: place == .chats || place == .routines ? Chats.shared.all : []) { _, _ in query.stock.version += 1 }
+            .onChange(of: place == .routines ? Routines.shared.all : []) { _, _ in query.stock.version += 1 }
+            .onChange(of: place == .snippets ? MailSnippets.shared.all : []) { _, _ in query.stock.version += 1 }
+    }
+}
+
 /// A place's row's mark: the site's icon, the file's, one of the app's on
 /// its tile, or a download's ring filling as it comes.
 struct PlaceTileView: View {
     let tile: PlaceTile
-    @ObservedObject var meter: Hoard.Meter
+    var meter: Hoard.Meter
 
     var body: some View {
         switch tile {
@@ -342,7 +347,7 @@ struct PlacePageMark: View {
 /// a picture is kept to 190 points so the lines start on the first screen.
 struct PlacePreview: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     let item: PlaceItem?
 
     var body: some View {
@@ -1159,7 +1164,7 @@ struct FactLine: View {
 struct CopyValue: View {
     let fact: Fact
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     var alignment: Alignment = .trailing
     var size: CGFloat = 13
     @State private var hovering = false
@@ -1318,7 +1323,7 @@ struct Shimmer: View {
 /// a button for all of it.
 struct CardDetail: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     let card: SavedCard
     let faded: Bool
 
@@ -1587,7 +1592,7 @@ struct PlaceFileTile: View {
 /// its one way on in a plain button.
 struct PlaceEmptyView: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     let empty: PlaceEmpty
 
     var body: some View {

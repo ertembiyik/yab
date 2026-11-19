@@ -12,7 +12,7 @@ import SyncKit
 // typed, the way it always did.
 
 @MainActor
-final class SyncInvite: ObservableObject {
+@Observable final class SyncInvite {
     enum Phase: Equatable {
         /// Showing the code; nobody has posted under it yet.
         case waiting
@@ -26,12 +26,12 @@ final class SyncInvite: ObservableObject {
         case failed
     }
 
-    @Published private(set) var phase: Phase = .waiting
+    private(set) var phase: Phase = .waiting
     let code: String
     let link: String
     private let host: JoinInviteHost
-    private var arrived: ((String) -> Void)?
-    private var done: (() -> Void)?
+    @ObservationIgnored private var arrived: ((String) -> Void)?
+    @ObservationIgnored private var done: (() -> Void)?
 
     init(host: JoinInviteHost) {
         self.host = host
@@ -97,7 +97,7 @@ final class SyncInvite: ObservableObject {
 /// The code as a QR on a white plate, which every camera reads in the dark
 /// too, and the same code in letters under it, to type instead.
 struct InviteCode: View {
-    @ObservedObject var invite: SyncInvite
+    var invite: SyncInvite
     var side: CGFloat = 132
     @State private var copied = false
     @State private var hovering = false

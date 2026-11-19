@@ -990,7 +990,7 @@ private final class Once {
 /// the page, hanging from its tab for what only asks. A small window's is
 /// over that window, for its one page, with no password pill.
 struct AskLayer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// A small window's page; the browser's tab in front otherwise.
     var page: Tab? = nil
 
@@ -1013,10 +1013,10 @@ struct AskLayer: View {
     }
 
     private struct Placed: View {
-        @ObservedObject var browser: Browser
-        @ObservedObject var tab: Tab
+        var browser: Browser
+        var tab: Tab
         /// Watched for the tab moving under its question (KeySky.moved).
-        @ObservedObject var sky: KeySky
+        var sky: KeySky
         let offers: Bool
         let origin: CGPoint
         let window: CGSize
@@ -1094,7 +1094,7 @@ struct AskLayer: View {
                 sky.watched = id != nil && question?.centered == false ? tab.id : nil
             }
             .frame(width: window.width, height: window.height, alignment: .topLeading)
-            .onReceive(browser.selectionCommands.$stage.map { $0 != .closed }.removeDuplicates()) { holding = $0 }
+            .onChange(of: browser.selectionCommands.stage != .closed, initial: true) { _, now in holding = now }
         }
 
         /// The password card comes as ⌘L's field does: in from a touch
@@ -1225,8 +1225,8 @@ struct AskPlace: Equatable {
 /// finish") comes out under it rather than behind it (CornerNotices). A
 /// card in the middle of the page is nowhere near the corner.
 @MainActor
-final class AskRoom: ObservableObject {
-    @Published var card: CGRect?
+@Observable final class AskRoom {
+    var card: CGRect?
 }
 
 /// Laid over the window, where the page's question comes up. With nothing
@@ -2025,7 +2025,7 @@ extension Tab {
 /// Read off WebKit, never off what was pressed: a page that mutes itself
 /// from its own button shows here at once.
 struct CaptureDot: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     /// The dot, and the ring it is when muted. Its center is the mark's
     /// corner (TabMark): half on the mark, so the cut takes the mark's

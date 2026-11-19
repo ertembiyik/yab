@@ -80,18 +80,18 @@ struct OutlookClient: OAuthDoor {
 /// The Outlook accounts connected for their calendars, their sign-in, and
 /// how they are read.
 @MainActor
-final class OutlookCalendars: ObservableObject {
+@Observable final class OutlookCalendars {
     static let shared = OutlookCalendars()
 
-    @Published private(set) var accounts: [String] = Store.settings.stringArray(forKey: "outlook.accounts") ?? []
-    @Published private(set) var connecting = false
+    private(set) var accounts: [String] = Store.settings.stringArray(forKey: "outlook.accounts") ?? []
+    private(set) var connecting = false
     /// Microsoft stopped letting Yab in: said on its row, with Sign In Again.
-    @Published private(set) var signedOut: Set<String> = []
+    private(set) var signedOut: Set<String> = []
 
-    private var signIn: MailSignIn?
-    private var signInTab: Tab.ID?
+    @ObservationIgnored private var signIn: MailSignIn?
+    @ObservationIgnored private var signInTab: Tab.ID?
     /// Access tokens, each until a minute before it runs out.
-    private var access: [String: (token: String, until: Date)] = [:]
+    @ObservationIgnored private var access: [String: (token: String, until: Date)] = [:]
 
     /// Its refresh token's keychain item, beside the mail's.
     static func item(_ account: String) -> String { "outlook:" + account.lowercased() }

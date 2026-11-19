@@ -127,7 +127,7 @@ extension Browser {
 /// Every message between WebKit's inspector and the page's backend, while
 /// the drawer's Protocol monitor records: Chrome's monitor, on WebKit's
 /// protocol.
-@MainActor final class ProtocolLog: ObservableObject, DevWireListener {
+@MainActor @Observable final class ProtocolLog: DevWireListener {
     static let channel = "protocol"
 
     struct Message: Identifiable, Equatable {
@@ -143,10 +143,10 @@ extension Browser {
         var target: String
     }
 
-    @Published private(set) var messages: [Message] = []
-    @Published var recording = false
-    private var next = 1
-    private var pending: [Int: Int] = [:]
+    private(set) var messages: [Message] = []
+    var recording = false
+    @ObservationIgnored private var next = 1
+    @ObservationIgnored private var pending: [Int: Int] = [:]
 
     init() {}
 

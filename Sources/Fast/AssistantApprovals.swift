@@ -9,7 +9,7 @@ import SyncKit
 // same way when Settings › Agents › Ask on my other devices is on: only the
 // yes or no that one press needs, never what needs this Mac itself.
 @MainActor
-final class AssistantApprovals: ObservableObject {
+@Observable final class AssistantApprovals {
     static let shared = AssistantApprovals()
     static let lifetime: TimeInterval = 15 * 60
     static let taskLifetime: TimeInterval = 24 * 60 * 60
@@ -53,11 +53,11 @@ final class AssistantApprovals: ObservableObject {
         var choices: [String]? = nil
     }
 
-    @Published private(set) var records: [String: Record] = [:]
-    private var waiters: [String: [(Record) -> Void]] = [:]
+    private(set) var records: [String: Record] = [:]
+    @ObservationIgnored private var waiters: [String: [(Record) -> Void]] = [:]
     /// Local questions waiting for Sync to come up, in a Yab woken for
     /// agents that hasn't started it yet.
-    private var unpublished: Set<String> = []
+    @ObservationIgnored private var unpublished: Set<String> = []
     private init() {}
 
     /// A local agent's question that may go to the other devices: a plain
@@ -195,10 +195,10 @@ final class AssistantApprovals: ObservableObject {
 
     /// Local questions sent quiet while you were at the Mac, to ring
     /// once you are away.
-    private var atMac: Set<String> = []
+    @ObservationIgnored private var atMac: Set<String> = []
     var holdsAtMac: Bool { !atMac.isEmpty }
     /// Local questions sent to the other devices because you were away.
-    private var sentAway: Set<String> = []
+    @ObservationIgnored private var sentAway: Set<String> = []
 
     /// Away from the Mac: what waits goes to the iPhone. Back: what went
     /// there for that comes off it, its card still answerable there.
@@ -346,7 +346,7 @@ final class AssistantApprovals: ObservableObject {
     }
 
     /// Picks being put into a page, by request: its answer isn't taken twice.
-    private var applying: Set<String> = []
+    @ObservationIgnored private var applying: Set<String> = []
 
     /// Only a reply opened from the sealed Sync journal by an enrolled device
     /// reaches here. The pending permit is checked again before its one yes.

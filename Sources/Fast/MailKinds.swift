@@ -122,8 +122,8 @@ enum MailKinds {
 /// language (TableCell, MenuCell, no headings): its name and the month's
 /// number, where it goes, and its label in Gmail.
 struct MailKindSettings: View {
-    @ObservedObject private var list = MailList.shared
-    @ObservedObject private var center = MailCenter.shared
+    private var list = MailList.shared
+    private var center = MailCenter.shared
     @State private var counts: [MailSensed.Kind: Int] = [:]
     @State private var labeled = MailKinds.labeled
 

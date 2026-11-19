@@ -22,10 +22,10 @@ import AppKit
 
 /// The welcome over the whole window, lights and all.
 struct WelcomePanel: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
 
-    @ObservedObject private var stage = WelcomeStage.shared
+    private var stage = WelcomeStage.shared
 
     var body: some View {
         WelcomeOverlay(stage: stage, chrome: chrome, fromDisk: stage.arrival(prefs) == .disk)
@@ -870,7 +870,7 @@ private final class DashesView: NSView {
 /// Welcome's line under the name, and under it, when this Yab came from a
 /// friend's link, who sent it (Invites).
 struct WelcomeLede: View {
-    @ObservedObject private var invites = Invites.shared
+    private var invites = Invites.shared
 
     var body: some View {
         VStack(spacing: 6) {

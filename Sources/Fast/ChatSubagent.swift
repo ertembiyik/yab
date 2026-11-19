@@ -169,7 +169,7 @@ struct ChatSubagentCard: View {
 /// each, with what it does now. Each gives way to its report's card.
 struct ChatSubagentsLive: View {
     let chat: Chat
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         let working = chat.subagents.compactMap { agents.session($0.id) }.filter { $0.state.live }

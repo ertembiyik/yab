@@ -7,7 +7,7 @@ import SwiftUI
 /// At the end of a live folder's tab: what it needs, the first that
 /// applies. Nothing when nothing does: the quiet row is the all clear.
 struct LiveWordsView: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// The same occupied end slot the title leaves clear, now outside
     /// the status text too; no room is taken when there are no words.
     var clearance: CGFloat = 0
@@ -41,17 +41,17 @@ struct LiveWordsView: View {
 /// sign-in page, a click away; "5 need you" when more wait than come out
 /// from under it shut; else nothing.
 struct LiveNestWords: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var nest: Nest
-    @ObservedObject private var live = LiveFolders.shared
+    var browser: Browser
+    var nest: Nest
+    private var live = LiveFolders.shared
     /// Live Folders off: the folder says so, its tabs kept as they were.
-    @ObservedObject private var prefs: Preferences
+    private var prefs: Preferences
     @Environment(\.tone) private var tone
 
     init(browser: Browser, nest: Nest) {
         self.browser = browser
         self.nest = nest
-        _prefs = ObservedObject(wrappedValue: browser.prefs)
+        self.prefs = browser.prefs
     }
 
     var body: some View {
@@ -102,8 +102,8 @@ struct LiveNestWords: View {
 /// shows, which repositories or workspaces, reading now, the site, and
 /// stopping.
 struct LiveNestMenu: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var nest: Nest
+    var browser: Browser
+    var nest: Nest
 
     var body: some View {
         if let live = nest.live, let source = LiveSource.of(live.source) {

@@ -68,29 +68,29 @@ final class HoardStack: NSPanel {
     static let goneAfter: Double = lowerTime + Double(most - 1) * stagger + 2.0 / 60
 
     /// Up or on its way down, for the cards to go out and come back by.
-    final class Phase: ObservableObject {
-        @Published var out = false
+    @Observable final class Phase {
+        var out = false
         /// A fresh opening starts with every row at the button. Departure
         /// is shorter: each visible row drops and fades from its own place.
-        var returning = false
+        @ObservationIgnored var returning = false
         /// The column's width, which the cards take.
-        @Published var width: CGFloat = 200
+        var width: CGFloat = 200
         /// On screen, or on its way off. Put away, the panel holds no
         /// cards: a hidden card would still be worked out with every step
         /// of a download (measured: 2.6% of the main thread at ten steps a
         /// second).
-        @Published var live = false
+        var live = false
         /// The button, under the cards: how far in from their left edge,
         /// and its size.
-        @Published var buttonX: CGFloat = 0
-        @Published var button: CGSize = .zero
+        var buttonX: CGFloat = 0
+        var button: CGSize = .zero
         /// The pointer has rested on the button: what a click there does.
-        @Published var tip = false
+        var tip = false
         /// Up by itself for one file (Hoard.peek): only its row, by path.
-        @Published var only: String?
-        var nameFrame: CGRect?
+        var only: String?
+        @ObservationIgnored var nameFrame: CGRect?
         /// The badge or the file rides into a row: the list goes on its curve.
-        var riding = false
+        @ObservationIgnored var riding = false
     }
 
     /// Opening is acknowledged by layout, never by a guessed run-loop turn.
@@ -468,10 +468,10 @@ private final class StackHost: NSHostingView<AnyView> {
 /// The latest files and transfers, newest nearest the button; as many as
 /// stand between the button and the pins, without separate card surfaces.
 struct HoardStackView: View {
-    @ObservedObject var hoard: Hoard
-    @ObservedObject var loot: Loot
+    var hoard: Hoard
+    var loot: Loot
     let browser: Browser
-    @ObservedObject var phase: HoardStack.Phase
+    var phase: HoardStack.Phase
     /// How many cards there is room for.
     let fits: () -> Int
 
@@ -593,7 +593,7 @@ struct StackMeasure: ViewModifier {
 /// fans out together; the ink follows from bottom to top. On departure the
 /// rows drop a short distance from their own places, as in the reference.
 private struct Rise: ViewModifier {
-    @ObservedObject var phase: HoardStack.Phase
+    var phase: HoardStack.Phase
     /// Counted up from the button.
     let place: Int
 
@@ -724,9 +724,9 @@ private struct Card<Picture: View>: View {
 }
 
 private struct FetchCard: View {
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
     /// The numbers, watched here and only here.
-    @ObservedObject var meter: Hoard.Meter
+    var meter: Hoard.Meter
     let fetch: Hoard.Fetch
     /// Nearest the button: the row the badge rides into.
     var lowest = false
@@ -776,7 +776,7 @@ private struct FetchCard: View {
 }
 
 private struct KeptCard: View {
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
     let keep: Keep
     let loot: Loot
     let browser: Browser
@@ -948,7 +948,7 @@ struct Thumb: View {
 
 /// The rows and pins under the stack, hushed while it is up.
 struct HoardHush: ViewModifier {
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
 
     func body(content: Content) -> some View {
         let _ = HoardStack.hushes += 1

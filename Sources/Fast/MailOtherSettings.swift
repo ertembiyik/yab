@@ -10,14 +10,14 @@ import SwiftUI
 /// it (MailProbe) before the account is kept. Where the provider's
 /// app-password page is signed in in Yab, Set It Up hands it all to an agent (MailSetup).
 struct MailOtherAccountSheet: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// The address it starts with: an account's own, for Fix; "@icloud.com"
     /// from the Add Account menu, the caret before the @.
     var start = ""
     /// Explicit Google selection also covers Workspace addresses.
     var provider: String? = nil
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var agent = MailSetup.shared
+    private var agent = MailSetup.shared
     @MailStill private var still
     @State private var address = ""
     @State private var name = NSFullUserName()
@@ -147,7 +147,7 @@ struct MailOtherAccountSheet: View {
             if Store.testing { MailSheetDrive.shared.seen = [:] }
         }
         // A test world's bench fills and presses it as a person would (MailSheetDrive).
-        .onReceive(MailSheetDrive.shared.$poke) { poke in
+        .onChange(of: MailSheetDrive.shared.poke, initial: true) { _, poke in
             guard Store.testing, let poke else { return }
             take(poke)
         }

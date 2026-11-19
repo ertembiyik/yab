@@ -9,7 +9,7 @@ import WebKit
 struct ExtensionWebsites: View {
     let id: String
     let item: Installed
-    @ObservedObject var extensions: Extensions
+    var extensions: Extensions
     let everywhere: Bool
     let hosts: [String]
     let clickable: Bool
@@ -126,8 +126,8 @@ struct ExtensionWebsites: View {
 /// Adding one is its own few steps,
 /// in ExtensionAdd.
 struct ExtensionsPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var model: SettingsModel
 
     var body: some View {
         if PageEngineFactory.chromiumEnabled {
@@ -160,8 +160,8 @@ struct ExtensionsPage: View {
     /// of its own: each keeps its own, as each Chrome profile does.
     @available(macOS 15.4, *)
     private struct SignInPicker: View {
-        @ObservedObject var browser: Browser
-        @ObservedObject var model: SettingsModel
+        var browser: Browser
+        var model: SettingsModel
 
         var body: some View {
             if SignIns.split(browser) {
@@ -187,10 +187,10 @@ struct ExtensionsPage: View {
 
     @available(macOS 15.4, *)
     private struct Installer: View {
-        @ObservedObject var browser: Browser
-        @ObservedObject var model: SettingsModel
-        @ObservedObject var extensions: Extensions
-        @ObservedObject var installs = SyncInstalls.shared
+        var browser: Browser
+        var model: SettingsModel
+        var extensions: Extensions
+        var installs = SyncInstalls.shared
         @State private var hovering = false
 
         var body: some View {
@@ -234,7 +234,7 @@ struct ExtensionsPage: View {
     /// off-the-record side, and each extension's own "Allow in Incognito"
     /// follows this switch (ChromiumPrivateProfiles, ChromiumExtensions).
     struct PrivateTabs: View {
-        @ObservedObject var prefs: Preferences
+        @Bindable var prefs: Preferences
 
         static let note = "Applies to new private tabs. Enabled extensions may access private page content."
 
@@ -273,8 +273,8 @@ struct ExtensionsPage: View {
     @available(macOS 15.4, *)
     private struct Row: View {
         let item: Installed
-        @ObservedObject var model: SettingsModel
-        @ObservedObject var extensions: Extensions
+        var model: SettingsModel
+        var extensions: Extensions
         @State private var hovering = false
 
         static let gap: CGFloat = 10
@@ -404,7 +404,7 @@ struct ExtensionsPage: View {
 struct ExtensionMark: View {
     let id: String
     let side: CGFloat
-    @ObservedObject var extensions: Extensions = .shared
+    var extensions: Extensions = .shared
 
     var body: some View {
         Group {
@@ -423,9 +423,9 @@ struct ExtensionMark: View {
 @available(macOS 15.4, *)
 struct ExtensionDetail: View {
     let id: String
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject var extensions: Extensions
+    var browser: Browser
+    var model: SettingsModel
+    var extensions: Extensions
 
     var body: some View {
         if let item = extensions.installed.first(where: { $0.id == id }) {
@@ -554,11 +554,8 @@ struct ExtensionDetail: View {
                 }
                 if newTab {
                     SettingsSwitch("Draws the new tab page", isOn: Binding(
-                        get: { Store.settings.object(forKey: "extensions.newtab.\(id)") as? Bool == true },
-                        set: {
-                            Store.settings.set($0, forKey: "extensions.newtab.\(id)")
-                            extensions.objectWillChange.send()
-                        }
+                        get: { extensions.drawsNewTab(id) },
+                        set: { extensions.setDrawsNewTab($0, for: id) }
                     ))
                 }
                 if reloads {
@@ -586,7 +583,7 @@ struct ExtensionDetail: View {
     private struct CommandRow: View {
         let title: String
         let command: WKWebExtension.Command
-        @ObservedObject var extensions: Extensions
+        var extensions: Extensions
 
         var body: some View {
             HStack(spacing: 12) {
@@ -715,7 +712,7 @@ struct ExtensionDetail: View {
 /// settings, as Search's is (SiteEditing).
 @available(macOS 15.4, *)
 @MainActor
-final class BlockEditing: ObservableObject {
+@Observable final class BlockEditing {
     static let shared = BlockEditing()
 
     struct Draft: Identifiable {
@@ -726,7 +723,7 @@ final class BlockEditing: ObservableObject {
         var allow = false
     }
 
-    @Published private(set) var draft: Draft?
+    private(set) var draft: Draft?
 
     func open(id: String, name: String, allow: Bool = false) {
         draft = Draft(extensionID: id, name: name, allow: allow)
@@ -739,7 +736,7 @@ final class BlockEditing: ObservableObject {
 /// the card in the middle, as Search's card comes (SiteCardLayer).
 @available(macOS 15.4, *)
 struct BlockCardLayer: View {
-    @ObservedObject var editing = BlockEditing.shared
+    var editing = BlockEditing.shared
 
     var body: some View {
         ZStack {
@@ -1272,7 +1269,8 @@ extension ShortcutRecorder {
     /// looks for them.
     @available(macOS 15.4, *)
     static func command(_ command: WKWebExtension.Command, _ extensions: Extensions) -> ShortcutRecorder {
-        ShortcutRecorder(
+        _ = extensions.revision
+        return ShortcutRecorder(
             current: command.activationKey.map { Hotkey($0, command.modifierFlags) },
             clash: { Keymap.shared.clash($0, for: nil, command: command) },
             save: { extensions.setKey($0?.key, $0?.flags ?? [], for: command) }
@@ -1286,7 +1284,7 @@ extension ShortcutRecorder {
 /// changed its markup leaves no room for it does the corner offer it, once
 /// for each extension, with Add on it.
 struct StoreOffer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         if #available(macOS 15.4, *), let tab = browser.active {
@@ -1304,8 +1302,8 @@ struct StoreOffer: View {
     @available(macOS 15.4, *)
     private struct Watch: View {
         let browser: Browser
-        @ObservedObject var tab: Tab
-        @ObservedObject var extensions: Extensions
+        var tab: Tab
+        var extensions: Extensions
 
         /// The extension this page is about, while the page's own button
         /// isn't in place and it isn't installed.

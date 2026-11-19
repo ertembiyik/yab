@@ -63,16 +63,16 @@ struct Bookmark: Codable, Identifiable, Hashable {
 }
 
 @MainActor
-final class Bookmarks: ObservableObject {
+@Observable final class Bookmarks {
     static let shared = Bookmarks()
     private static let writes = DispatchQueue(label: "yab.bookmarks", qos: .utility)
-    @Published private(set) var roots: [Bookmark] = [] {
+    private(set) var roots: [Bookmark] = [] {
         didSet { revision &+= 1 }
     }
     /// Bumped with every change, for a list made from the tree to know
     /// it is stale without comparing the tree.
-    private(set) var revision = 0
-    private var spotlightRevision: UInt64 = 0
+    @ObservationIgnored private(set) var revision = 0
+    @ObservationIgnored private var spotlightRevision: UInt64 = 0
 
     init() {
         load()
@@ -169,10 +169,10 @@ final class Bookmarks: ObservableObject {
 
     /// The one just added, and when: the bookmarks bar draws it arriving,
     /// out of the place it offered for it when the row was empty.
-    private var fresh: (id: Bookmark.ID, at: Date)?
+    @ObservationIgnored private var fresh: (id: Bookmark.ID, at: Date)?
     /// When another browser's bookmarks last came in, for the bar to bring
     /// them in one after another.
-    private var arrived = Date.distantPast
+    @ObservationIgnored private var arrived = Date.distantPast
 
     func isFresh(_ id: Bookmark.ID) -> Bool {
         guard let fresh, fresh.id == id else { return false }

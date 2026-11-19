@@ -154,11 +154,11 @@ final class PasteStyleTarget {
 /// Refresh menu enablement when AppKit opens a menu. The keyboard action
 /// independently checks the live target, so stale state never causes a paste.
 @MainActor
-final class PasteStyleMenuState: ObservableObject {
+@Observable final class PasteStyleMenuState {
     static let shared = PasteStyleMenuState()
-    @Published private(set) var enabled = false
-    @Published private(set) var allowsShortcut = true
-    private var watches: [NSObjectProtocol] = []
+    private(set) var enabled = false
+    private(set) var allowsShortcut = true
+    @ObservationIgnored private var watches: [NSObjectProtocol] = []
 
     init() {
         for name in [NSMenu.didBeginTrackingNotification, NSWindow.didBecomeKeyNotification,
@@ -185,7 +185,7 @@ final class PasteStyleMenuState: ObservableObject {
 }
 
 struct PasteStyleMenuItem: View {
-    @ObservedObject private var state = PasteStyleMenuState.shared
+    private var state = PasteStyleMenuState.shared
 
     var body: some View {
         Button("Paste and Match Style") { PasteStyleTarget.current().perform() }

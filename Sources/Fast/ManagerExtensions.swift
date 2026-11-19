@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 
 /// Password managers' extensions, in one place whichever engine draws the
 /// pages: the CEF profile's list while Chromium is the default, the same list
@@ -8,27 +7,19 @@ import Combine
 /// With Chromium the default, WebKit's list is a leftover at rest: a manager
 /// in it runs on no page.
 @MainActor
-final class ManagerExtensions: ObservableObject {
+@Observable final class ManagerExtensions {
     static let shared = ManagerExtensions()
 
-    private var following: [ObjectIdentifier: AnyCancellable] = [:]
     /// The manager last asked to be added on Chromium, whose list has one
     /// `busy` for everything it does.
     private var addingID: String?
-    private var images: [Data: NSImage] = [:]
+    @ObservationIgnored private var images: [Data: NSImage] = [:]
 
     /// The window in front's CEF profile's list; nil under WebKit.
     var native: ChromiumExtensions? {
         guard PageEngineFactory.chromiumEnabled,
               let browser = BrowserWindows.shared.activeBrowser ?? Extensions.shared.browser else { return nil }
-        let list = ChromiumExtensions.of(browser)
-        let key = ObjectIdentifier(list)
-        if following[key] == nil {
-            following[key] = list.objectWillChange.sink { [weak self] in
-                DispatchQueue.main.async { self?.objectWillChange.send() }
-            }
-        }
-        return list
+        return ChromiumExtensions.of(browser)
     }
 
     var installed: [Installed] {

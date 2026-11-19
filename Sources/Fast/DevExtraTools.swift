@@ -3,7 +3,7 @@ import SwiftUI
 
 struct DevExtraTool: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     let tool: DevTool
     @State private var rows: [DevProperty] = []
     @State private var overviewColors: [DevProperty] = []

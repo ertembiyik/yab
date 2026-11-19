@@ -492,7 +492,7 @@ enum WelcomeConnect: WelcomeChapter {
     /// refreshes while the welcome is away.)
     private static func watchReturn(_ stage: WelcomeStage) {
         guard comingBack == nil else { return }
-        comingBack = stage.$away.removeDuplicates().dropFirst().sink { [weak stage] away in
+        comingBack = stage.observed(\.away).removeDuplicates().dropFirst().sink { [weak stage] away in
             guard !away else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35 * WelcomeMotion.pace) {
                 guard let stage, stage.beat == .connect else { return }

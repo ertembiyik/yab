@@ -12,12 +12,12 @@ import SwiftUI
 /// under the spaces and the plus, eased away over a fall above it (#335:
 /// with many tabs the rows under the foot hid its spaces).
 @MainActor
-final class ColumnEnds: ObservableObject {
+@Observable final class ColumnEnds {
     struct Depth: Equatable {
         var above: CGFloat = 0
         var below: CGFloat = 0
     }
-    @Published var depth = Depth()
+    var depth = Depth()
 
     /// How far past what stands over an end a row comes clear.
     static let fall: CGFloat = 24
@@ -74,7 +74,7 @@ struct ColumnScrolled: ViewModifier {
 /// scroll view's edges too, where a held row is drawn while the rows fit
 /// and nothing clips them (SideBar's scrollClipDisabled).
 struct ColumnFade: View {
-    @ObservedObject var ends: ColumnEnds
+    var ends: ColumnEnds
     let top: CGFloat
     let foot: Bool
     /// What stands over the column's bottom: the foot, a note over it, the
@@ -121,7 +121,7 @@ struct ColumnFade: View {
 /// on outside the rows' mask: a mask over it would draw it on its own,
 /// with nothing under it to blur.
 struct ColumnBlur: View {
-    @ObservedObject var ends: ColumnEnds
+    var ends: ColumnEnds
     let top: CGFloat
     let foot: Bool
     /// The window's grain, 0 for none.

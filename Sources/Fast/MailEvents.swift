@@ -13,7 +13,7 @@ import WebKit
 // corner takes it out again.
 
 @MainActor
-final class MailEvents: ObservableObject {
+@Observable final class MailEvents {
     static let shared = MailEvents()
 
     /// The event a mail's date made, as its card shows it.
@@ -34,7 +34,7 @@ final class MailEvents: ObservableObject {
         var anchor: CGPoint?
     }
 
-    @Published var card: Card?
+    var card: Card?
 
     /// A mail's words with their dates marked, and the dates.
     struct Dated {
@@ -46,7 +46,7 @@ final class MailEvents: ObservableObject {
     /// Kept for the mails shown lately, by what changes what comes out: the
     /// mail, its words' length, its promises, and the day (a date goes
     /// once it is over).
-    private var kept: [String: Dated] = [:]
+    @ObservationIgnored private var kept: [String: Dated] = [:]
 
     private init() {}
 
@@ -333,7 +333,7 @@ struct MailEventWords: PreferenceKey {
 /// Where the event's line goes over a mail's words: under the date, its
 /// arrow at the date, kept inside the words' width.
 struct MailEventSpot: View {
-    @ObservedObject var events: MailEvents
+    var events: MailEvents
     let card: MailEvents.Card
     @State private var width: CGFloat = 0
 
@@ -354,7 +354,7 @@ struct MailEventSpot: View {
 /// for the fuller form (title, time, people, place). A popover's frame:
 /// inset 6, its curve that plus a button's.
 struct MailEventPop: View {
-    @ObservedObject var events: MailEvents
+    var events: MailEvents
     let card: MailEvents.Card
     /// Where the arrow points, from the line's leading edge.
     let arrow: CGFloat

@@ -265,7 +265,7 @@ struct ProjectListRow: View {
     let browser: Browser
     let project: Project
     let latest: Chat?
-    @ObservedObject private var chats = Chats.shared
+    private var chats = Chats.shared
     @State private var over = false
     @State private var dropping = false
 
@@ -303,7 +303,7 @@ struct ProjectListRow: View {
 struct ChatPinnedProjects: View {
     let browser: Browser
     let projects: [Project]
-    @ObservedObject private var chats = Chats.shared
+    private var chats = Chats.shared
     /// The circle a chat's row is held over.
     @State private var dropping: String?
 

@@ -13,7 +13,7 @@ import SwiftUI
 /// Nothing is drawn under it: it is the backdrop's own top. In full screen
 /// there is none: the lights are macOS's, from the top.
 struct HeadBand: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         ZStack {
@@ -42,7 +42,7 @@ struct HeadBand: View {
 
     /// The site, as the plate names it; the page's own name off the web.
     private struct Title: View {
-        @ObservedObject var tab: Tab
+        var tab: Tab
         @Environment(\.tone) private var tone
 
         var body: some View {

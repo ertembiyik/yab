@@ -11,10 +11,10 @@ import SwiftUI
 
 struct DevConsolePane: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: ConsoleLog
-    @ObservedObject var panel: ConsolePanel
-    @ObservedObject var prefs = ConsolePrefs.shared
+    var tab: Tab
+    @Bindable var log: ConsoleLog
+    @Bindable var panel: ConsolePanel
+    @Bindable var prefs = ConsolePrefs.shared
     /// In the drawer under another panel: no sidebar.
     var compact = false
 
@@ -56,13 +56,13 @@ struct DevConsolePane: View {
 
 struct ConsoleToolbar: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: ConsoleLog
-    @ObservedObject var panel: ConsolePanel
-    @ObservedObject var prefs: ConsolePrefs
+    var tab: Tab
+    @Bindable var log: ConsoleLog
+    @Bindable var panel: ConsolePanel
+    @Bindable var prefs: ConsolePrefs
     let compact: Bool
     @State private var width: CGFloat = 0
-    @ObservedObject private var counts: DevLog.Counts
+    private var counts: DevLog.Counts
 
     init(browser: Browser, tab: Tab, log: ConsoleLog, panel: ConsolePanel, prefs: ConsolePrefs, compact: Bool) {
         self.browser = browser
@@ -241,7 +241,7 @@ struct ConsoleCopyItems: View {
 /// is the real one.
 struct ConsoleCopyPicker: View {
     let browser: Browser
-    @ObservedObject var panel: ConsolePanel
+    @Bindable var panel: ConsolePanel
     let shown: [ConsoleMessage]
     @State private var json: [String: String] = [:]
 
@@ -330,7 +330,7 @@ struct ConsoleCopyCard: View {
 
 /// The gear's settings, in Chrome's two columns and order.
 struct ConsoleSettingsRow: View {
-    @ObservedObject var prefs: ConsolePrefs
+    @Bindable var prefs: ConsolePrefs
 
     var body: some View {
         HStack(alignment: .top, spacing: 24) {
@@ -371,8 +371,8 @@ struct ConsoleSettingsRow: View {
 // MARK: - sidebar
 
 struct ConsoleSidebar: View {
-    @ObservedObject var log: ConsoleLog
-    @ObservedObject var panel: ConsolePanel
+    @Bindable var log: ConsoleLog
+    @Bindable var panel: ConsolePanel
 
     var body: some View {
         let pageMessages = log.messages.filter { $0.kind == .page || $0.kind == .xhr }
@@ -441,7 +441,7 @@ struct ConsoleSidebar: View {
 
 struct ConsoleLiveList: View {
     let browser: Browser
-    @ObservedObject var log: ConsoleLog
+    @Bindable var log: ConsoleLog
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -515,9 +515,9 @@ private struct ConsoleLinkedText: NSViewRepresentable {
 
 struct ConsoleMessages: View {
     let browser: Browser
-    @ObservedObject var log: ConsoleLog
-    @ObservedObject var panel: ConsolePanel
-    @ObservedObject var prefs: ConsolePrefs
+    @Bindable var log: ConsoleLog
+    @Bindable var panel: ConsolePanel
+    @Bindable var prefs: ConsolePrefs
     let shown: [ConsoleMessage]
 
     /// The list's own coordinates, where the prompt sees how much of the

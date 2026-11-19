@@ -16,51 +16,56 @@ import WebKit
 
 @available(macOS 15.4, *)
 @MainActor
-final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopoverDelegate, WKScriptMessageHandler {
+@Observable final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopoverDelegate, WKScriptMessageHandler {
     static let shared = ExtensionPopup()
 
-    private var popover: NSPopover?
-    private var web: WKWebView?
-    private var staging: NSViewController?
-    private weak var anchor: NSView?
-    private var layoutToken: String?
-    private var layoutNavigation: WKNavigation?
-    private var layoutDeadline: DispatchWorkItem?
-    private(set) var layoutState = "closed"
-    private var pendingEvents: Any?
+    @ObservationIgnored private var popover: NSPopover?
+    @ObservationIgnored private var web: WKWebView?
+    @ObservationIgnored private var staging: NSViewController?
+    @ObservationIgnored private weak var anchor: NSView?
+    @ObservationIgnored private var layoutToken: String?
+    @ObservationIgnored private var layoutNavigation: WKNavigation?
+    @ObservationIgnored private var layoutDeadline: DispatchWorkItem?
+    @ObservationIgnored private(set) var layoutState = "closed"
+    @ObservationIgnored private var pendingEvents: Any?
     /// The popup as WebKit is told about it: a page it can find, belonging
     /// to the browser's window, Chrome gives a popup no window of its own,
     /// so "the current window" from a popup is the browser's, and so is the
     /// last focused one.
-    private var page: PopupPage?
-    private(set) var extensionID: String?
+    @ObservationIgnored private var page: PopupPage?
+    @ObservationIgnored private(set) var extensionID: String?
     /// The sign-in's extensions it is of (ExtensionSignIns): their
     /// controller is told of it, and its links open where they run.
-    private(set) weak var owner: Extensions?
+    @ObservationIgnored private(set) weak var owner: Extensions?
     private var controller: WKWebExtensionController { (owner ?? .shared).controller }
     static let closeHandler = "yabExtensionPopupClose"
     static let layoutHandler = "yabExtensionPopupLayout"
     static let layoutWorld = WKContentWorld.world(name: "yab-extension-popup-layout")
-    private var closeController: WKUserContentController?
+    @ObservationIgnored private var closeController: WKUserContentController?
     /// The popup whose handler the shared controller holds now.
     private static weak var handlerOwner: ExtensionPopup?
-    private var closeOrigin: URL?
-    private var closeFor: String?
-    private var closeToken: String?
+    @ObservationIgnored private var closeOrigin: URL?
+    @ObservationIgnored private var closeFor: String?
+    @ObservationIgnored private var closeToken: String?
     /// The extension's own button, when the popup hangs from it.
-    private weak var button: NSView?
+    @ObservationIgnored private weak var button: NSView?
     /// The sliders the popup hangs from instead: an unpinned extension's,
     /// pressed in the list, or a pin's with no pin on screen to hang from.
-    private weak var door: NSView?
+    @ObservationIgnored private weak var door: NSView?
     /// The popup a click on its own button just closed: the popover goes on
     /// that click's mouse-down, and the button's press comes after, on its
     /// mouse-up, which would open it again.
-    private var closedByButton: (id: String, at: Date)?
+    @ObservationIgnored private var closedByButton: (id: String, at: Date)?
+    /// Bumped when the popover goes up or away, which isShown, fromDoor and hangs read through it.
+    private(set) var revision = 0
 
     /// The popup's web view, while one is up, for the bench.
     var view: WKWebView? { web }
     /// A popup is up: the column it hangs from stays out (Lights.hanging).
-    var isShown: Bool { staging != nil || popover?.isShown == true }
+    var isShown: Bool {
+        _ = revision
+        return staging != nil || popover?.isShown == true
+    }
     /// A popup is up from the sliders: they stay on screen under it, as a
     /// pin does under its own (SidePlate, SiteControlsDoor).
     var fromDoor: Bool { isShown && door != nil }
@@ -166,14 +171,11 @@ final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopo
         }
         layoutNavigation = web.load(request)
         // What it hangs from stays out under it, the pin or the sliders
-        // (SidePlate, SiteControlsDoor), which read this popup but don't
-        // watch it: told once it is up, as on close. The list handing its
+        // (SidePlate, SiteControlsDoor), which read revision: told once it
+        // is up, as on close. The list handing its
         // popover over had told them first, before there was a popup, and
         // the sliders went with the list.
-        DispatchQueue.main.async {
-            owner.objectWillChange.send()
-            SiteControlsState.shared.objectWillChange.send()
-        }
+        DispatchQueue.main.async { [weak self] in self?.revision &+= 1 }
         // A manager Yab unlocks, showing its lock screen: unlocked in place.
         ManagerKeep.inPlace(web, url: url)
         layoutState = "loading"
@@ -189,7 +191,7 @@ final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopo
 
     /// Each extension's popup size, so the next opening starts there.
     private static var lastSize: [String: NSSize] = [:]
-    private var shown = false
+    @ObservationIgnored private var shown = false
 
     /// The page, at the popover's size, in view.
     private func reveal() {
@@ -222,8 +224,7 @@ final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopo
             context.duration = 0.12
             web.animator().alphaValue = 1
         }
-        owner?.objectWillChange.send()
-        SiteControlsState.shared.objectWillChange.send()
+        revision &+= 1
     }
 
     /// `lingering`: closed by its own page's window.close(). The popover
@@ -620,7 +621,7 @@ final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopo
     }
 
     /// Passkey requests from this popup still waiting on the Mac's sheet.
-    private var held = 0
+    @ObservationIgnored private var held = 0
 
     /// Kept up while its page waits on the Mac's passkey sheet, which takes
     /// the focus a transient popover closes on (Bitwarden's unlock with a
@@ -654,8 +655,7 @@ final class ExtensionPopup: NSObject, WKUIDelegate, WKNavigationDelegate, NSPopo
         forget()
         // The pin it kept out beside the address may go now, and the
         // sliders it hung from (the tab's door reads SiteControlsState).
-        (owner ?? .shared).objectWillChange.send()
-        SiteControlsState.shared.objectWillChange.send()
+        revision &+= 1
     }
 }
 

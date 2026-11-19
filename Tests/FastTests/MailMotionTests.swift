@@ -109,13 +109,13 @@ struct MailMotionTests {
 }
 
 @MainActor
-private final class LetterMotionProbe: ObservableObject {
-    @Published var place = MailDesk.Place.after
-    var seen: [(animated: Bool, blocked: Bool)] = []
+@Observable private final class LetterMotionProbe {
+    var place = MailDesk.Place.after
+    @ObservationIgnored var seen: [(animated: Bool, blocked: Bool)] = []
 }
 
 private struct LetterMotionView: View {
-    @ObservedObject var probe: LetterMotionProbe
+    var probe: LetterMotionProbe
     let move: MailDesk.Move
     let nested: Bool
 

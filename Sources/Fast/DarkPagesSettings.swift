@@ -6,8 +6,8 @@ import WebKit
 /// sheet behind Customize… (docs/dark-pages.md, "What people see").
 struct DarkPagesSettings: View {
     static let open = Notification.Name("yab.dark-pages.sheet")
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var extensions = Extensions.shared
+    @Bindable var prefs: Preferences
+    private var extensions = Extensions.shared
     @State private var sheet = false
     @State private var moving = 0
 
@@ -37,7 +37,7 @@ struct DarkPagesSettings: View {
 /// Dark Pages, 460 wide as Fonts is: a live picture of the page in front
 /// (a sample when there is none), the look, and the sites kept light.
 struct DarkPagesSheet: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
     let close: () -> Void
     @State private var kept = DarkPages.keptLight()
 

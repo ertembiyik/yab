@@ -205,71 +205,71 @@ struct SelectionSnapshot {
 }
 
 @MainActor
-final class SelectionCommands: ObservableObject {
+@Observable final class SelectionCommands {
     enum Stage: Equatable { case closed, running, preview, failed }
-    @Published var stage: Stage = .closed
-    @Published var snapshot: SelectionSnapshot?
-    @Published var hint: SelectionSnapshot?
-    @Published var output = ""
-    @Published var showOriginal = false
-    @Published var error = ""
-    @Published var noChange = false
-    @Published var command: SelectionCommand?
-    @Published var commands: [SelectionCommand] = SelectionCommand.builtIn
+    var stage: Stage = .closed
+    var snapshot: SelectionSnapshot?
+    var hint: SelectionSnapshot?
+    var output = ""
+    var showOriginal = false
+    var error = ""
+    var noChange = false
+    var command: SelectionCommand?
+    var commands: [SelectionCommand] = SelectionCommand.builtIn
     /// The answer is in the ⌘J field (FieldAnswer), Raycast's output view,
     /// not over or beside the text: a command picked from the field's list
     /// answers there, and what is said next follows it up there.
-    @Published var answering = false
+    var answering = false
     /// The answers before the one showing, each with what asked for it
     /// (nil: the command itself), oldest first.
-    @Published var turns: [Turn] = []
+    var turns: [Turn] = []
     /// The follow-up the answer showing is for; nil for the command's own.
-    @Published var asked: String?
+    var asked: String?
     /// Being put into the page from the field: the field has gone, the
     /// preview over the text stays away while the page takes it.
-    @Published var handing = false
+    var handing = false
     /// Replace went in: the page has the words, and the result drawn over
     /// them stays a moment while its wash fades (SelectionInk).
-    @Published var replacing = false
+    var replacing = false
     /// A command uses the page's shared agent dock, never a second card
     /// beside the selection. No dock exists before a command starts.
-    @Published private(set) var docked = false
-    @Published private(set) var applying = false
-    private var insertionPending = false
+    private(set) var docked = false
+    private(set) var applying = false
+    @ObservationIgnored private var insertionPending = false
     enum Receipt: String { case replaced = "Replaced", cancelled = "Cancelled", restored = "Original restored", copied = "Copied" }
-    @Published private(set) var receipt: Receipt?
-    private var receiptTask: Task<Void, Never>?
+    private(set) var receipt: Receipt?
+    @ObservationIgnored private var receiptTask: Task<Void, Never>?
     var showsDock: Bool { docked && !answering && stage != .closed }
     var showsDockResult: Bool { showsDock && stage == .preview && !applying && receipt == nil }
     /// Under an Ask's answer, the pages it came from (AskFromDay), over
     /// them what stretch of time, and the one ↓ moved to.
-    @Published var sources: [AnswerSource] = []
-    @Published var sourceCaption = ""
-    @Published var sourceSpot: Int?
+    var sources: [AnswerSource] = []
+    var sourceCaption = ""
+    var sourceSpot: Int?
     /// While an Ask with time words is answered, the stretch it looks
     /// through: "this morning", for the live line.
-    @Published var lookingThrough: String?
+    var lookingThrough: String?
     /// What the question was handed from your day, numbered.
-    private var offered: AskFromDay.Context?
+    @ObservationIgnored private var offered: AskFromDay.Context?
     struct Turn: Identifiable, Equatable {
         let id = UUID()
         let asked: String?
         let answer: String
     }
-    private var habits: [String: [String]] = [:]
-    private var pageActions: [Skills.Action] = []
-    private weak var tab: Tab?
-    private weak var hintTab_: Tab?
+    @ObservationIgnored private var habits: [String: [String]] = [:]
+    @ObservationIgnored private var pageActions: [Skills.Action] = []
+    @ObservationIgnored private weak var tab: Tab?
+    @ObservationIgnored private weak var hintTab_: Tab?
     var activeTab: Tab? { tab }
     var hintTab: Tab? { hintTab_ }
-    private var task: Task<Void, Never>?
-    private var generation = 0
+    @ObservationIgnored private var task: Task<Void, Never>?
+    @ObservationIgnored private var generation = 0
     /// The agent's session answering now, and the last one: published, so
     /// the answer's Open in Chat is there from its first moment.
-    @Published private var sessionID: String?
-    @Published private var lastSessionID: String?
+    private var sessionID: String?
+    private var lastSessionID: String?
 
-    private var macModelChanges: AnyCancellable?
+    @ObservationIgnored private var macModelChanges: AnyCancellable?
 
     init() {
         load()
@@ -332,7 +332,7 @@ final class SelectionCommands: ObservableObject {
 
     /// Scrolling moves the text out from under the list and the preview:
     /// they go with the first scroll rather than float over other words.
-    private var scrolling: Any?
+    @ObservationIgnored private var scrolling: Any?
 
     private func watchScroll() {
         guard scrolling == nil else { return }
@@ -1344,7 +1344,7 @@ final class SelectionCommands: ObservableObject {
 
     /// The frame the latest selection was read in, nil for the page's
     /// own: Replace puts the words back there.
-    private var readFrame: PageFrame?
+    @ObservationIgnored private var readFrame: PageFrame?
 
     /// The selection, wherever it is: the page's, a frame of its site's
     /// (readScript follows the caret into it), a shadow root's, or a

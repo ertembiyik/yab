@@ -13,7 +13,7 @@ import Combine
 /// moves when a query gains or loses results.
 struct Omnibox: View {
     let browser: Browser
-    @ObservedObject var query: Query
+    var query: Query
     /// Room on the left outside the active split half; zero otherwise,
     /// so the field stands in the middle of the whole window.
     let inset: CGFloat
@@ -45,7 +45,7 @@ struct Omnibox: View {
     @Environment(\.accessibilityReduceTransparency) private var solid
     @State private var shake: CGFloat = 0
     @State private var refused = false
-    @StateObject private var retainedRows: RetainedFieldRows
+    @State private var retainedRows: RetainedFieldRows
 
     init(browser: Browser, inset: CGFloat, trail: CGFloat = 0, pageTop: CGFloat = 0, pageBottom: CGFloat = 0) {
         self.browser = browser
@@ -58,7 +58,7 @@ struct Omnibox: View {
         self.shy = browser.windowPurpose.isPrivate(active: (browser.fieldGuest ?? browser.active)?.shy)
         self.hushedAt = (browser.fieldGuest ?? browser.active)?.hushedAt
         self.stealth = shy && browser.windowPurpose == .normal
-        self._retainedRows = StateObject(wrappedValue: RetainedFieldRows(browser: browser))
+        self._retainedRows = State(initialValue: RetainedFieldRows(browser: browser))
     }
 
     /// The box's own space, where the field is the top fieldHeight.
@@ -1538,7 +1538,7 @@ struct AddressField: NSViewRepresentable {
     @MainActor static var creations = 0
     let browser: Browser
     /// Watched, rather than the browser: this is what changes as you type.
-    @ObservedObject var query: Query
+    var query: Query
     /// Over a private tab, drawn as on a dark window.
     var dark = false
     /// Its empty words are the omnibox's (StealthHint), not its own.
@@ -2158,12 +2158,12 @@ struct CalcCard: View {
 /// keeps its native row menus and hover views alive through Escape/Cmd-L;
 /// the next Cmd-T rewrites their contents instead of mounting them again.
 @MainActor
-private final class RetainedFieldRows: ObservableObject {
-    private(set) var offers: [Suggestion] = []
-    private var watching: AnyCancellable?
+@Observable private final class RetainedFieldRows {
+    @ObservationIgnored private(set) var offers: [Suggestion] = []
+    @ObservationIgnored private var watching: AnyCancellable?
 
     init(browser: Browser) {
-        watching = browser.query.$offers.sink { [weak self, weak browser] offers in
+        watching = browser.query.observed(\.offers).sink { [weak self, weak browser] offers in
             guard let self, let browser else { return }
             if browser.windowPurpose.isPrivate(active: (browser.fieldGuest ?? browser.active)?.shy) {
                 self.offers = []

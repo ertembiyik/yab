@@ -52,7 +52,7 @@ enum FrequentReach: String, CaseIterable, Identifiable {
 /// What an empty ⌘T lists and in what order. Split View's field and the
 /// words typed are not its business.
 @MainActor
-final class FieldSections: ObservableObject {
+@Observable final class FieldSections {
     static let shared = FieldSections()
 
     private enum Key {
@@ -61,10 +61,10 @@ final class FieldSections: ObservableObject {
 
     private let defaults: UserDefaults
 
-    @Published private(set) var order: [FieldSection] {
+    private(set) var order: [FieldSection] {
         didSet { defaults.set(order.map(\.rawValue), forKey: Key.order) }
     }
-    @Published private(set) var off: Set<FieldSection> {
+    private(set) var off: Set<FieldSection> {
         didSet { defaults.set(off.map(\.rawValue).sorted(), forKey: Key.off) }
     }
 

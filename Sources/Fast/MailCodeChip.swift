@@ -3,7 +3,7 @@ import SwiftUI
 struct MailCodeChip: View {
     let item: MailCodeItem
     var size: CGFloat = 12
-    @ObservedObject private var codes = MailCodeState.shared
+    private var codes = MailCodeState.shared
     @Environment(\.accessibilityReduceMotion) private var reduced
 
     var body: some View {
@@ -47,7 +47,7 @@ struct MailCodeChip: View {
 
 struct MailCodeRow: View {
     let item: MailCodeItem
-    @ObservedObject private var codes = MailCodeState.shared
+    private var codes = MailCodeState.shared
     var body: some View {
         HStack(spacing: 6) {
             MailCodeChip(item: item)

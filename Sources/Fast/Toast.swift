@@ -5,49 +5,49 @@ import SwiftUI
 /// notice that comes and goes in a corner has no business laying out the
 /// tabs, the column and the page twice over on its way through.
 @MainActor
-final class Toaster: ObservableObject {
-    @Published private(set) var shown = false
+@Observable final class Toaster {
+    private(set) var shown = false
     /// Pressed again while it is up: counts, so the corner can answer each.
-    @Published private(set) var nods = 0
+    private(set) var nods = 0
 
     /// What it says, and what it wears: the chain, or another mark, a key
     /// for a copied password, a hand for a key a request wants. The
     /// same corner and motion answer all of them: one kind of notice for
     /// one kind of act. Set before `shown`, so the words are in place
     /// before anything moves.
-    @Published private(set) var words = "Link copied"
-    @Published private(set) var mark: String?
+    private(set) var words = "Link copied"
+    private(set) var mark: String?
     /// The keys it teaches, set after the words as a button sets its key:
     /// "Send with ⌘↩".
-    @Published private(set) var keys: [String] = []
+    private(set) var keys: [String] = []
     /// What its Undo does, for a notice that offers one: a tab sent to
     /// another space. Set with the words.
-    private(set) var undo: (() -> Void)?
+    @ObservationIgnored private(set) var undo: (() -> Void)?
     /// The button's word, when the one thing it offers isn't an undo: a
     /// hint's Split View or Set Up (Teach.swift). Set with the words.
-    @Published private(set) var act: String?
+    private(set) var act: String?
     /// The tab it names, a link's opened behind the page: its favicon for
     /// the mark, as its row has it, there as soon as the tab has one. Set
     /// with the words.
-    private(set) weak var page: Tab?
+    @ObservationIgnored private(set) weak var page: Tab?
     /// Something flew to where it stands and became it (mail's Send,
     /// MailMorph): it comes up there, without coming out from under the edge.
-    @Published private(set) var landing = false
+    private(set) var landing = false
     /// When what it says happens, for words that count down to it: mail's
     /// "Sending in 5s" while ⌘Z can still take the send back. Set with the
     /// words; `span` is the count it started from, for its width.
-    @Published private(set) var until: Date?
-    private(set) var span = 0
+    private(set) var until: Date?
+    @ObservationIgnored private(set) var span = 0
     /// Taken off where it stands (mail's ⌘Z on a send): gone at once, what
     /// flies from there is it now.
-    private(set) var lifted = false
+    @ObservationIgnored private(set) var lifted = false
 
     /// How long it stays up when it says something to act on.
     static let stay: TimeInterval = 1.6
     /// A copy only says it happened, and is done sooner.
     static let brief: TimeInterval = 1.2
 
-    private var hush: DispatchWorkItem?
+    @ObservationIgnored private var hush: DispatchWorkItem?
 
     /// `stay`, for a notice that asks for something and is good for as long
     /// as the asking is: "Again to remove it" while the second press counts.
@@ -189,11 +189,11 @@ struct Say: Equatable {
 struct Notice: View {
     /// Only asked to undo, never watched: see Toaster.
     let browser: Browser
-    @ObservedObject var toaster: Toaster
-    @ObservedObject var tidier: Tidier
+    var toaster: Toaster
+    var tidier: Tidier
     /// An agent waiting on you elsewhere: said until it's answered, and
     /// come back to after anything said over it.
-    @ObservedObject var agents: Agents
+    var agents: Agents
     /// From the edge it comes out from under to where it rests.
     var top: CGFloat
     /// The browser's own corner, which says an agent is waiting on you and

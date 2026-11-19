@@ -36,7 +36,7 @@ struct LinkRoute: Codable, Equatable, Identifiable {
 }
 
 @MainActor
-final class LinkRoutes: ObservableObject {
+@Observable final class LinkRoutes {
     static let shared = LinkRoutes()
 
     nonisolated static let key = "links.routes"
@@ -50,10 +50,10 @@ final class LinkRoutes: ObservableObject {
     /// Sites whose suggestion was waved away.
     nonisolated static let declinedKey = "links.routes.declined"
 
-    @Published private(set) var defaultSpace: UUID?
-    @Published private(set) var routes: [LinkRoute]
-    @Published private(set) var kept: [Kept]
-    @Published private(set) var declined: Set<String>
+    private(set) var defaultSpace: UUID?
+    private(set) var routes: [LinkRoute]
+    private(set) var kept: [Kept]
+    private(set) var declined: Set<String>
 
     struct Kept: Codable, Equatable {
         var site: String

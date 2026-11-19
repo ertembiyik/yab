@@ -14,21 +14,21 @@ import SwiftUI
 // quits on its own. The Dock, Spotlight or a link shows it as usual.
 
 @MainActor
-final class OpenAtLogin: ObservableObject {
+@Observable final class OpenAtLogin {
     static let shared = OpenAtLogin()
 
     /// macOS opens Yab at login.
-    @Published private(set) var on = false
+    private(set) var on = false
     /// Turned on, and waiting for the person to allow it in System
     /// Settings › General › Login Items.
-    @Published private(set) var waiting = false
+    private(set) var waiting = false
     /// Why the last change didn't take, in words.
-    @Published private(set) var trouble: String?
+    private(set) var trouble: String?
 
     /// What macOS said last, so the switch is drawn as it was while macOS
     /// is asked again. This Mac's own: no synced prefix (SyncShapes).
     private static let onKey = "loginItem.on", waitingKey = "loginItem.waiting"
-    private var reading = false
+    @ObservationIgnored private var reading = false
 
     private init() {
         on = Store.settings.bool(forKey: Self.onKey)
@@ -111,7 +111,7 @@ final class OpenAtLogin: ObservableObject {
 /// Settings › General's row: the switch, and while macOS waits for the
 /// person's yes, the way to where it is given.
 struct OpenAtLoginRow: View {
-    @ObservedObject var login = OpenAtLogin.shared
+    var login = OpenAtLogin.shared
 
     var body: some View {
         SettingsRow("Open at Login", detail: login.detail) {

@@ -68,48 +68,48 @@ enum FolderTint: String, CaseIterable {
 /// folder is in are held through it (`parent`), so a folder with only
 /// folders in it is still there for as long as any tab under it is.
 @MainActor
-final class Nest: ObservableObject, Identifiable {
+@Observable final class Nest: Identifiable {
     let id: UUID
     /// Typed while the model was still asked (`unnamed`): the bar goes, the
     /// typed name stays.
-    @Published var name: String {
+    var name: String {
         didSet { if unnamed, name != oldValue { unnamed = false } }
     }
-    @Published var customMark: String?
+    var customMark: String?
     /// A chosen folder color. Nil keeps the original neutral appearance.
-    @Published var color: String?
+    var color: String?
     /// Hover preview in Customize Folder; never written to the session.
-    @Published var previewTint: FolderTint?
+    var previewTint: FolderTint?
     /// Open: its tabs under it. Shut: only the one on screen, if it is one
     /// of them.
-    @Published var open: Bool
+    var open: Bool
     /// The words searched, for a folder a search gathered (Research.swift):
     /// such a folder is among today's tabs, not the kept. Nil for one you
     /// made.
-    @Published var search: String?
+    var search: String?
     /// When a search's folder was started, and whether it is still open only
     /// because it was just started: that one shuts by itself once you go to
     /// a tab outside it.
-    var born: Date?
-    var opened = false
+    @ObservationIgnored var born: Date?
+    @ObservationIgnored var opened = false
 
     /// Made by a ⌘-click (Research.gatherLinks) and waiting for the model on
     /// this Mac to name it: its row shows a gray bar where the name goes, as
     /// Dia's does (LinkFolders).
-    @Published var unnamed = false
+    var unnamed = false
     /// When the model's name came: the row's name shimmers once from then.
-    @Published var named: Date?
+    var named: Date?
     /// When it came in behind the bar's dust instead (Rename.swift).
-    @Published var renamed: Date?
+    var renamed: Date?
     /// Made by a ⌘-click or a ⌥⇧-click (Research.swift): its mark is its
     /// pages' site while they are of one, else the emoji its name came with
     /// (LinkFolders.mark).
-    var linked = false
+    @ObservationIgnored var linked = false
 
     /// The folder of yours it is in, nil at the top of the kept. Never a
     /// search's or one of today's, never one in it (Folders.settle puts
     /// that right whatever made it).
-    var parent: Nest?
+    @ObservationIgnored var parent: Nest?
 
     /// Where an empty folder at the top of the kept stands, as Arc keeps an
     /// empty folder wherever it was put: just above `before`, a kept tab at
@@ -122,7 +122,7 @@ final class Nest: ObservableObject, Identifiable {
         var after: UUID?
         var next: UUID?
     }
-    var stand: Stand?
+    @ObservationIgnored var stand: Stand?
 
     init(id: UUID = UUID(), name: String, open: Bool = true, search: String? = nil) {
         self.id = id
@@ -159,26 +159,26 @@ final class Nest: ObservableObject, Identifiable {
 
     /// Made of two of today's tabs (SideBar.dwell): among today's as a
     /// search's is, and going as they go, never kept.
-    var fleeting = false
+    @ObservationIgnored var fleeting = false
 
     /// An ordinary folder moved below Clear: retains its identity and nesting.
-    var ordinaryToday = false
+    @ObservationIgnored var ordinaryToday = false
 
     /// An extension's tab group (ExtensionGroups.swift): one of today's
     /// that stays with a single tab in it.
-    var byExtension = false
+    @ObservationIgnored var byExtension = false
 
     /// A meeting's folder (MeetingFolders.swift): its calendar event and
     /// when it ends. It stays with only the call in it until then.
-    var meeting: String?
-    @Published var meetingEnd: Date?
+    @ObservationIgnored var meeting: String?
+    var meetingEnd: Date?
 
     /// Kept with one tab: an extension's group, or a meeting's while it is on.
     var staysAlone: Bool { ordinaryToday || byExtension || (meetingEnd.map { $0 > Date() } ?? false) }
 
     /// A live folder's source: its tabs kept up to date (Live.swift). Nil
     /// for a folder that only holds what you put in it.
-    @Published var live: Live?
+    var live: Live?
 
     /// Among today's tabs rather than the kept: a search's, or one of
     /// today's you made. It shuts and sleeps when left alone, goes whole

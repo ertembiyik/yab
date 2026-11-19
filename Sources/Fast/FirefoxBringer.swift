@@ -5,7 +5,7 @@ import SwiftUI
 /// said under the row. Passwords are their own export, a CSV, so the row
 /// says where it is and Bring passwords in takes the file.
 struct FirefoxBringer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let anchor: String
 
     private enum Stage: Equatable {

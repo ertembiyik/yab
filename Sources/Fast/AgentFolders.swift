@@ -281,36 +281,26 @@ extension Agents {
 // MARK: - the folders
 
 @MainActor
-final class Folders: ObservableObject {
+@Observable final class Folders {
     static let shared = Folders()
 
     private let emptiesFile: URL?
     /// Every space's empty folders, read from `emptiesFile` the first time:
     /// one shelf for every window (`init(sharing:)`).
     private let shelf: Shelf
-    /// Another window's: its changes are the first window's too, for every
-    /// view that watches the folders (KeptEverywhere.swift).
-    private var forward: AnyCancellable?
 
-    init(emptiesFile: URL? = Store.file("empty-folders.json"), forwardingTo first: Folders? = nil) {
+    init(emptiesFile: URL? = Store.file("empty-folders.json")) {
         self.emptiesFile = emptiesFile
         shelf = Shelf()
-        // Private windows keep their own shelf and no file, but the column
-        // observes the same notification source as every other window.
-        if let first {
-            forward = objectWillChange.sink { [weak first] _ in first?.objectWillChange.send() }
-        }
     }
 
     /// The folders of a window other than the first: its own rows, places,
     /// open task folders and names being typed, the same empty folders as
-    /// the first window's, and a change told to whatever watches the
-    /// first's, which the column of every window does.
+    /// the first window's.
     init(sharing first: Folders) {
         emptiesFile = first.emptiesFile
         shelf = first.shelf
         shelf.folders.append(Weak(self))
-        forward = objectWillChange.sink { [weak first] _ in first?.objectWillChange.send() }
     }
 
     /// Every space's empty folders, and the folders that draw them.
@@ -415,35 +405,35 @@ final class Folders: ObservableObject {
     /// most of the row.
     static let indent: CGFloat = 15
 
-    @Published private(set) var folders: [Folder] = []
-    @Published private(set) var places: [Tab.ID: Place] = [:]
-    @Published private(set) var open: Set<String> = []
+    private(set) var folders: [Folder] = []
+    private(set) var places: [Tab.ID: Place] = [:]
+    private(set) var open: Set<String> = []
     /// Some of today's tabs are open, so the line heads them.
-    @Published private(set) var lined = false
+    private(set) var lined = false
     /// The space on screen is folded under its name (SpaceName), as Arc
     /// folds a space's pinned tabs: its kept tabs, its folders and the
     /// empty ones are out of sight, but the tab on screen and one asking,
     /// each drawn under the name as a row of its own. Today's stay.
-    @Published private(set) var shut = false
+    private(set) var shut = false
     /// The kept tabs in no folder of yours out of sight under it. Those in
     /// one have their place (`Place.bare`).
-    @Published private(set) var away: Set<Tab.ID> = []
+    private(set) var away: Set<Tab.ID> = []
     /// The space on screen has something to fold: kept tabs or folders.
-    @Published private(set) var keeps = false
+    private(set) var keeps = false
     /// The spaces folded under their names, as kept on this Mac.
-    @Published private(set) var shutSpaces: Set<UUID> = Folders.readShut()
+    private(set) var shutSpaces: Set<UUID> = Folders.readShut()
     /// The space folding or unfolding, its rows in the list meanwhile.
     private var spaceTurn: Int?
     /// Its kept tabs in no folder of yours while it folds or unfolds: given
     /// a place for that while (`place(of:)`), so their rows fold and unfold
     /// as a folder's do rather than come and go.
-    @Published private(set) var turning: Set<Tab.ID> = []
+    private(set) var turning: Set<Tab.ID> = []
     /// Folders of yours whose rows the folded space keeps out of sight.
     private var shutRows = 0
     /// Folders of yours with nothing in them yet, this space's: at the end
     /// of the kept, above the line, until a tab goes in (Kept.swift). A
     /// folder with tabs is held by its tabs; one without, by this list.
-    @Published private(set) var empties: [Nest] = []
+    private(set) var empties: [Nest] = []
     /// Every space's empty folders, as kept on disk.
     private var emptyBySpace: [UUID: [Nest]] {
         get {
@@ -455,9 +445,9 @@ final class Folders: ObservableObject {
         set { shelf.bySpace = newValue }
     }
     /// The folder of yours whose name is being typed, just made or Rename…
-    @Published var naming: UUID?
+    var naming: UUID?
     /// The last folder selected in this window's column, for ⌘I.
-    @Published var focused: UUID?
+    var focused: UUID?
     /// Rows put out of sight by a shut folder's minus, including opened
     /// tabs while focus is outside it. Kept by folder so list changes and
     /// unrelated selections cannot reveal them again.
@@ -507,15 +497,19 @@ final class Folders: ObservableObject {
     /// the folder is shut.
     private(set) var whole: Set<String> = []
 
-    private var watching: [AnyCancellable] = []
+    @ObservationIgnored private var watching: [AnyCancellable] = []
+    @ObservationIgnored private var following: ObservationLoop?
     private var pending = false
 
     weak var browser: Browser? {
         didSet {
             guard let browser, browser !== oldValue else { return }
-            let agents = Agents.shared
+            following = ObservationLoop { [weak self, weak browser] in
+                guard let browser else { return }
+                _ = Folders.tasks(in: browser.tabs, rowed: true)
+                self?.soon()
+            }
             watching = [
-                agents.objectWillChange.sink { [weak self] _ in self?.soon() },
                 browser.changes(\.tabs).sink { [weak self] _ in self?.soon() },
                 browser.changes(\.activeID).sink { [weak self] id in
                     DispatchQueue.main.async { self?.looked(at: id) }
@@ -2179,7 +2173,7 @@ final class Folders: ObservableObject {
     /// tabs sleep.
     nonisolated static let idle: TimeInterval = 20 * 60
 
-    private var idleClock: Timer?
+    @ObservationIgnored private var idleClock: Timer?
 
     /// Looked at once a minute while there are search folders.
     private func watchIdle() {
@@ -2359,7 +2353,7 @@ struct FolderMark: View {
 
 /// A site's own mark, kept up as its icon comes.
 private struct FolderSiteMark: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         Mark(icon: tab.displayIcon, letter: tab.monogram, size: SideBar.mark)
@@ -2372,14 +2366,14 @@ private struct FolderSiteMark: View {
 /// opens or shuts it and never changes the page; a sealed one's shows its
 /// chat, and resting on it says its step, never its pages.
 struct FolderRow: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let folder: Folders.Folder
     let open: Bool
     /// Where its tabs are, when not in the space on screen: a space's row
     /// drawn before it comes (PagedSpace).
     var among: [Tab]? = nil
 
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
     @Environment(\.tabTitleSize) private var titleSize
     @Environment(\.tone) private var tone
     /// In a cell of the AppKit column: where it stands is the page's to say.
@@ -2465,7 +2459,7 @@ struct FolderEnd: View {
     let tint: Color
     /// At rest, one picture (StillFace).
     var still = false
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         ZStack {
@@ -2501,7 +2495,7 @@ struct FolderEnd: View {
 /// (its eyes, the tick): words there only pushed the name out.
 struct FolderNeeds: View {
     let folder: Folders.Folder
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
     @Environment(\.tone) private var tone
 
     static func words(_ folder: Folders.Folder, session: Agents.Session?) -> String? {
@@ -2686,7 +2680,7 @@ struct FolderMore: View {
 /// Open, its tabs come out to its right in a wash. A sealed one is always
 /// shut, as its row in the column is.
 struct FolderPill: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let folder: Folders.Folder
     let open: Bool
     let width: CGFloat
@@ -2694,7 +2688,7 @@ struct FolderPill: View {
     /// space's row coming up on top (StripComing).
     var among: [Tab]? = nil
 
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
     @Environment(\.tone) private var tone
     @State private var hovering = false
 

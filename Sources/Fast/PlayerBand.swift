@@ -131,8 +131,8 @@ struct PlayerBand: NSViewRepresentable {
 /// the pointer only where the glass is (BandView.hitTest).
 struct BandSlot: View {
     let player: Player
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var room: PlayerRoom
+    var prefs: Preferences
+    var room: PlayerRoom
     /// The column's width now.
     let column: CGFloat
     /// The column is on the window's right: the slot is pinned to its
@@ -158,7 +158,7 @@ struct BandSlot: View {
 /// Where the foot and the rows keep clear of the island: its row and its
 /// inset, while it is up.
 struct BandRoom: View {
-    @ObservedObject var room: PlayerRoom
+    var room: PlayerRoom
     var visible = true
     var edge = Band.edge
 

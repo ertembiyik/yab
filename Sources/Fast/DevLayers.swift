@@ -11,7 +11,7 @@ struct DevLayer: Identifiable {
 
 struct DevLayersPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     @State private var layers: [DevLayer] = []
     @State private var selected = ""
     @State private var reasons: [DevProperty] = []

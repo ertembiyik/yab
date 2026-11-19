@@ -24,14 +24,14 @@ enum SitePage {
 
 /// What the panel is showing, for the doors that open it to light up.
 @MainActor
-final class SiteControlsState: ObservableObject {
+@Observable final class SiteControlsState {
     static let shared = SiteControlsState()
-    @Published var page: SitePage = .main
+    var page: SitePage = .main
     /// The tab the panel is about, while it is up.
-    @Published var openFor: Tab.ID?
+    var openFor: Tab.ID?
     /// What was hidden on this site, listed under its row: opened from the
     /// row, or from ⌘K's Hidden Here.
-    @Published var hiddenOpen = false
+    var hiddenOpen = false
 }
 
 extension Browser {
@@ -55,15 +55,15 @@ extension Browser {
 /// site, the connection at the foot.
 struct SiteControlsView: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var translation: PageTranslation
-    @ObservedObject var extensions: Extensions
-    @ObservedObject var state = SiteControlsState.shared
-    @ObservedObject private var shield = Shield.shared
+    var tab: Tab
+    @Bindable var prefs: Preferences
+    var translation: PageTranslation
+    var extensions: Extensions
+    var state = SiteControlsState.shared
+    private var shield = Shield.shared
     /// A Chromium tab's own extensions (ChromiumColumn).
-    @ObservedObject private var column = ChromiumColumn.shared
-    @ObservedObject private var automaticPiP = AutomaticPiPSites.shared
+    private var column = ChromiumColumn.shared
+    private var automaticPiP = AutomaticPiPSites.shared
     /// Bumped when something here is forgotten, so the rows are read again.
     @State private var forgets = 0
 
@@ -367,7 +367,7 @@ struct SiteControlsView: View {
     /// good. Leaving the list, or the panel, puts the page back as it was.
     private struct HiddenList: View {
         let browser: Browser
-        @ObservedObject var curtain: Curtain
+        var curtain: Curtain
         let changed: () -> Void
 
         var body: some View {
@@ -615,7 +615,7 @@ struct SiteControlsView: View {
 
     /// Smaller and bigger, for a page that isn't at 100%.
     private struct Stepper: View {
-        @ObservedObject var tab: Tab
+        var tab: Tab
 
         var body: some View {
             HStack(spacing: 2) {
@@ -966,10 +966,10 @@ struct SiteControlsDoor: View {
     /// The sliders' line, the weight of the doors beside them: the band's
     /// camera and the plate's link.
     var stroke: CGFloat = 1.5
-    @ObservedObject private var state = SiteControlsState.shared
+    private var state = SiteControlsState.shared
     /// The window's sign-in's extensions (ExtensionSignIns).
-    @ObservedObject private var here = ExtensionsHere.shared
-    @ObservedObject private var nativePopup = ChromiumPopupHost.shared
+    private var here = ExtensionsHere.shared
+    private var nativePopup = ChromiumPopupHost.shared
     private var extensions: Extensions { Extensions.of(browser) }
     @Environment(\.tone) private var tone
     @State private var hovering = false
@@ -1046,14 +1046,14 @@ struct ExtensionAnchor: NSViewRepresentable {
 /// the sliders' place, the blocker off here has its shield. Pressed, the
 /// site is ⌘L.
 struct SidePlate: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var here = ExtensionsHere.shared
+    var browser: Browser
+    var tab: Tab
+    private var here = ExtensionsHere.shared
     private var extensions: Extensions { space.map { Extensions.of(space: $0) } ?? Extensions.of(browser) }
     /// A Chromium tab's own extensions (ChromiumColumn).
-    @ObservedObject private var column = ChromiumColumn.shared
-    @ObservedObject private var nativePopup = ChromiumPopupHost.shared
-    @ObservedObject private var shield = Shield.shared
+    private var column = ChromiumColumn.shared
+    private var nativePopup = ChromiumPopupHost.shared
+    private var shield = Shield.shared
     /// The pointer is somewhere in the column.
     let near: Bool
     let width: CGFloat
@@ -1062,7 +1062,7 @@ struct SidePlate: View {
     var fromAsking = false
     /// What shows through it is blurred (PlateGround).
     var frosted = false
-    @ObservedObject private var card = SiteControlsState.shared
+    private var card = SiteControlsState.shared
     @Environment(\.tone) private var tone
     @Environment(\.accessibilityReduceMotion) private var still
     @State private var hovering = false
@@ -1070,9 +1070,9 @@ struct SidePlate: View {
     @State private var untick: DispatchWorkItem?
     /// The address has slid in from where the question was.
     @State private var arrived = false
-    @ObservedObject private var boostEditor = BoostEditor.shared
+    private var boostEditor = BoostEditor.shared
     /// Pins a window of the extension's own stands under (ExtensionWindowFrame).
-    @ObservedObject private var hung = ExtensionWindowFrame.Hung.shared
+    private var hung = ExtensionWindowFrame.Hung.shared
 
     /// The plate's height at the column's density (Density), with the
     /// pins' corner under it (SideBar.corner).
@@ -1387,7 +1387,7 @@ struct PagedPlate: View {
         let tab: Tab
         let width: CGFloat
         let space: UUID?
-        @ObservedObject var pointer: SlidePointer
+        var pointer: SlidePointer
 
         var body: some View {
             if !tab.isBlank {
@@ -1404,7 +1404,7 @@ struct PagedPlate: View {
 /// asking where to go, ⌘T's field when pressed. The pins and rows under it
 /// stay where they were.
 struct EmptyPlate: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     var frosted = false
     @Environment(\.tone) private var tone
     @State private var hovering = false
@@ -1495,7 +1495,7 @@ struct PlatePin: View {
     @Environment(\.tone) private var tone
     @State private var hovering = false
     /// A window of its own stands under it (ExtensionWindowFrame): lit too.
-    @ObservedObject private var hung = ExtensionWindowFrame.Hung.shared
+    private var hung = ExtensionWindowFrame.Hung.shared
 
     var body: some View {
         let lit = self.lit || hung.ids.contains(button.id)
@@ -1611,7 +1611,7 @@ enum AddressWords {
 struct AddressMenu: View {
     let browser: Browser
     let tab: Tab
-    @ObservedObject private var prefs: Preferences
+    @Bindable private var prefs: Preferences
 
     init(browser: Browser, tab: Tab) {
         self.browser = browser

@@ -7,12 +7,12 @@ import SwiftUI
 /// browser, the whole window, was drawn again when the edge brought the
 /// card out, and again when it let it go, before the card could move.
 @MainActor
-final class SidePeek: ObservableObject {
-    @Published var out = false
-    @Published var card = false
+@Observable final class SidePeek {
+    var out = false
+    var card = false
     /// The next change of `out` slides, though it comes with no animation
     /// (Brim.bring, ColumnView.peek).
-    var sliding = false
+    @ObservationIgnored var sliding = false
 }
 
 /// The put-away strip out over the page, and how it looks while it is out
@@ -22,9 +22,9 @@ final class SidePeek: ObservableObject {
 /// twice before the strip could move. Only the strip, the window's drag
 /// strip and the downloads button watch it.
 @MainActor
-final class StripPeek: ObservableObject {
-    @Published var out = false
-    @Published var card = false
+@Observable final class StripPeek {
+    var out = false
+    var card = false
 }
 
 /// The band with the lights over the page, beside a column on the right
@@ -34,17 +34,17 @@ final class StripPeek: ObservableObject {
 /// moving, a pass long enough to drop that frame. Only the band and the
 /// page column's offset (HeadSunk) watch it.
 @MainActor
-final class HeadPeek: ObservableObject {
+@Observable final class HeadPeek {
     /// Asked out: what the edge and the band's clicks go by, at once.
-    @Published var out = false
-    @Published var shown = false
+    var out = false
+    var shown = false
     /// The page column laid out down under the band. It follows `out` once
     /// Core Animation has carried the page there (Browser.moveHead), so the
     /// window is laid out again when nothing is moving.
-    @Published var sunk = false
+    var sunk = false
     /// How far down that is, as the column last worked it out (HeadSunk):
     /// what the page is carried by. Not published; nothing draws from it.
-    var sink: CGFloat = 0
+    @ObservationIgnored var sink: CGFloat = 0
 }
 
 /// The column of tabs down the left, as one surface at every size it takes.
@@ -70,9 +70,9 @@ final class HeadPeek: ObservableObject {
 /// flat, the page taking its room, rather than stopping as a card first. The springs are the caller's: arriving,
 /// leaving and reshaping each have their own (see Motion).
 struct Column: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var peek: SidePeek
+    var browser: Browser
+    var prefs: Preferences
+    var peek: SidePeek
     /// In the window beside the page, rather than over it.
     let docked: Bool
     /// The backdrop the column wears, if there is one: docked, it sits on
@@ -277,8 +277,8 @@ struct Column: View {
 /// so everything the column says in window space (`.global`) is where it
 /// was, and takes clicks only where the column is.
 struct ColumnHost: NSViewRepresentable {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
 
     func makeNSView(context: Context) -> ColumnView { ColumnView(browser: browser) }
 
@@ -333,7 +333,7 @@ final class ColumnView: NSView {
         // found), so `sliding` went on a pass with nothing to slide. Any
         // other change of it, with the window's mode or ⌘S, is only noted
         // here; ⌘S's own pass slides.
-        peeking = browser.peek.$out.dropFirst().sink { [weak self] out in
+        peeking = browser.peek.observed(\.out).dropFirst().sink { [weak self] out in
             MainActor.assumeIsolated { self?.peek(out) }
         }
     }
@@ -888,8 +888,8 @@ enum CardMotion {
 /// What the column wears, worked out where it is drawn: the site's color
 /// or the backdrop's, as the window's own view works it out.
 struct ColumnRoot: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
     @Environment(\.colorScheme) private var scheme
     private var privateWindow: Bool { browser.windowPurpose == .privateOnly }
 

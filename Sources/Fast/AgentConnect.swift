@@ -11,9 +11,9 @@ import SwiftUI
 // once (AgentsTry).
 
 struct AgentsIntro: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var setup = AgentSetupModel.shared
-    @ObservedObject private var geminiChoices = GeminiChoices.shared
+    var browser: Browser
+    private var setup = AgentSetupModel.shared
+    private var geminiChoices = GeminiChoices.shared
     /// The mark is one thing through the steps: it moves, the words fade.
     @Namespace private var markSpace
     /// Use an API Key's field; kept after a key is turned down, to fix.
@@ -22,7 +22,7 @@ struct AgentsIntro: View {
     /// the last paste wasn't a whole code.
     @State private var googleCode = ""
     @State private var badPaste = false
-    @ObservedObject private var gemini = GeminiAccount.shared
+    private var gemini = GeminiAccount.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -497,9 +497,9 @@ struct AgentsIntro: View {
 /// Continue. The moment the agent really opens a tab, it says so.
 struct AgentsTry: View {
     let clis: [String]
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let marks: Namespace.ID
-    @ObservedObject private var setup = AgentSetupModel.shared
+    private var setup = AgentSetupModel.shared
     @State private var cli = ""
     @State private var inApp = false
     @State private var round = 0
@@ -583,9 +583,9 @@ struct AgentsTry: View {
 /// Return starts it, Escape leaves it for later (the Memory row and the
 /// new tab still offer it).
 struct KnowStep: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let marks: Namespace.ID
-    @ObservedObject private var setup = AgentSetupModel.shared
+    private var setup = AgentSetupModel.shared
 
     private let points: [(icon: String, tint: NSColor, title: String, detail: String)] = [
         ("doc", .systemGreen, "Fills forms for you", "Name, job, links, address."),

@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import AppKit
 
@@ -586,7 +587,38 @@ private struct DropGround: ViewModifier {
 public enum LiquidGlass {
     public static var wanted: Bool {
         guard #available(macOS 26.0, *) else { return false }
-        return !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        return !DisplayOptions.shared.reduceTransparency
+    }
+}
+
+/// The Mac's display options, observed, unlike NSWorkspace's own.
+@Observable
+public final class DisplayOptions: @unchecked Sendable {
+    public static let shared = DisplayOptions()
+
+    public private(set) var reduceTransparency = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+    public private(set) var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    public private(set) var increaseContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+    @ObservationIgnored private var watch: AnyCancellable?
+
+    private init() {
+        watch = NSWorkspace.shared.notificationCenter
+            .publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.read() }
+    }
+
+    private func read() {
+        let workspace = NSWorkspace.shared
+        if reduceTransparency != workspace.accessibilityDisplayShouldReduceTransparency {
+            reduceTransparency = workspace.accessibilityDisplayShouldReduceTransparency
+        }
+        if reduceMotion != workspace.accessibilityDisplayShouldReduceMotion {
+            reduceMotion = workspace.accessibilityDisplayShouldReduceMotion
+        }
+        if increaseContrast != workspace.accessibilityDisplayShouldIncreaseContrast {
+            increaseContrast = workspace.accessibilityDisplayShouldIncreaseContrast
+        }
     }
 }
 

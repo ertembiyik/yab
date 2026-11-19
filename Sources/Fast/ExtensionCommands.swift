@@ -110,6 +110,7 @@ extension Extensions {
     /// Chromium (its keys Chrome's), from its manifest while it sleeps or
     /// waits its turn.
     func commandGroups() -> [(item: Installed, short: String, commands: [CommandEntry])] {
+        _ = revision
         let native = ChromiumExtensionCommands.native(for: self)
         return installed.filter(\.enabled).compactMap { item in
             let short = buttons.first { $0.id == item.id }?.label
@@ -143,6 +144,7 @@ extension Extensions {
     }
 
     func routedKey(_ command: WKWebExtension.Command) -> Hotkey? {
+        _ = revision
         guard !ExtensionCommands.off(command.webExtensionContext?.uniqueIdentifier ?? "", command.id),
               let key = command.activationKey.map({ Hotkey($0, command.modifierFlags) }),
               ExtensionCommands.routes(key) else { return nil }
@@ -166,7 +168,7 @@ extension Extensions {
             var all = Store.settings.dictionary(forKey: "extensions.keys.\(id)") ?? [:]
             all[command] = ["key": hotkey?.key ?? "", "flags": Int(hotkey?.flags.rawValue ?? 0)]
             Store.settings.set(all, forKey: "extensions.keys.\(id)")
-            objectWillChange.send()
+            revision &+= 1
         }
         refreshTipFacts(id)
         actionsChanged += 1
@@ -174,7 +176,7 @@ extension Extensions {
 
     func setCommand(_ kept: ExtensionCommands.Kept, extension id: String, command: String) {
         ExtensionCommands.set(kept, id, command)
-        objectWillChange.send()
+        revision &+= 1
         actionsChanged += 1
     }
 

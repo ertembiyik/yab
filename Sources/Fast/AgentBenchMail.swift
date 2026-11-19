@@ -208,7 +208,6 @@ extension Bench {
         if let key = got["thread"] as? String, let session, let root = agents.session(agents.root(of: session)),
            !root.mailDrafts.contains(key) {
             root.mailDrafts.append(key)
-            agents.objectWillChange.send()
         }
         answer(got)
     }

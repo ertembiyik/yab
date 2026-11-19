@@ -91,8 +91,8 @@ struct CornerPlate: View {
 /// apart, and with it on every mark each row of the column cost an offscreen
 /// pass whenever the column moved.
 struct MarkCorners: ViewModifier {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var choices = CountSites.shared
+    var tab: Tab
+    private var choices = CountSites.shared
     /// How far inside the mark's corner the call's dot centers.
     let dotInset: CGFloat
     /// Room right of the mark inside whatever it is drawn in: a wider plate
@@ -147,8 +147,8 @@ extension Tab {
 /// A row with no mark, letters rather than icons: the count stands on its
 /// own where the mark would be, before the title.
 struct LooseCount: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var choices = CountSites.shared
+    var tab: Tab
+    private var choices = CountSites.shared
 
     var body: some View {
         if let corner = tab.unadornedCountCorner { CornerPlate(corner: corner) }
@@ -159,8 +159,8 @@ struct LooseCount: View {
 /// microphone's dot, when the calendar knows when it ends. One small shake
 /// as they come and at two, as the words at its end had.
 private struct CallCorners: ViewModifier {
-    @ObservedObject var tab: Tab
-    @ObservedObject var meetings = Meetings.shared
+    var tab: Tab
+    var meetings = Meetings.shared
     let count: Corner?
     let dotInset: CGFloat
     let room: CGFloat
@@ -178,8 +178,8 @@ private struct CallCorners: ViewModifier {
 /// The mail pin: the number Settings › Mail's Count says (MailCenter.counted),
 /// at its mark's corner as a site's count is. Only this mark hears mail's count.
 private struct MailCorners: ViewModifier {
-    @ObservedObject var tab: Tab
-    @ObservedObject var center = MailCenter.shared
+    var tab: Tab
+    var center = MailCenter.shared
     let dot: Bool
     let dotInset: CGFloat
     let room: CGFloat
@@ -330,12 +330,12 @@ enum Counts {
 /// mark with a count hears it, which costs nothing: it changes only from a
 /// menu.
 @MainActor
-final class CountSites: ObservableObject {
+@Observable final class CountSites {
     static let shared = CountSites()
     private let store = Store.settings
 
-    @Published var on: Set<String> { didSet { store.set(Array(on).sorted(), forKey: "counts.on") } }
-    @Published var off: Set<String> { didSet { store.set(Array(off).sorted(), forKey: "counts.off") } }
+    var on: Set<String> { didSet { store.set(Array(on).sorted(), forKey: "counts.on") } }
+    var off: Set<String> { didSet { store.set(Array(off).sorted(), forKey: "counts.off") } }
 
     private init() {
         on = Set(store.stringArray(forKey: "counts.on") ?? [])

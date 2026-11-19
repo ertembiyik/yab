@@ -76,6 +76,7 @@ enum AppIconStyle: String, CaseIterable, Identifiable {
 
     /// Whether this one can be worn: friends' icons only once unlocked.
     @MainActor var unlocked: Bool {
+        _ = Invites.shared.revision
         if let icon = AppIconCatalog(rawValue: rawValue), Store.settings.bool(forKey: icon.grantKey) {
             return true
         }
@@ -94,7 +95,7 @@ enum AppIconStyle: String, CaseIterable, Identifiable {
     @MainActor static func sharedSettingsChanged(_ keys: Set<String>) {
         let palette = !keys.isDisjoint(with: SyncShapes.charmPaletteKeys)
         guard palette || keys.contains(where: { AppIconGrants.icon(for: $0) != nil }) else { return }
-        Invites.shared.objectWillChange.send()
+        Invites.shared.revision &+= 1
         if palette, saved == .charm {
             Self.charm.apply()
             announce()
@@ -207,7 +208,7 @@ enum AppIconStyle: String, CaseIterable, Identifiable {
 /// The Dock's icon in Appearance: the chosen one small beside its name,
 /// the whole row opening App Icon, where they are shown large.
 struct AppIconRow: View {
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
     @AppStorage(AppIconStyle.key, store: Store.settings) private var selection: AppIconStyle = .original
     @State private var dark = AppIconStyle.systemDark
 
@@ -245,7 +246,7 @@ extension EnvironmentValues {
 struct AppIconPage: View {
     var model: SettingsModel?
     @AppStorage(AppIconStyle.key, store: Store.settings) private var selection: AppIconStyle = .original
-    @ObservedObject private var invites = Invites.shared
+    private var invites = Invites.shared
     /// The one in the middle, when it isn't the one worn: shown, not worn.
     @State private var looking: AppIconStyle?
     @State private var dark = AppIconStyle.systemDark

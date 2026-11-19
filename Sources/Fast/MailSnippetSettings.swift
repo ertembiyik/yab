@@ -37,8 +37,8 @@ struct SnippetsPage: View {
 /// change everything else; New Snippet… makes one; a right click deletes.
 /// Most used first.
 struct MailSnippetList: View {
-    @ObservedObject private var snippets = MailSnippets.shared
-    @ObservedObject private var snippetKey = Keymap.shared.slot(.snippets)
+    private var snippets = MailSnippets.shared
+    private var snippetKey = Keymap.shared.slot(.snippets)
     private var editing: SnippetEditing { SnippetEditing.shared }
 
     var body: some View {
@@ -84,11 +84,11 @@ struct MailSnippetEditing: Identifiable {
 /// Settings window for its dimming on every step (evals/snippets/editor.py,
 /// 350 ms to see it, 620 ms cold), where this is up in the next frame.
 @MainActor
-final class SnippetEditing: ObservableObject {
+@Observable final class SnippetEditing {
     static let shared = SnippetEditing()
-    @Published var card: MailSnippetEditing?
+    var card: MailSnippetEditing?
     /// The bench's click on Hotkey: its recorder starts listening.
-    @Published var listen = false
+    var listen = false
 
     func open(_ snippet: MailSnippet?, draft: MailSnippet? = nil) {
         card = MailSnippetEditing(snippet: snippet, draft: draft)
@@ -102,14 +102,14 @@ final class SnippetEditing: ObservableObject {
     }
 
     /// The agent reading Superhuman's snippets, until they are on the card.
-    @Published var reading: Agents.Session?
+    var reading: Agents.Session?
     /// What it says it is doing now.
-    @Published var readingNow = ""
+    var readingNow = ""
 
     /// Another app's snippets on the card, before they come in.
-    @Published var bring: SnippetBringing?
+    var bring: SnippetBringing?
     /// The ones just brought in, lit in the list for a moment.
-    @Published var fresh: Set<String> = []
+    var fresh: Set<String> = []
 
     func bring(_ source: SnippetSource, from place: String, found: [FoundSnippet]) {
         card = nil
@@ -127,7 +127,7 @@ final class SnippetEditing: ObservableObject {
 
 /// The editor over Settings' pane: the page dimmed under it, a click there or esc going back.
 struct SnippetCardLayer: View {
-    @ObservedObject private var editing = SnippetEditing.shared
+    private var editing = SnippetEditing.shared
 
     var body: some View {
         ZStack {
@@ -177,7 +177,7 @@ private struct MailSnippetRow: View {
     @State private var refused: String?
     @State private var glow: Glow?
     /// Lit for a moment when it has just been brought in.
-    @ObservedObject private var editing = SnippetEditing.shared
+    private var editing = SnippetEditing.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -294,7 +294,7 @@ private struct MailSnippetEditor: View {
     /// The words take the keyboard as it opens.
     @FocusState private var writing: Bool
     /// The bench starts the recorder as a click would (`listen`).
-    @ObservedObject private var editing = SnippetEditing.shared
+    private var editing = SnippetEditing.shared
     private let new: Bool
     let close: () -> Void
 

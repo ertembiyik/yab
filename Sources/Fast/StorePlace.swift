@@ -139,7 +139,7 @@ struct StoreHead: View {
     let id: String
     let item: PlaceItem
     let meter: Hoard.Meter
-    @ObservedObject private var catalog = StoreCatalog.shared
+    private var catalog = StoreCatalog.shared
 
     var body: some View {
         if let listing = catalog.item(id) {

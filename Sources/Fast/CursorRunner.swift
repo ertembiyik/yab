@@ -10,7 +10,7 @@ enum CursorRunner {
     static let model = AgentModel(cli: "cursor", model: "auto", name: "Auto", about: "Your Cursor plan's default model.", efforts: [])
     static var chatClis: [String] { AgentSetupModel.clis }
     static var models: [AgentModel] {
-        [model] + parseModels(Store.settings.string(forKey: "agents.cursor.models") ?? "").filter { $0.model != "auto" }
+        [model] + parseModels(AgentSetupModel.shared.cursorModels).filter { $0.model != "auto" }
     }
     /// Where Cursor shows its plan's usage; it doesn't tell its CLI.
     static let usage = URL(string: "https://cursor.com/dashboard?tab=usage")!
@@ -22,8 +22,7 @@ enum CursorRunner {
         refreshed = Date()
         let result = await Shell.timed(binary, ["models"], env: environment(env), permit: permit)
         guard permit.valid, result.code == 0, !parseModels(result.output).isEmpty else { return }
-        AgentSetupModel.shared.objectWillChange.send()
-        Store.settings.set(result.output, forKey: "agents.cursor.models")
+        AgentSetupModel.shared.keepCursorModels(result.output)
     }
 
     static func parseModels(_ text: String) -> [AgentModel] {

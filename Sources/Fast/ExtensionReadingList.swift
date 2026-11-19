@@ -38,7 +38,7 @@ enum ExtensionReadingList {
         }
         guard watch == nil else { return }
         last = entries()
-        watch = Bookmarks.shared.$roots.dropFirst().sink { _ in
+        watch = Bookmarks.shared.observed(\.roots).dropFirst().sink { _ in
             // @Published tells before it sets: read once it has.
             DispatchQueue.main.async { changed() }
         }

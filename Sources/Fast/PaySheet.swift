@@ -17,8 +17,8 @@ import SwiftUI
 // buttons regular (28), Touch ID's mark 16.
 
 struct PaySheet: View {
-    @ObservedObject var flow: PayFlow
-    @ObservedObject var tab: Tab
+    @Bindable var flow: PayFlow
+    var tab: Tab
     /// Inside a plate of its own (the page's dock): no glass of its own.
     var embedded = false
     @Environment(\.accessibilityReduceMotion) private var still
@@ -155,7 +155,7 @@ private struct PayGroup<Content: View>: View {
 }
 
 private struct PayRows: View {
-    @ObservedObject var flow: PayFlow
+    @Bindable var flow: PayFlow
 
     var body: some View {
         let model = flow.model
@@ -290,9 +290,9 @@ private struct PayTotal: View {
 /// the one button, pinned to the sheet's trailing edge: neither moves nor
 /// changes width from Pay to Touch ID to Paid.
 private struct PayFoot: View {
-    @ObservedObject var flow: PayFlow
-    @ObservedObject var touch: PayTouch
-    @ObservedObject private var confirmation = Keymap.shared.slot(.confirmDanger)
+    @Bindable var flow: PayFlow
+    var touch: PayTouch
+    private var confirmation = Keymap.shared.slot(.confirmDanger)
 
     var body: some View {
         let model = flow.model
@@ -334,8 +334,8 @@ private struct PayFoot: View {
 /// it holds the widest one's width throughout. A finger that didn't match
 /// shakes it, ±5 pt.
 private struct PayButton: View {
-    @ObservedObject var flow: PayFlow
-    @ObservedObject var touch: PayTouch
+    @Bindable var flow: PayFlow
+    var touch: PayTouch
     let keys: String?
     @Environment(\.accessibilityReduceMotion) private var still
 
@@ -387,7 +387,7 @@ private struct PayButton: View {
 /// under Reduce Motion): the system's own glyph (LAAuthenticationView),
 /// whose context is the one listening, or the symbol where there is none.
 private struct PayTouchMark: View {
-    @ObservedObject var touch: PayTouch
+    var touch: PayTouch
     let live: Bool
     @Environment(\.accessibilityReduceMotion) private var still
     @State private var low = false
@@ -485,7 +485,7 @@ enum PayInk {
 // MARK: - a list in the sheet's place
 
 private struct PayList: View {
-    @ObservedObject var flow: PayFlow
+    @Bindable var flow: PayFlow
     let pane: PaySheetModel.Pane
 
     var body: some View {
@@ -515,7 +515,7 @@ private struct PayList: View {
 // MARK: - a form in the sheet's place
 
 private struct PayForm: View {
-    @ObservedObject var flow: PayFlow
+    @Bindable var flow: PayFlow
     let pane: PaySheetModel.Pane
     @FocusState private var focus: String?
 

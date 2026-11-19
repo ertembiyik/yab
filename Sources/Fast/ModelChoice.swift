@@ -144,7 +144,7 @@ struct ModelChoice: Equatable {
 
 /// The default model for each kind of work, kept in the settings.
 @MainActor
-final class ModelDefaults: ObservableObject {
+@Observable final class ModelDefaults {
     static let shared = ModelDefaults()
 
     enum Work: String, CaseIterable {
@@ -205,9 +205,9 @@ final class ModelDefaults: ObservableObject {
         work == .drafts && writer == nil ? "Form drafts need a plan connected in Settings \u{203A} AI." : nil
     }
 
-    @Published private var choices: [Work: ModelChoice] = [:]
+    private var choices: [Work: ModelChoice] = [:]
     /// Models left out of the lists (Models in lists), by `AgentModel.id`.
-    @Published var hidden: Set<String> {
+    var hidden: Set<String> {
         didSet { Store.settings.set(Array(hidden).sorted(), forKey: "models.hidden") }
     }
 
@@ -584,7 +584,7 @@ struct ModelMark: View {
 /// The list: a search field, the models by plan, and what the one under
 /// the pointer is, at its foot.
 private struct ModelList: View {
-    @ObservedObject private var macModel = AppleModelControl.shared
+    private var macModel = AppleModelControl.shared
     let choice: ModelChoice
     let automatic: (title: String, detail: String)
     var follows = ModelDefaults.Work.commands
@@ -859,8 +859,8 @@ private struct ModelRow: View {
 
 /// Settings › AI › Models: the default model for each kind of work.
 struct DefaultModels: View {
-    @ObservedObject private var defaults = ModelDefaults.shared
-    @ObservedObject private var keys = APIKeys.shared
+    private var defaults = ModelDefaults.shared
+    private var keys = APIKeys.shared
     @State private var reader = FieldReader.chosen
 
     /// Who reads now: Jev chosen without a key on is this Mac's model.
@@ -898,7 +898,7 @@ struct DefaultModels: View {
                     }
                 }))
                 .fixedSize()
-                .onReceive(keys.$openRouter) { _ in reader = FieldReader.chosen }
+                .onChange(of: keys.openRouter, initial: true) { _, _ in reader = FieldReader.chosen }
             }
             .settingsAnchor("agents-model-field")
             SettingsNote("Each model uses the listed subscription. Override individual commands in Commands.")
@@ -912,12 +912,12 @@ struct DefaultModels: View {
 /// Code's and Codex's sign-ins, and this Mac's own model), the default
 /// model for each kind of work, and which models the lists offer.
 struct ModelsPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var setup = AgentSetupModel.shared
-    @ObservedObject private var accounts = PlanAccounts.shared
-    @ObservedObject private var keys = APIKeys.shared
-    @ObservedObject private var gemini = GeminiAccount.shared
-    @ObservedObject private var geminiChoices = GeminiChoices.shared
+    var browser: Browser
+    private var setup = AgentSetupModel.shared
+    private var accounts = PlanAccounts.shared
+    private var keys = APIKeys.shared
+    private var gemini = GeminiAccount.shared
+    private var geminiChoices = GeminiChoices.shared
 
     var body: some View {
         PageHero(page: .models)
@@ -968,7 +968,7 @@ struct ModelsPage: View {
 
 /// This Mac's plan has a Yab-only opt-out, beside its hardware status.
 struct AppleModelRow: View {
-    @ObservedObject var model = AppleModelControl.shared
+    var model = AppleModelControl.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -997,9 +997,9 @@ struct AppleModelRow: View {
 /// account in Yab's existing profile. Sign In and Switch Account use the
 /// shared chooser and a Yab tab; only installation uses Terminal.
 private struct GeminiPlanRow: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var gemini = GeminiAccount.shared
-    @ObservedObject private var accounts = PlanAccounts.shared
+    var browser: Browser
+    private var gemini = GeminiAccount.shared
+    private var accounts = PlanAccounts.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1091,9 +1091,9 @@ private struct GeminiPlanRow: View {
 private struct PlanAccountRow: View {
     static let markSide: CGFloat = 24
     let account: PlanAccount
-    @ObservedObject var browser: Browser
-    @ObservedObject private var accounts = PlanAccounts.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    var browser: Browser
+    private var accounts = PlanAccounts.shared
+    private var setup = AgentSetupModel.shared
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1284,7 +1284,7 @@ struct Renewal: Equatable {
 /// a click. An empty ring until the plan has said.
 private struct QuotaRing: View {
     let account: PlanAccount
-    @ObservedObject private var accounts = PlanAccounts.shared
+    private var accounts = PlanAccounts.shared
     @State private var open = false
     @State private var hovering = false
 
@@ -1323,7 +1323,7 @@ private struct QuotaRing: View {
 /// starts over.
 struct QuotaDetails: View {
     let account: PlanAccount
-    @ObservedObject private var accounts = PlanAccounts.shared
+    private var accounts = PlanAccounts.shared
 
     var body: some View {
         let windows = accounts.windows(account.id)
@@ -1378,9 +1378,9 @@ struct QuotaDetails: View {
 /// installed or signed in to again as it needs. Another account's sign-in
 /// opens in a private tab.
 private struct AddAccountRow: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var accounts = PlanAccounts.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    var browser: Browser
+    private var accounts = PlanAccounts.shared
+    private var setup = AgentSetupModel.shared
     @State private var hovering = false
     @State private var shown = false
     @State private var place = DropAnchor.Place()
@@ -1462,7 +1462,7 @@ private struct AddAccountRow: View {
 /// Raycast's Manage Models: every model a plan has, and whether the lists
 /// offer it. One left out still runs where it was already chosen.
 private struct ModelsInLists: View {
-    @ObservedObject private var defaults = ModelDefaults.shared
+    private var defaults = ModelDefaults.shared
     /// Plans whose whole list is open.
     @State private var open: Set<String> = []
     @State private var collapsed: Set<String> = []

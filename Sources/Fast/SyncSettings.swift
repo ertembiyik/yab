@@ -10,8 +10,8 @@ import UniformTypeIdentifiers
 /// It says how the line is only when something needs doing about it, and
 /// then on this Mac's own row.
 struct SyncPage: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject var sync = SyncCenter.shared
+    var model: SettingsModel
+    @Bindable var sync = SyncCenter.shared
 
     var body: some View {
         Group {
@@ -216,7 +216,7 @@ struct SeparateRow: View {
     let name: String
     /// Still undecided: Keep Separate is there too.
     let keep: Bool
-    @ObservedObject var sync = SyncCenter.shared
+    @Bindable var sync = SyncCenter.shared
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
@@ -307,7 +307,7 @@ private struct SyncSubHero: View {
 // MARK: What syncs
 
 struct SyncWhatPage: View {
-    @ObservedObject var sync = SyncCenter.shared
+    @Bindable var sync = SyncCenter.shared
 
     struct Kind {
         let title: String
@@ -369,8 +369,8 @@ struct SyncWhatPage: View {
 // MARK: The way out
 
 struct SyncOffPage: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject var sync = SyncCenter.shared
+    var model: SettingsModel
+    @Bindable var sync = SyncCenter.shared
 
     var body: some View {
         SyncSubHero(title: "Turn Off Sync", detail: "Stop syncing this Mac or all devices.")
@@ -412,7 +412,7 @@ struct SyncOffPage: View {
 /// is. What goes with it, the one button, and the other way in for a Mac
 /// joining an account another one already has.
 struct SyncArrival: View {
-    @ObservedObject var sync = SyncCenter.shared
+    @Bindable var sync = SyncCenter.shared
     /// Asked to join: the code shows, and waits.
     @State private var asking = false
     /// The code another Mac shows under Add a Device, typed here.
@@ -650,7 +650,7 @@ private struct CodePlates: View {
 /// other than this Mac. Done takes the card away.
 private struct RecoveryCard: View {
     let key: String
-    @ObservedObject var sync = SyncCenter.shared
+    @Bindable var sync = SyncCenter.shared
     @State private var saved: URL?
 
     var body: some View {

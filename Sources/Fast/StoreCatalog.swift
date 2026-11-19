@@ -7,7 +7,7 @@ import UserNotifications
 /// Site Controls' Popular row and the website all read the same items and
 /// the same pinned revisions.
 @MainActor
-final class StoreCatalog: ObservableObject {
+@Observable final class StoreCatalog {
     static let shared = StoreCatalog()
 
     struct Check: Codable, Equatable {
@@ -63,19 +63,19 @@ final class StoreCatalog: ObservableObject {
         var items: [Item]
     }
 
-    @Published private(set) var items: [Item]
+    private(set) var items: [Item]
     /// Where these items came from: catalog.json's address as it answered,
     /// nil for the shelf shipped with Yab. Code installs only from the site.
-    private(set) var origin: URL?
+    @ObservationIgnored private(set) var origin: URL?
     /// Bumped when items or pictures change, for the field's memo.
-    @Published private(set) var version = 0 {
+    private(set) var version = 0 {
         // An open Store place draws again (its rows' memo keys on the stock's version).
         didSet { for browser in BrowserWindows.shared.browsers where browser.query.place == .store { browser.query.stock.version += 1 } }
     }
-    private var fetched: Date?
-    private var fetching = false
-    private var pictures: [String: NSImage] = [:]
-    private var loading: Set<String> = []
+    @ObservationIgnored private var fetched: Date?
+    @ObservationIgnored private var fetching = false
+    @ObservationIgnored private var pictures: [String: NSImage] = [:]
+    @ObservationIgnored private var loading: Set<String> = []
 
     private static let cache = Store.file("store-catalog.json")
     private static let originsKey = "store.origins"
@@ -226,7 +226,7 @@ final class StoreCatalog: ObservableObject {
 
     /// The sites' own marks, from the Store's site rather than the sites
     /// themselves, so opening the Store tells no site anything. Once a launch.
-    private var iconsAsked = false
+    @ObservationIgnored private var iconsAsked = false
     func fetchIcons() {
         guard !iconsAsked, let base = Updater.site ?? URL(string: "https://yetanotherbrowser.com/") else { return }
         iconsAsked = true

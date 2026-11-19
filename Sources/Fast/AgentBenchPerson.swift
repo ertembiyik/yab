@@ -647,7 +647,6 @@ extension Bench {
             tab.answer = nil
             agents.touch(id, "read")
             AgentFeed.shared.did(tab, .read)
-            agents.objectWillChange.send()
             answer(["session": id, "id": tab.id.uuidString])
             return
         case "drive": AgentFeed.shared.drive(tab)

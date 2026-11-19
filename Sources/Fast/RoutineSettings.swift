@@ -17,11 +17,11 @@ private func routineNewTabPlace(_ key: Hotkey?, plates: Bool = false) -> String 
 // set yet, the commands that can run on a page besides them.
 
 struct AgentRoutinesPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var newTabKey = Keymap.shared.slot(.newTab)
-    @ObservedObject private var routines = Routines.shared
-    @ObservedObject private var ideas = RoutineIdeas.shared
-    @ObservedObject private var editing = RoutineEditing.shared
+    var browser: Browser
+    private var newTabKey = Keymap.shared.slot(.newTab)
+    private var routines = Routines.shared
+    private var ideas = RoutineIdeas.shared
+    @Bindable private var editing = RoutineEditing.shared
 
     var body: some View {
         PageHero(page: .agentRoutines)
@@ -88,7 +88,7 @@ struct AgentRoutinesPage: View {
 /// last run found.
 private struct RoutineRow: View {
     let routine: Routine
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     /// Wide enough for the times people pick: "Weekdays 9:00 AM",
     /// "Mondays and Thursdays 9:00 AM" were cut at a hotkey's 144.
@@ -229,15 +229,15 @@ private struct RoutineIdeaRow: View {
 /// thread as the page shows, ten minutes apart at most. The sites counted
 /// are also the editor's Sites You Use.
 @MainActor
-final class RoutineIdeas: ObservableObject {
+@Observable final class RoutineIdeas {
     static let shared = RoutineIdeas()
     nonisolated static let declinedKey = "routines.ideas.declined"
 
     /// Visits to each host this month, once counted.
-    @Published private(set) var visits: [String: Int]?
-    @Published private(set) var declined: Set<String>
-    private var counted = Date.distantPast
-    private var counting = false
+    private(set) var visits: [String: Int]?
+    private(set) var declined: Set<String>
+    @ObservationIgnored private var counted = Date.distantPast
+    @ObservationIgnored private var counting = false
 
     private init() {
         declined = Set(Store.settings.stringArray(forKey: Self.declinedKey) ?? [])
@@ -303,7 +303,7 @@ final class RoutineIdeas: ObservableObject {
 /// What is being made or changed: the editor's sheet, or the small card a
 /// command is made a routine in.
 @MainActor
-final class RoutineEditing: ObservableObject {
+@Observable final class RoutineEditing {
     static let shared = RoutineEditing()
 
     struct Sheet: Identifiable {
@@ -317,12 +317,12 @@ final class RoutineEditing: ObservableObject {
         let command: SelectionCommand
     }
 
-    @Published var sheet: Sheet? {
+    var sheet: Sheet? {
         didSet {
             if let old = oldValue, old.id != sheet?.id { Routines.shared.cancelDraft(old.routine.id) }
         }
     }
-    @Published private(set) var card: Card?
+    private(set) var card: Card?
 
     /// Open in the editor, or a new one when nil; from anywhere: Settings is
     /// brought up on Routines first.
@@ -343,11 +343,11 @@ private struct RoutineEditor: View {
     let isNew: Bool
     /// Its when as it was kept: unchanged, its runs keep their count.
     private let saved: String
-    @ObservedObject private var newTabKey = Keymap.shared.slot(.newTab)
+    private var newTabKey = Keymap.shared.slot(.newTab)
     @State private var draft: Routine
     @State private var parts: RoutineWhen.Parts
     @State private var trying: String?
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
     @Environment(\.dismiss) private var dismiss
 
     init(browser: Browser, sheet: RoutineEditing.Sheet) {
@@ -547,7 +547,7 @@ private struct RoutineEditor: View {
 private struct RoutineTabs: View {
     let browser: Browser
     @Binding var tabs: [String]
-    @ObservedObject private var ideas = RoutineIdeas.shared
+    private var ideas = RoutineIdeas.shared
     @State private var place = DropAnchor.Place()
 
     var body: some View {
@@ -931,7 +931,7 @@ enum RoutineWhen {
 // MARK: - a command, run regularly
 
 struct RoutineCardLayer: View {
-    @ObservedObject private var editing = RoutineEditing.shared
+    @Bindable private var editing = RoutineEditing.shared
     let browser: Browser
 
     var body: some View {
@@ -955,7 +955,7 @@ private struct RoutineCommandCard: View {
     let browser: Browser
     let command: SelectionCommand
     let done: () -> Void
-    @ObservedObject private var newTabKey = Keymap.shared.slot(.newTab)
+    private var newTabKey = Keymap.shared.slot(.newTab)
 
     @State private var page: String
     @State private var repeats = "daily"

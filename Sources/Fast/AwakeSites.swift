@@ -15,7 +15,7 @@ import SwiftUI
 // when memory runs out, after every other tab, does one go.
 
 @MainActor
-final class AwakeSites: ObservableObject {
+@Observable final class AwakeSites {
     static let shared = AwakeSites()
 
     nonisolated static let key = "tabs.awake"
@@ -28,7 +28,7 @@ final class AwakeSites: ObservableObject {
     ]
 
     /// The list as kept: the defaults until it is changed.
-    @Published private(set) var sites: [String]
+    private(set) var sites: [String]
 
     private init() {
         sites = Store.settings.stringArray(forKey: Self.key) ?? Self.defaults
@@ -90,8 +90,8 @@ final class AwakeSites: ObservableObject {
 /// Settings › Tabs, under Close tabs: the sites put to sleep last, in the table look of an extension's Allowed sites, the site's
 /// mark and name, a minus on hover and Remove on a right click, Add Site… in the heading.
 struct AwakeSiteSettings: View {
-    @ObservedObject private var awake = AwakeSites.shared
-    @ObservedObject private var editing = AwakeSiteEditing.shared
+    private var awake = AwakeSites.shared
+    private var editing = AwakeSiteEditing.shared
 
     var body: some View {
         Section {
@@ -146,21 +146,21 @@ private struct AwakeSiteRow: View {
 /// Add Site…'s card, laid over the whole of the settings as an
 /// extension's is (BlockEditing).
 @MainActor
-final class AwakeSiteEditing: ObservableObject {
+@Observable final class AwakeSiteEditing {
     static let shared = AwakeSiteEditing()
 
     struct Draft: Identifiable {
         let id = UUID()
     }
 
-    @Published private(set) var draft: Draft?
+    private(set) var draft: Draft?
 
     func open() { draft = Draft() }
     func close() { draft = nil }
 }
 
 struct AwakeSiteCardLayer: View {
-    @ObservedObject private var editing = AwakeSiteEditing.shared
+    private var editing = AwakeSiteEditing.shared
 
     var body: some View {
         ZStack {

@@ -6,7 +6,7 @@ import AppKit
 /// place in the row.
 struct DevElementsSide: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     @State private var width: CGFloat = 0
 
     static let tabs = ["Styles", "Computed", "Layout", "Event Listeners", "DOM Breakpoints", "Properties", "Accessibility"]
@@ -81,7 +81,7 @@ struct DevElementsSide: View {
 
 struct DevStylesPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     private var filter: String { model.paneFilters["styles"] ?? "" }
     private var filterText: Binding<String> { Binding(get: { model.paneFilters["styles"] ?? "" }, set: { model.paneFilters["styles"] = $0 }) }
     @State private var classes = false
@@ -159,7 +159,7 @@ struct DevStylesPane: View {
 /// `}`; where it comes from at the right, a link into Sources.
 struct DevRuleView: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     let style: DevStyle
     let filter: String
     @State private var adding = false
@@ -587,7 +587,7 @@ enum DevSwatch {
 /// of Computed: margin, border, padding round the content, each side's
 /// size where it stands.
 struct DevBoxModel: View {
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
 
     var body: some View {
         layer("margin", "margin", Color(nsColor: NSColor(srgbRed: 0.98, green: 0.8, blue: 0.62, alpha: 1)), dashed: true) {
@@ -665,7 +665,7 @@ struct DevFilterField: View {
 
 struct DevComputedPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     private var filter: String { model.paneFilters["computed"] ?? "" }
     private var filterText: Binding<String> { Binding(get: { model.paneFilters["computed"] ?? "" }, set: { model.paneFilters["computed"] = $0 }) }
     @AppStorage("devComputedAll", store: Store.settings) private var all = false
@@ -757,7 +757,7 @@ struct DevComputedPane: View {
 
 struct DevLayoutPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     @AppStorage("devGridLabels", store: Store.settings) private var labels = "numbers"
     @AppStorage("devGridTracks", store: Store.settings) private var tracks = false
     @AppStorage("devGridAreas", store: Store.settings) private var areas = false
@@ -816,7 +816,7 @@ struct DevLayoutPane: View {
 
 struct DevListenersPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     @AppStorage("devListenersAncestors", store: Store.settings) private var ancestors = true
     @AppStorage("devListenersKind", store: Store.settings) private var kind = "All"
     @State private var closed: Set<String> = []
@@ -891,7 +891,7 @@ struct DevListenersPane: View {
 
 struct DevBreaksPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
 
     var body: some View {
         if model.domBreaks.isEmpty {
@@ -930,7 +930,7 @@ struct DevBreaksPane: View {
 
 struct DevPropertiesPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     private var filter: String { model.paneFilters["properties"] ?? "" }
     private var filterText: Binding<String> { Binding(get: { model.paneFilters["properties"] ?? "" }, set: { model.paneFilters["properties"] = $0 }) }
     @AppStorage("devPropertiesAll", store: Store.settings) private var all = false
@@ -987,7 +987,7 @@ private struct DevPropertyRow: View {
 
 struct DevAccessibilityPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
 
     var body: some View {
         let node = model.node(model.selectedNode)

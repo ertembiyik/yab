@@ -9,8 +9,8 @@ import SwiftUI
 struct ChatProjectCard: View {
     let browser: Browser
     let project: Project
-    @ObservedObject private var chats = Chats.shared
-    @ObservedObject private var routines = Routines.shared
+    private var chats = Chats.shared
+    private var routines = Routines.shared
     @State private var instructions = ""
     @State private var notes: [String] = []
     @State private var allNotes = false

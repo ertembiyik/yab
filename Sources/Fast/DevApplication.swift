@@ -4,9 +4,9 @@ import SwiftUI
 /// Chrome's Application hierarchy, backed by the inspected tab's real origins.
 struct DevApplicationPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
-    @ObservedObject var app: DevApplicationModel
-    @ObservedObject private var net = NetPrefs.shared
+    var model: DevWorkbench
+    @Bindable var app: DevApplicationModel
+    private var net = NetPrefs.shared
     @State private var editor = false
     @State private var key = ""
     @State private var value = ""
@@ -637,7 +637,7 @@ private extension Dictionary where Key == String, Value == Any { var originID: S
 private struct ApplicationTreeRow: View {
     let item: ApplicationTreeItem
     let depth: Int
-    @ObservedObject var app: DevApplicationModel
+    @Bindable var app: DevApplicationModel
     var select: (ApplicationSelection) -> Void
     var expand: (ApplicationTreeItem) -> Void
     @State private var hovered = false

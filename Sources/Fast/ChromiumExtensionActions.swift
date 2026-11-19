@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import SwiftUI
 import YabCoreClient
 
@@ -10,7 +9,7 @@ import YabCoreClient
 /// extension's worker (`ext.actions.state`) and says when it changed
 /// (`ext.actions.changed`). Popups are hosted by the core track.
 @MainActor
-final class ChromiumColumn: ObservableObject {
+@Observable final class ChromiumColumn {
     static let shared = ChromiumColumn()
 
     /// One extension's action on one page, as Chromium has it.
@@ -51,24 +50,23 @@ final class ChromiumColumn: ObservableObject {
     }
 
     /// By page (its YabCore tab) and extension.
-    @Published private(set) var states: [String: [String: Native]] = [:]
+    private(set) var states: [String: [String: Native]] = [:]
     private struct Watched {
         weak var tab: Tab?
         let profile: String
         /// Requested actions, independent of the results Chrome returned.
         let actions: [String]
     }
-    private var watched: [String: Watched] = [:]
-    private var reading: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var watched: [String: Watched] = [:]
+    @ObservationIgnored private var reading: [String: Task<Void, Never>] = [:]
     /// The last failed read by page, for the bench (a page that cannot be read keeps the extension's own icon).
     private var failures: [String: String] = [:]
     private var again: Set<String> = []
-    private var lists: [String: AnyCancellable] = [:]
-    private var listedAt: [String: Date] = [:]
-    private var listing: Set<String> = []
+    @ObservationIgnored private var listedAt: [String: Date] = [:]
+    @ObservationIgnored private var listing: Set<String> = []
     /// The last failed list read by profile, for the bench.
     private var listErrors: [String: String] = [:]
-    private var images: [Data: NSImage] = [:]
+    @ObservationIgnored private var images: [Data: NSImage] = [:]
     /// The icon each extension last set for every tab, by profile. Chrome
     /// keeps it past the worker's sleep and has no getter for it, and the
     /// worker's record goes with the worker, so a read after that finds none.
@@ -119,7 +117,6 @@ final class ChromiumColumn: ObservableObject {
     @available(macOS 15.4, *)
     func buttons(for tab: Tab, all: Bool = false) -> [Extensions.Button] {
         guard let native = native(for: tab) else { return [] }
-        follow(native)
         let (pinned, rest) = Self.members(items(native, for: tab), pinnedIDs: native.pinnedIDs, all: all)
         var here: [String: Native] = [:]
         if let page = tab.builtPage as? ChromiumPage, let remote = page.remoteID,
@@ -195,14 +192,6 @@ final class ChromiumColumn: ObservableObject {
         if images.count > 256 { images.removeAll() }
         images[data] = made
         return made
-    }
-
-    private func follow(_ native: ChromiumExtensions) {
-        let key = (native.privateMode ? "private:" : "regular:") + native.profile
-        guard lists[key] == nil else { return }
-        lists[key] = native.objectWillChange.sink { [weak self] in
-            DispatchQueue.main.async { self?.objectWillChange.send() }
-        }
     }
 
     /// The column draws from the list: read it when nothing has, and again

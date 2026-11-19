@@ -2,9 +2,9 @@ import SwiftUI
 
 /// The approved account-choice screen, shared by Connect and Switch Account.
 struct GeminiArrival: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var choices = GeminiChoices.shared
-    @ObservedObject private var gemini = GeminiAccount.shared
+    var browser: Browser
+    private var choices = GeminiChoices.shared
+    private var gemini = GeminiAccount.shared
     @State private var more = false
 
     var body: some View {

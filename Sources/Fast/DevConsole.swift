@@ -213,23 +213,23 @@ struct ConsoleContext: Identifiable, Equatable, Hashable {
 }
 
 /// What Yab keeps of Console's settings, Chrome's, across pages and launches.
-final class ConsolePrefs: ObservableObject {
+@Observable final class ConsolePrefs {
     static let shared = ConsolePrefs()
 
-    @Published var networkMessages: Bool { didSet { save("console.network", networkMessages) } }
-    @Published var logXHR: Bool { didSet { save("console.xhr", logXHR) } }
-    @Published var keepLog: Bool { didSet { save("console.keepLog", keepLog) } }
-    @Published var eager: Bool { didSet { save("console.eager", eager) } }
-    @Published var selectedContextOnly: Bool { didSet { save("console.selectedOnly", selectedContextOnly) } }
-    @Published var historyCompletion: Bool { didSet { save("console.historyCompletion", historyCompletion) } }
-    @Published var groupSimilar: Bool { didSet { save("console.groupSimilar", groupSimilar) } }
-    @Published var userActivation: Bool { didSet { save("console.userActivation", userActivation) } }
-    @Published var corsErrors: Bool { didSet { save("console.cors", corsErrors) } }
-    @Published var timestamps: Bool { didSet { save("console.timestamps", timestamps) } }
-    @Published var expandTraces: Bool { didSet { save("console.expandTraces", expandTraces) } }
-    @Published var levels: Set<ConsoleLevel> { didSet { Store.settings.set(levels.map(\.rawValue), forKey: "console.levels") } }
-    @Published var sidebar: Bool { didSet { save("console.sidebar", sidebar) } }
-    @Published var history: [String] { didSet { Store.settings.set(Array(history.suffix(300)), forKey: "console.history") } }
+    var networkMessages: Bool { didSet { save("console.network", networkMessages) } }
+    var logXHR: Bool { didSet { save("console.xhr", logXHR) } }
+    var keepLog: Bool { didSet { save("console.keepLog", keepLog) } }
+    var eager: Bool { didSet { save("console.eager", eager) } }
+    var selectedContextOnly: Bool { didSet { save("console.selectedOnly", selectedContextOnly) } }
+    var historyCompletion: Bool { didSet { save("console.historyCompletion", historyCompletion) } }
+    var groupSimilar: Bool { didSet { save("console.groupSimilar", groupSimilar) } }
+    var userActivation: Bool { didSet { save("console.userActivation", userActivation) } }
+    var corsErrors: Bool { didSet { save("console.cors", corsErrors) } }
+    var timestamps: Bool { didSet { save("console.timestamps", timestamps) } }
+    var expandTraces: Bool { didSet { save("console.expandTraces", expandTraces) } }
+    var levels: Set<ConsoleLevel> { didSet { Store.settings.set(levels.map(\.rawValue), forKey: "console.levels") } }
+    var sidebar: Bool { didSet { save("console.sidebar", sidebar) } }
+    var history: [String] { didSet { Store.settings.set(Array(history.suffix(300)), forKey: "console.history") } }
 
     private init() {
         let s = Store.settings
@@ -263,17 +263,17 @@ final class ConsolePrefs: ObservableObject {
 
 // MARK: - the tab's console
 
-@MainActor final class ConsoleLog: ObservableObject, DevWireListener {
+@MainActor @Observable final class ConsoleLog: DevWireListener {
     static let channel = "console"
 
-    @Published private(set) var messages: [ConsoleMessage] = [] {
+    private(set) var messages: [ConsoleMessage] = [] {
         didSet { counts.update(messages) }
     }
     /// The DevTools head counts occurrences, including collapsed repeats.
     /// Observe these totals separately so ordinary log batches leave it alone.
-    final class Counts: ObservableObject {
-        @Published private(set) var errors = 0
-        @Published private(set) var warnings = 0
+    @Observable final class Counts {
+        private(set) var errors = 0
+        private(set) var warnings = 0
         /// Chrome's DevTools count their own (ChromiumDevTools.swift).
         func set(errors: Int, warnings: Int) {
             if self.errors != errors { self.errors = errors }
@@ -288,26 +288,26 @@ final class ConsolePrefs: ObservableObject {
     }
     let counts = Counts()
     /// Groups shut, by the id of the message that opens them.
-    @Published var shut: Set<Int> = []
+    var shut: Set<Int> = []
     /// Messages whose stack is shown.
-    @Published var opened: Set<Int> = []
-    @Published var live: [ConsoleLive] = []
-    @Published var contexts: [ConsoleContext] = []
+    var opened: Set<Int> = []
+    var live: [ConsoleLive] = []
+    var contexts: [ConsoleContext] = []
     /// Bumped when the contexts may have changed, for the menu to ask again.
-    @Published private(set) var contextsChanged = 0
+    private(set) var contextsChanged = 0
     /// What the bridge was unable to do, said once.
-    @Published var unavailable = false
-    private var next = 1
-    private var openGroups: [String: [Int]] = [:]
-    private var lastPage: [String: Int] = [:]
-    private var nextLive = 1
+    var unavailable = false
+    @ObservationIgnored private var next = 1
+    @ObservationIgnored private var openGroups: [String: [Int]] = [:]
+    @ObservationIgnored private var lastPage: [String: Int] = [:]
+    @ObservationIgnored private var nextLive = 1
 
     init() {}
 
-    private var batchIssued = 0
-    private var batchNext = 0
-    private var batchGeneration = 0
-    private var pendingBatches: [Int: [Item]] = [:]
+    @ObservationIgnored private var batchIssued = 0
+    @ObservationIgnored private var batchNext = 0
+    @ObservationIgnored private var batchGeneration = 0
+    @ObservationIgnored private var pendingBatches: [Int: [Item]] = [:]
 
     func hear(_ json: String) {
         let ticket = batchIssued, generation = batchGeneration
@@ -474,7 +474,7 @@ final class ConsolePrefs: ObservableObject {
 
     /// Page lines kept over a return, by what makes one the same line, to
     /// their ids here.
-    private var handedOver: [String: [Int]] = [:]
+    @ObservationIgnored private var handedOver: [String: [Int]] = [:]
     private static func mark(_ m: ConsoleMessage) -> String {
         "\(m.timestamp)|\(m.level)|\(m.type)|\(m.target)|\(m.url):\(m.line):\(m.column)|\(m.text)"
     }
@@ -604,31 +604,31 @@ enum ConsoleGroup: String, CaseIterable, Hashable {
 }
 
 /// What the console's panel shows of a tab's log.
-@MainActor final class ConsolePanel: ObservableObject {
-    @Published var filter = ConsoleFilter()
-    @Published var group: ConsoleGroup = .all
+@MainActor @Observable final class ConsolePanel {
+    var filter = ConsoleFilter()
+    var group: ConsoleGroup = .all
     /// One source's messages within the group, from the sidebar.
-    @Published var groupSource: String?
-    @Published var settingsOpen = false
+    var groupSource: String?
+    var settingsOpen = false
     /// The copy picker, open from the toolbar's chevron, and the way its
     /// card shows: the one under the pointer.
-    @Published var copying = false
-    @Published var copyLit: ConsoleCopyWay = .brief
-    @Published var hidden = 0
-    @Published var context: Int = 0
-    @Published var focusPrompt = false
+    var copying = false
+    var copyLit: ConsoleCopyWay = .brief
+    var hidden = 0
+    var context: Int = 0
+    var focusPrompt = false
     /// The prompt shows completions: Escape is theirs, not the drawer's.
-    var completing = false
+    @ObservationIgnored var completing = false
     /// Words to put at the prompt, to change and run: Edit and resend.
-    @Published var prefill: String?
+    var prefill: String?
     /// Hidden by "Hide messages from": these sources' files.
-    @Published var hiddenFiles: Set<String> = []
+    var hiddenFiles: Set<String> = []
     /// What is at the prompt and not run yet, kept as it is typed (not
     /// published: the prompt draws it), for the prompt made anew and for
     /// the tab left (DevReturn).
-    var draft = ""
+    @ObservationIgnored var draft = ""
     /// Said when `draft` was put back from elsewhere: another tab's.
-    @Published private(set) var draftLoaded = 0
+    private(set) var draftLoaded = 0
 
     func loadDraft(_ words: String) {
         guard draft != words else { return }

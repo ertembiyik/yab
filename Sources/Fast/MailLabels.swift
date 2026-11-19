@@ -70,7 +70,7 @@ enum MailViews {
 /// by "/", what is closed, and the unread counts of the rows it shows,
 /// read from the stores again whenever one changes.
 @MainActor
-final class MailLabels: ObservableObject {
+@Observable final class MailLabels {
     static let shared = MailLabels()
 
     /// A row of the column's labels.
@@ -89,44 +89,44 @@ final class MailLabels: ObservableObject {
 
     /// Every label of the person's on the accounts the column shows, by
     /// name: what L, V and G then L offer. Yab's own (yab/Snoozed) left out.
-    @Published private(set) var names: [String] = []
+    private(set) var names: [String] = []
     /// The rows the column shows: no label Gmail's own list hides, none
     /// under a closed one.
-    @Published private(set) var rows: [Row] = []
+    private(set) var rows: [Row] = []
     /// The section closed, and the labels closed over theirs, as left.
-    @Published private(set) var folded = Store.settings.bool(forKey: "mail.labels.folded")
-    @Published private(set) var closed = Set(Store.settings.stringArray(forKey: "mail.labels.closed") ?? [])
+    private(set) var folded = Store.settings.bool(forKey: "mail.labels.folded")
+    private(set) var closed = Set(Store.settings.stringArray(forKey: "mail.labels.closed") ?? [])
     /// Those Gmail's list hides (Hide from Column), by name: what the
     /// heading's Hidden Labels brings back. Not those inside one of them.
-    @Published private(set) var hidden: [String] = []
+    private(set) var hidden: [String] = []
     /// The label whose name is being typed in its row (Rename…), by its
     /// whole name; the one a label is being made inside (New Label Inside),
     /// "" for one at the top (the heading's New Label). One at a time.
-    @Published private(set) var naming: String?
-    @Published private(set) var making: String?
+    private(set) var naming: String?
+    private(set) var making: String?
     /// The name typed is another label's: said at the field's end.
-    @Published private(set) var taken = false
+    private(set) var taken = false
     /// Deleted or hidden while the corner says so with Undo: out of the
     /// column, those inside with them; Gmail hears once the corner has gone.
-    private var going = Set<String>()
-    private var hiding = Set<String>()
+    @ObservationIgnored private var going = Set<String>()
+    @ObservationIgnored private var hiding = Set<String>()
     /// Shown again (Hidden Labels), before Gmail's list says so.
-    private var unhiding = Set<String>()
+    @ObservationIgnored private var unhiding = Set<String>()
     /// The labels the column lists, open or closed over: where Move To goes.
-    private var listedNames: [String] = []
+    @ObservationIgnored private var listedNames: [String] = []
     /// Each account's labels by name: their ids and counts.
-    private var byAccount: [String: [String: MailLabel]] = [:]
+    @ObservationIgnored private var byAccount: [String: [String: MailLabel]] = [:]
     /// The same by Gmail's id, for a row's chips (MailLabelChip).
-    private var byID: [String: [String: MailLabel]] = [:]
+    @ObservationIgnored private var byID: [String: [String: MailLabel]] = [:]
     /// Mail's space is up, its column with it: the rows it shows are the
     /// labels whose counts Gmail is asked, as last told to each account's
     /// sync (a new one, the account added again, is told afresh).
-    private var showing = false
-    private var told: [ObjectIdentifier: [String]] = [:]
-    private var bag: AnyCancellable?
+    @ObservationIgnored private var showing = false
+    @ObservationIgnored private var told: [ObjectIdentifier: [String]] = [:]
+    @ObservationIgnored private var bag: AnyCancellable?
 
     private init() {
-        bag = MailCenter.shared.$changed.dropFirst()
+        bag = MailCenter.shared.observed(\.changed).dropFirst()
             .debounce(for: .milliseconds(120), scheduler: RunLoop.main)
             .sink { [weak self] _ in MainActor.assumeIsolated { self?.reload() } }
         // Read once made, after the view that asked for it is drawn.
@@ -711,7 +711,7 @@ final class MailLabels: ObservableObject {
 /// inbox's lists to another doesn't reach in here; and then only the rows
 /// that changed, the two plates moving.
 struct MailLabelRows: View, Equatable {
-    @ObservedObject var labels: MailLabels
+    var labels: MailLabels
     /// The label whose list is in front, by its name; nil for another list,
     /// or a search over it.
     let chosen: String?
@@ -890,9 +890,9 @@ private struct MailLabelFieldRow: View {
 /// in: said quietly while Gmail looks for its older mail, and, when Gmail
 /// found more than came, the way to it (J past the last row does the same).
 struct MailViewFoot: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
-    @ObservedObject private var server = MailServerSearch.shared
+    var desk: MailDesk
+    var list: MailList
+    private var server = MailServerSearch.shared
 
     var body: some View {
         let searching = desk.who != nil || !desk.query.trimmingCharacters(in: .whitespaces).isEmpty
@@ -968,7 +968,7 @@ struct MailLabelLine {
 /// tab menu wears them.
 struct MailLabelMenu: View {
     let name: String?
-    @ObservedObject private var labels = MailLabels.shared
+    private var labels = MailLabels.shared
 
     var body: some View {
         let lines = name.map(labels.lines) ?? labels.headingLines

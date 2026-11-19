@@ -7,7 +7,7 @@ import SwiftUI
 // (Rename.swift).
 
 struct WhileYouBrowsePage: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
 
     var body: some View {
         PageHero(page: .whileYouBrowse)

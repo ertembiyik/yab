@@ -13,15 +13,15 @@ import SwiftUI
 /// and kept for the space; ⋯ in the field's corner holds Reset, once
 /// something changed, which puts back what the card opened on.
 @MainActor
-final class LookCard: ObservableObject {
+@Observable final class LookCard {
     static let shared = LookCard()
 
-    @Published private(set) var open = false
+    private(set) var open = false
     /// The look the card opened on, for Reset.
-    private(set) var opened: SpacePaint?
-    private weak var browser: Browser?
-    private var keys: Any?
-    private var saving: DispatchWorkItem?
+    @ObservationIgnored private(set) var opened: SpacePaint?
+    @ObservationIgnored private weak var browser: Browser?
+    @ObservationIgnored private var keys: Any?
+    @ObservationIgnored private var saving: DispatchWorkItem?
 
     /// Up over the window, on the space on screen, Mail's too: its look is
     /// its own, kept apart from the list (MailSpaceLook).
@@ -193,7 +193,7 @@ final class LookCard: ObservableObject {
 /// card's switches have it: the site's color, while Take the site's color
 /// is on and the page has one, and how far the colors have turned.
 struct LookWorn<Content: View>: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     @ViewBuilder let content: (NSColor?, Int) -> Content
 
     var body: some View {
@@ -207,8 +207,8 @@ struct LookWorn<Content: View>: View {
 /// Where the card stands: over the page, beside the column, up from the
 /// space's name at its foot.
 struct LookCardLayer: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var card = LookCard.shared
+    var browser: Browser
+    private var card = LookCard.shared
 
     private static let top: CGFloat = 44
     private static let width: CGFloat = 290
@@ -260,9 +260,9 @@ struct LookCardLayer: View {
 
 /// The card itself.
 struct LookCardView: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var card = LookCard.shared
+    var browser: Browser
+    var prefs: Preferences
+    private var card = LookCard.shared
 
     /// The card's width less its frame's inset each side (CardFrame): the
     /// width of a look's controls wherever they are.
@@ -385,7 +385,7 @@ enum LookMode: String, CaseIterable {
 /// dark back to none, SwiftUI left the window dark at its next change. Auto
 /// is the app's own, as Settings' Theme makes it, the Mac's when System.
 struct LookModeScheme: View {
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     /// A private window is dark, whatever its space or the Mac wear.
     var privateWindow = false
     @State private var appDark = LookModeScheme.dark(NSApp.effectiveAppearance)

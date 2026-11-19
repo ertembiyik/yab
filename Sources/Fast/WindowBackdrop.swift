@@ -1,3 +1,4 @@
+import YabDesign
 import AppKit
 import SwiftUI
 
@@ -250,7 +251,7 @@ final class WindowBackdropView: NSView {
     /// again on every frame the window drew, 60 a second under a page
     /// that animates (a WebGL scene, #911).
     private var frosted: Bool {
-        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        let reduced = DisplayOptions.shared.reduceTransparency
         if glassStyle.active || reduced { return false }
         guard let paint = effectivePaint else { return true }
         if BackdropTransparency.opacity(paint.transparency) < 1 { return true }
@@ -339,7 +340,7 @@ final class WindowBackdropView: NSView {
         cover = value
         guard let layer = coating.layer, let paint = effectivePaint else { return }
         let alpha = Float(BackdropTransparency.opacity(paint.transparency,
-                                    reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+                                    reduced: DisplayOptions.shared.reduceTransparency))
         CATransaction.begin()
         // Set first: it covers only the animations added after it.
         CATransaction.setCompletionBlock { [weak self] in MainActor.assumeIsolated { self?.frost() } }
@@ -358,7 +359,7 @@ final class WindowBackdropView: NSView {
         cover = value
         guard let layer = coating.layer, let paint = effectivePaint else { return }
         let alpha = Float(BackdropTransparency.opacity(paint.transparency,
-                                    reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+                                    reduced: DisplayOptions.shared.reduceTransparency))
         CATransaction.begin()
         // Set first: it covers only the animations added after it.
         CATransaction.setCompletionBlock { [weak self] in MainActor.assumeIsolated { self?.frost() } }
@@ -486,7 +487,7 @@ final class BackdropCoatingView: NSView {
         grain.opacity = Float(Grain.opacity(paint.grain))
         LookDrawings.dress(drawings, with: paint, drawn: &drawn)
         layer?.opacity = Float(BackdropTransparency.opacity(paint.transparency,
-                                       reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+                                       reduced: DisplayOptions.shared.reduceTransparency))
         CATransaction.commit()
     }
 }

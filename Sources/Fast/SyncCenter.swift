@@ -42,7 +42,7 @@ struct SyncDeviceIdentity {
 private let syncFlushing = DispatchQueue(label: "yab.sync.flush", qos: .utility)
 
 @MainActor
-final class SyncCenter: ObservableObject {
+@Observable final class SyncCenter {
     static let shared = SyncCenter()
 
     private let sharedKey: () -> Seal?
@@ -67,19 +67,19 @@ final class SyncCenter: ObservableObject {
     }
 
     let capabilityAnswerers = AssistantAnswererNames()
-    @Published private(set) var on = false { didSet { refreshAssistantAnswererNames() } }
-    @Published private(set) var state: SyncClient.State = .off
-    @Published private(set) var devices: [SyncClient.Listed] = [] { didSet { refreshAssistantAnswererNames() } }
+    private(set) var on = false { didSet { refreshAssistantAnswererNames() } }
+    private(set) var state: SyncClient.State = .off
+    private(set) var devices: [SyncClient.Listed] = [] { didSet { refreshAssistantAnswererNames() } }
     /// The Recovery Key, shown once, right after sync is turned on.
-    @Published var recovery: String?
+    var recovery: String?
     /// The code this Mac shows while it waits to be let in, or the code of
     /// another Mac's Add a Device typed here (`joiningInvited`).
-    @Published private(set) var joining: Joining?
+    private(set) var joining: Joining?
     /// `joining` is under a code another Mac showed: this Mac shows the four
     /// digits that Mac asks about, not a code of its own.
-    @Published private(set) var joiningInvited = false
+    private(set) var joiningInvited = false
     /// Why the last code didn't get this Mac in, shown under the next one.
-    @Published private(set) var joinTrouble: String?
+    private(set) var joinTrouble: String?
     /// Where Turn On Sync has got to (docs/sync.md, "Turning on").
     enum Arrival: Equatable {
         case ready
@@ -90,8 +90,8 @@ final class SyncCenter: ObservableObject {
         /// No line: nobody can say there are no other devices.
         case offline
     }
-    @Published private(set) var arrival = Arrival.ready
-    private var lookNumber = 0
+    private(set) var arrival = Arrival.ready
+    @ObservationIgnored private var lookNumber = 0
     /// Another account on this Apple ID, while it stands apart.
     struct Separate: Equatable {
         let account: String
@@ -100,33 +100,33 @@ final class SyncCenter: ObservableObject {
         let devices: Int
         static func == (a: Separate, b: Separate) -> Bool { a.account == b.account && a.name == b.name && a.devices == b.devices }
     }
-    @Published private(set) var separate: Separate?
+    private(set) var separate: Separate?
     /// The same, after Keep Separate: only Add a Device still offers it.
-    @Published private(set) var keptApart: Separate?
+    private(set) var keptApart: Separate?
     /// Two accounts are becoming one.
-    @Published private(set) var joiningAccounts = false
+    private(set) var joiningAccounts = false
     /// This Mac said Join to a code it typed while it syncs.
-    @Published private(set) var joinAgreed = false
+    private(set) var joinAgreed = false
     /// The key that code's Mac sent, held until Join.
-    private var heldKey: Seal?
+    @ObservationIgnored private var heldKey: Seal?
     var awaitingJoinConfirmation: Bool { heldKey != nil && !joinAgreed }
     /// Two accounts became one from a code typed here: Add a Device is done.
-    @Published private(set) var joinedByCode = 0
-    private var separateLooked = Date.distantPast
+    private(set) var joinedByCode = 0
+    @ObservationIgnored private var separateLooked = Date.distantPast
     private static let keptKey = "sync.keptSeparate", leftKey = "sync.leftAccounts", toldKey = "sync.toldSeparate"
-    private var asking: Pairing.Asking? {
+    @ObservationIgnored private var asking: Pairing.Asking? {
         willSet { asking?.cancel() }
     }
     /// How many things of each kind sync holds, for Settings, counted only
     /// while it shows them (`showCounts`).
-    @Published private(set) var counts: [String: Int] = [:]
-    private var countsShown = 0
-    private var counting = false
-    private var countAgain = false
+    private(set) var counts: [String: Int] = [:]
+    @ObservationIgnored private var countsShown = 0
+    @ObservationIgnored private var counting = false
+    @ObservationIgnored private var countAgain = false
     private let countQueue = DispatchQueue(label: "sync.count", qos: .utility)
-    @Published private(set) var disabledCategories = Set((Store.settings.stringArray(forKey: SyncCategory.preferenceKey) ?? [])
+    private(set) var disabledCategories = Set((Store.settings.stringArray(forKey: SyncCategory.preferenceKey) ?? [])
         .compactMap(SyncCategory.init(rawValue:)))
-    private var categoryRevision = 0
+    @ObservationIgnored private var categoryRevision = 0
 
     var excludedCollections: Set<String> { SyncCategory.excluded(by: disabledCategories) }
 
@@ -157,29 +157,29 @@ final class SyncCenter: ObservableObject {
         })
     }
     /// The last two weeks of history go with the rest, unless turned off.
-    @Published var history = Store.settings.object(forKey: "sync.history") as? Bool ?? true {
+    var history = Store.settings.object(forKey: "sync.history") as? Bool ?? true {
         didSet {
             Store.settings.set(history, forKey: "sync.history")
             changed(SyncShapes.visit)
         }
     }
 
-    private(set) var journal: Journal? { didSet { refreshAssistantAnswererNames() } }
-    private(set) var client: SyncClient?
+    @ObservationIgnored private(set) var journal: Journal? { didSet { refreshAssistantAnswererNames() } }
+    @ObservationIgnored private(set) var client: SyncClient?
     /// When each chat that went up had last moved: one that hasn't moved
     /// since isn't read again (SyncChats).
-    var chatsSent: [String: Date] = [:]
+    @ObservationIgnored var chatsSent: [String: Date] = [:]
     /// Tasks from the iPhone, while sync is on (SyncTasks, SyncTaskRead).
-    private(set) var taskReader: SyncTaskRead?
+    @ObservationIgnored private(set) var taskReader: SyncTaskRead?
     /// The page in front on each iPhone of the account, as its presence
     /// last said it (SyncPhone): the field's From iPhone row.
-    var phoneFronts: [String: PhoneFront.Page] = [:]
+    @ObservationIgnored var phoneFronts: [String: PhoneFront.Page] = [:]
     /// When an iPhone not in the device list last had it read again.
-    var phonesAskedForDevices = Date.distantPast
+    @ObservationIgnored var phonesAskedForDevices = Date.distantPast
     /// When a task from a phone not yet in the device list last asked for
     /// the list again (SyncTasks): a phone that just joined.
-    var taskAskedForDevices = Date.distantPast
-    private var seal: Seal?
+    @ObservationIgnored var taskAskedForDevices = Date.distantPast
+    @ObservationIgnored private var seal: Seal?
 
     /// The Memory review only decodes address context. It never reads a
     /// password/card item or performs a network request to show a preview.
@@ -195,38 +195,38 @@ final class SyncCenter: ObservableObject {
                 return Wallet.put(card: false, record.id, secret: data, facts: facts, from: record.latest?.wall)
             })
     }
-    private var bag = Set<AnyCancellable>()
-    private var due = Set<String>()
-    private var dueWork: DispatchWorkItem?
+    @ObservationIgnored private var bag = Set<AnyCancellable>()
+    @ObservationIgnored private var due = Set<String>()
+    @ObservationIgnored private var dueWork: DispatchWorkItem?
     /// Set while what came from elsewhere is being written in, so the
     /// writes it causes aren't read back as changes made here.
-    private var applying = false
+    @ObservationIgnored private var applying = false
     /// Joined just now: once caught up, the same pin or bookmark brought
     /// by both sides is made one (`settleJoin`).
-    private var merging = false
+    @ObservationIgnored private var merging = false
     /// The front tab and how far down its page is (0...1), read as the
     /// person leaves this Mac: a phone opening that tab starts there (R9).
-    private var leftAt: (tab: UUID, scroll: Double)?
+    @ObservationIgnored private var leftAt: (tab: UUID, scroll: Double)?
     /// This Mac is going to sleep, or Yab is quitting: said with the
     /// presence, so a phone shows "Mac asleep" at once, not minutes later.
-    private var sleeping = false
+    @ObservationIgnored private var sleeping = false
     /// Yab is quitting: its last presence says `why: quit`, not sleep.
-    private var quitting = false
+    @ObservationIgnored private var quitting = false
     /// Incoming addon changes held until a join has caught up, including
     /// removals of plugins this Mac still keeps from its previous join.
-    private var joiningAddons: [String: Set<String>] = [:]
+    @ObservationIgnored private var joiningAddons: [String: Set<String>] = [:]
     /// Passwords and cards (SyncWallet): the keychain is read and written
     /// on a queue of its own. `walletStamps` and `walletSeen` are what the
     /// last read knew, `walletEpoch` moves when records come in, so a read
     /// begun before them is thrown away, and `walletChanges` is the
     /// keychain's change count that read saw.
     private let walletQueue = DispatchQueue(label: "sync.wallet", qos: .utility)
-    private var walletStamps: [String: String] = [:]
-    private var walletSeen = Set<String>()
-    private var walletEpoch = 0
-    private var walletChanges = -1
+    @ObservationIgnored private var walletStamps: [String: String] = [:]
+    @ObservationIgnored private var walletSeen = Set<String>()
+    @ObservationIgnored private var walletEpoch = 0
+    @ObservationIgnored private var walletChanges = -1
     /// Passwords and cards go with the rest, unless turned off.
-    @Published var passwords = SyncWallet.on {
+    var passwords = SyncWallet.on {
         didSet {
             SyncWallet.on = passwords
             walletChanges = -1
@@ -238,7 +238,7 @@ final class SyncCenter: ObservableObject {
     /// waits to be put in. What it agreed on with the account stays noted
     /// (SyncAddons.Ledger), so on again it takes what changed elsewhere
     /// meanwhile and sends only what changed here.
-    @Published var addons = SyncAddons.on {
+    var addons = SyncAddons.on {
         didSet {
             guard addons != oldValue else { return }
             if !addons, let journal, let mirror {
@@ -258,10 +258,10 @@ final class SyncCenter: ObservableObject {
         }
     }
     /// The extensions and plugins mirror (SyncMirror), while sync is on.
-    private(set) var mirror: SyncMirror?
+    @ObservationIgnored private(set) var mirror: SyncMirror?
     /// Set while this Mac hands its plugins over and leaves: nothing more
     /// is read, sent or taken in.
-    private var leaving = false
+    @ObservationIgnored private var leaving = false
     private static var ledgerFile: URL { Store.file("sync-addons.json") }
 
     /// The server: `YAB_SYNC_URL`, then Info.plist's `YabSync`, then the
@@ -925,7 +925,7 @@ final class SyncCenter: ObservableObject {
             .sink { [weak self] _ in self?.changed(SyncShapes.tab) }
             .store(in: &bag)
         // A chat moves with every step its agent takes: up within a second.
-        Chats.shared.$all.dropFirst()
+        Chats.shared.observed(\.all).dropFirst()
             .sink { [weak self] _ in self?.changed(SyncChats.chat) }
             .store(in: &bag)
         NotificationCenter.default.publisher(for: Routines.changed)
@@ -935,23 +935,23 @@ final class SyncCenter: ObservableObject {
             .sink { [weak self] _ in self?.changed(SyncShapes.project) }
             .store(in: &bag)
         // Now's mail rows, for the iPhone's Now widget: only when they change.
-        Hints.shared.$rows
+        Hints.shared.observed(\.rows)
             .map { SyncNow.rows($0, message: { _, _ in "" }) }
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] _ in self?.changed(SyncNow.now) }
             .store(in: &bag)
-        Bookmarks.shared.$roots
+        Bookmarks.shared.observed(\.roots)
             .dropFirst()
             .sink { [weak self] _ in self?.changed(SyncShapes.bookmark) }
             .store(in: &bag)
         NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
             .sink { [weak self] _ in self?.changed(SyncShapes.setting) }
             .store(in: &bag)
-        Extensions.shared.$installed.dropFirst()
+        Extensions.shared.observed(\.installed).dropFirst()
             .sink { [weak self] _ in self?.changed(SyncAddons.ext) }
             .store(in: &bag)
-        Boosts.shared.$records.dropFirst()
+        Boosts.shared.observed(\.records).dropFirst()
             .sink { [weak self] _ in self?.changed(SyncAddons.plugin) }
             .store(in: &bag)
         NotificationCenter.default.publisher(for: BoostStorage.changed)
@@ -1406,12 +1406,12 @@ final class SyncCenter: ObservableObject {
     /// The bench's: told in the main-thread turn a read of the keychain
     /// reached the journal (evals/sync/check.py changes a password in the
     /// very second sync wrote its record).
-    var walletRead: (() -> Void)?
+    @ObservationIgnored var walletRead: (() -> Void)?
 
     /// The bench's: the keychain's queue held, as on a Mac too busy to
     /// write in what came, until let go or `seconds` passed
     /// (evals/sync/check.py).
-    private var walletHold: DispatchSemaphore?
+    @ObservationIgnored private var walletHold: DispatchSemaphore?
     func holdWallet(seconds: Double) {
         releaseWallet()
         let hold = DispatchSemaphore(value: 0)

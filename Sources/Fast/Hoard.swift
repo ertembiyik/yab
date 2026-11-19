@@ -37,7 +37,7 @@ import UniformTypeIdentifiers
 // lands, fails or ends.
 
 @MainActor
-final class Hoard: ObservableObject {
+@Observable final class Hoard {
     struct Fetch: Identifiable, Equatable {
         let id: ObjectIdentifier
         var name: String
@@ -59,14 +59,14 @@ final class Hoard: ObservableObject {
 
     /// The numbers, ten times a second. Only the open list watches `steps`;
     /// the badge listens to `whole` without going through SwiftUI at all.
-    final class Meter: ObservableObject {
-        @Published fileprivate(set) var steps: [ObjectIdentifier: Step] = [:]
+    @Observable final class Meter {
+        fileprivate(set) var steps: [ObjectIdentifier: Step] = [:]
     }
 
     /// Everything under way together, 0…1, nil when none of it knows its
     /// size, for the badge's ring, which listens to this and nothing else.
-    final class Gauge: ObservableObject {
-        @Published fileprivate(set) var whole: Double?
+    @Observable final class Gauge {
+        fileprivate(set) var whole: Double?
     }
 
     /// Where a button stands. Each has its own popover, since the column's
@@ -75,38 +75,38 @@ final class Hoard: ObservableObject {
 
     /// Under way or failed, newest first. A finished one leaves this for
     /// the Loot, which remembers it.
-    @Published private(set) var fetches: [Fetch] = [] {
+    private(set) var fetches: [Fetch] = [] {
         didSet { refreshShown() }
     }
     /// The button has a place in the strip and the address bar from the
     /// first download, or file in the air, of the session on, and keeps it:
     /// a button that went once a download was over left nowhere to look for
     /// it. Before that it has none there. The column's foot always has it.
-    @Published private(set) var shown = false
+    private(set) var shown = false
     /// The last file's name, while its icon waits by the button for the
     /// pointer. No timer: it goes when the list opens, or the next one comes.
-    @Published private(set) var waiting: String?
+    private(set) var waiting: String?
     var landed: Bool { waiting != nil }
     /// The waiting file has had its moment on the chip: the chip goes back
     /// into its edge and takes the file with it; the file still waits by
     /// the button in the column (owner, 2026-11-01).
-    @Published private(set) var settled = false
+    private(set) var settled = false
     /// The last one is on disk and the ring goes full, just before the icon.
-    @Published private(set) var filling = false
+    private(set) var filling = false
     /// The badge has the button's place, unless the list is open (its row has it).
     var badged: Bool { filling || !fetches.isEmpty && (!going.isEmpty || unseen) }
     /// On its way to or from its row: the row's icon waits until it arrives.
-    @Published private(set) var carrying = false
+    private(set) var carrying = false
     /// Back from its row: the badge is there at once, with no pop.
-    private(set) var returned = false
+    @ObservationIgnored private(set) var returned = false
     /// A failure nobody has looked at yet.
-    @Published private(set) var unseen = false
+    private(set) var unseen = false
     /// The chip stays out a little after the tick, then goes home.
-    @Published private(set) var staying = false {
+    private(set) var staying = false {
         didSet { refreshShown() }
     }
     /// Which button's list is open.
-    @Published var openAt: Place? {
+    var openAt: Place? {
         didSet {
             if openAt == nil {
                 panel?.dismiss()
@@ -117,9 +117,9 @@ final class Hoard: ObservableObject {
         }
     }
     /// Counts arrivals; the button gives a little each time.
-    @Published private(set) var bumps = 0
+    private(set) var bumps = 0
     /// Files in the air right now.
-    @Published private(set) var airborne = 0 {
+    private(set) var airborne = 0 {
         didSet { refreshShown() }
     }
 
@@ -141,7 +141,7 @@ final class Hoard: ObservableObject {
     static let spring: Double = 0.36
     static let springCurve = (x1: 0.3, y1: 1.35, x2: 0.5, y2: 1.0)
 
-    weak var browser: Browser?
+    @ObservationIgnored weak var browser: Browser?
 
     /// Once there is something to show, the button takes its place, and the
     /// slot opens before a file in the air lands in it.
@@ -151,53 +151,53 @@ final class Hoard: ObservableObject {
     }
 
     /// Where files are drawn in flight. See HoardSky.
-    weak var sky: HoardSkyView?
+    @ObservationIgnored weak var sky: HoardSkyView?
     /// The home button can't be seen: the chip is where things land.
-    var away = false
+    @ObservationIgnored var away = false
     /// Where the home button is, in SwiftUI's window space, as last laid out.
-    var home: CGRect?
+    @ObservationIgnored var home: CGRect?
     /// Where the chip stands once it is out, in the same space.
-    var chipAt: CGPoint = .zero
+    @ObservationIgnored var chipAt: CGPoint = .zero
     /// Each button's frame, in the same space, for the list to open from.
-    var frames: [Place: CGRect] = [:]
+    @ObservationIgnored var frames: [Place: CGRect] = [:]
     /// Which button last said each place's frame. The strip's button moves
     /// between the tab row and the address bar, and the one going can leave
     /// after the one coming has said where it is: only the button whose
     /// frame it is takes it away.
-    var framers: [Place: UUID] = [:]
+    @ObservationIgnored var framers: [Place: UUID] = [:]
     /// Individual mounted buttons in test runs, including duplicates at one
     /// place; populated by the actual button's layout observer.
-    var buttonFrames: [UUID: (place: Place, frame: CGRect)] = [:]
+    @ObservationIgnored var buttonFrames: [UUID: (place: Place, frame: CGRect)] = [:]
     /// The list, in a panel of its own over the window. See Tray.
-    private var panel: Tray?
+    @ObservationIgnored private var panel: Tray?
     /// The column's: its cards over the column. See HoardStack.
-    private var stack: HoardStack?
+    @ObservationIgnored private var stack: HoardStack?
     /// Between the column's button and the rows' top, as it opened.
-    private var stackRoom: CGFloat = 0
+    @ObservationIgnored private var stackRoom: CGFloat = 0
     /// Only the rows covered by the download stack fade away.
-    @Published private(set) var stackHeight: CGFloat = 0
+    private(set) var stackHeight: CGFloat = 0
     /// The last open stack's extent, retained for the mask's return path.
-    private(set) var stackExtent: CGFloat = 0
+    @ObservationIgnored private(set) var stackExtent: CGFloat = 0
 
-    private var downloads: [ObjectIdentifier: any PageDownload] = [:]
-    private var arriving: [ObjectIdentifier: Fetch] = [:]
-    private var resume: [ObjectIdentifier: Data] = [:]
-    private var watches: [ObjectIdentifier: NSKeyValueObservation] = [:]
+    @ObservationIgnored private var downloads: [ObjectIdentifier: any PageDownload] = [:]
+    @ObservationIgnored private var arriving: [ObjectIdentifier: Fetch] = [:]
+    @ObservationIgnored private var resume: [ObjectIdentifier: Data] = [:]
+    @ObservationIgnored private var watches: [ObjectIdentifier: NSKeyValueObservation] = [:]
     /// Where each download was asked for, in window coordinates, kept from
     /// the click until its name is known, past a save panel, if there is one.
-    private var origins: [ObjectIdentifier: CGPoint] = [:]
-    private var canceled: Set<ObjectIdentifier> = []
-    private var pausing: Set<ObjectIdentifier> = []
-    private var press: (at: CGPoint, time: CFTimeInterval, right: Bool)?
-    private var monitor: Any?
-    private weak var window: NSWindow?
-    private var beat: DispatchWorkItem?
+    @ObservationIgnored private var origins: [ObjectIdentifier: CGPoint] = [:]
+    @ObservationIgnored private var canceled: Set<ObjectIdentifier> = []
+    @ObservationIgnored private var pausing: Set<ObjectIdentifier> = []
+    @ObservationIgnored private var press: (at: CGPoint, time: CFTimeInterval, right: Bool)?
+    @ObservationIgnored private var monitor: Any?
+    @ObservationIgnored private weak var window: NSWindow?
+    @ObservationIgnored private var beat: DispatchWorkItem?
     /// When the last file in the air lands.
-    private var touchdown: CFTimeInterval = 0
+    @ObservationIgnored private var touchdown: CFTimeInterval = 0
     /// Steps heard since the Meter was last told, and whether telling it is
     /// already on its way.
-    private var heard: [ObjectIdentifier: Step] = [:]
-    private var telling = false
+    @ObservationIgnored private var heard: [ObjectIdentifier: Step] = [:]
+    @ObservationIgnored private var telling = false
 
     /// Anything going on that the chip should be out for.
     var calling: Bool {
@@ -658,7 +658,7 @@ final class Hoard: ObservableObject {
         browser?.openPlace(.downloads)
     }
 
-    private var rising: DispatchWorkItem?
+    @ObservationIgnored private var rising: DispatchWorkItem?
 
     /// The pointer on the column's button, or off it: resting there a
     /// moment brings the cards up (HoardStack), which then go by
@@ -740,12 +740,12 @@ final class Hoard: ObservableObject {
     // MARK: - into its row
 
     /// What stands by the button rides into the row, as the list opens.
-    private var rides = false
-    private var rodeFrom: Place?
-    private var carrierPanel: HoardCarrier?
+    @ObservationIgnored private var rides = false
+    @ObservationIgnored private var rodeFrom: Place?
+    @ObservationIgnored private var carrierPanel: HoardCarrier?
     /// The row that gets it: the column's lowest, the list's first. Where
     /// its icon stands, in its panel, top down, and which panel.
-    var rowSpot: (panel: () -> NSWindow?, icon: CGRect)? {
+    @ObservationIgnored var rowSpot: (panel: () -> NSWindow?, icon: CGRect)? {
         didSet {
             DispatchQueue.main.async { [weak self] in self?.stack?.rowsMounted() }
         }
@@ -950,7 +950,7 @@ final class Hoard: ObservableObject {
         }
     }
 
-    private var renameSteps: [String: UUID] = [:]
+    @ObservationIgnored private var renameSteps: [String: UUID] = [:]
 
     /// The row's Undo and ⌘Z consume the same step, once.
     func undoName(_ keep: Keep) {
@@ -983,7 +983,7 @@ final class Hoard: ObservableObject {
     var listWindow: NSWindow? { panel }
 
     /// Downloads that aren't, for the bench to picture the stack with.
-    private var pretended: [NSObject] = []
+    @ObservationIgnored private var pretended: [NSObject] = []
 
     /// A download that isn't one, part way through, for the bench.
     func pretend(name: String, from: String, got: Int64, total: Int64) {
@@ -1024,7 +1024,7 @@ final class Hoard: ObservableObject {
         toldDock()
     }
 
-    private var ticking: Timer?
+    @ObservationIgnored private var ticking: Timer?
 
     /// The pretended downloads coming on, ten steps a second as WebKit's
     /// are told (Gate, tell), for the bench to weigh them; nil stops.
@@ -1103,7 +1103,7 @@ private final class Gate: @unchecked Sendable {
 /// of file, with a thin bar under it filling as it comes. The downloads
 /// list and the box's downloads place draw the same one.
 struct HoardFetchIcon: View {
-    @ObservedObject var meter: Hoard.Meter
+    var meter: Hoard.Meter
     let fetch: Hoard.Fetch
     var side: CGFloat = 20
 
@@ -1157,7 +1157,7 @@ struct HoardUnsized: View {
 
 /// A download's progress in words, kept up with its meter.
 struct HoardFetchWords: View {
-    @ObservedObject var meter: Hoard.Meter
+    var meter: Hoard.Meter
     let fetch: Hoard.Fetch
 
     var body: some View {
@@ -1166,7 +1166,7 @@ struct HoardFetchWords: View {
 }
 
 struct HoardSlot: View {
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
     let place: Hoard.Place
     /// A split's half behind the one in front, the pointer off its band:
     /// away with the doors beside it, unless a download wants to be seen.
@@ -1190,7 +1190,7 @@ struct HoardSlot: View {
 }
 
 struct HoardButton: View {
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
     let place: Hoard.Place
 
     @State private var hovering = false
@@ -1526,7 +1526,7 @@ struct HoardBadge: NSViewRepresentable {
     /// cut; it takes no space, standing in an overlay.
     static let room: CGFloat = 44
 
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
     let gauge: Hoard.Gauge
     /// With the tabs on top: the file goes to the upper left, smaller.
     let top: Bool
@@ -1622,7 +1622,7 @@ final class HoardBadgeView: NSView {
         count.addSublayer(number)
         count.isHidden = true
         dial.addSublayer(count)
-        listening = gauge.$whole.sink { [weak self] whole in
+        listening = gauge.observed(\.whole).sink { [weak self] whole in
             MainActor.assumeIsolated { self?.heard(whole) }
         }
     }
@@ -2071,7 +2071,7 @@ final class HoardCarrier: NSPanel {
 /// be seen: at the foot of the window's left edge. The column's stays out;
 /// the strip's comes out only while something is going.
 struct HoardChip: View {
-    @ObservedObject var hoard: Hoard
+    var hoard: Hoard
     let away: Bool
     /// The tabs are on top: the button's place is the strip or the band.
     /// Kept for the callers; the chip comes out the same way either way.
@@ -2358,8 +2358,8 @@ struct HoardList: View {
     static let rowSide: CGFloat = 6
     static var edge: CGFloat { inset + rowSide }
 
-    @ObservedObject var hoard: Hoard
-    @ObservedObject var loot: Loot
+    var hoard: Hoard
+    var loot: Loot
     let browser: Browser
 
     private var kept: [Keep] {
@@ -2441,10 +2441,10 @@ struct HoardList: View {
     }
 
     private struct FetchRow: View {
-        @ObservedObject var hoard: Hoard
+        var hoard: Hoard
         /// The numbers, watched here and only here: the list is the one
         /// thing that needs them ten times a second, and only while it is open.
-        @ObservedObject var meter: Hoard.Meter
+        var meter: Hoard.Meter
         let fetch: Hoard.Fetch
 
         private var step: Hoard.Step { self.meter.steps[fetch.id] ?? Hoard.Step() }
@@ -2474,7 +2474,7 @@ struct HoardList: View {
     }
 
     private struct KeptRow: View {
-        @ObservedObject var hoard: Hoard
+        var hoard: Hoard
         /// The list's first row: nothing is going above it.
         var first = false
         let keep: Keep

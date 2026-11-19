@@ -70,8 +70,8 @@ enum ColumnHead {
 /// The sidebar mark: puts the column away, as ⌘S does; in the card,
 /// brings it back.
 struct ColumnDoor: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
 
     /// Its tip waits as long as a Mac's own, longer than the doors pressed
     /// all day: it is found once and then left to ⌘S.

@@ -4,9 +4,9 @@ import SwiftUI
 /// User limits are independent of author metadata. All AI entry points share
 /// the same counter, so a service cannot evade a limit by starting a task.
 @MainActor
-final class BoostAI: ObservableObject {
+@Observable final class BoostAI {
     static let shared = BoostAI()
-    @Published private(set) var change = 0
+    private(set) var change = 0
     private func key(_ id: String) -> String { "boosts.ai." + id + "." + String(ISO8601DateFormatter().string(from: Date()).prefix(10)) }
     func used(_ id: String) -> Int { Store.settings.integer(forKey: key(id)) }
     func limit(_ package: BoostPackage) -> Int {
@@ -26,8 +26,8 @@ final class BoostAI: ObservableObject {
 }
 
 struct BoostAISettings: View {
-    @ObservedObject private var boosts = Boosts.shared
-    @ObservedObject private var usage = BoostAI.shared
+    private var boosts = Boosts.shared
+    private var usage = BoostAI.shared
     var body: some View {
         let packages = boosts.records.compactMap { boosts.packages[$0.id] }.filter { $0.plugin.permissions.contains("yab:ask") || $0.plugin.permissions.contains("yab:task") || $0.files["commands.json"] != nil }
         if !packages.isEmpty {

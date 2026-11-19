@@ -8,7 +8,7 @@ import SwiftUI
 struct ChatProjectScreen: View {
     let browser: Browser
     let project: Project
-    @ObservedObject private var chats = Chats.shared
+    private var chats = Chats.shared
     @State private var words = ""
     @FocusState private var focused: Bool
     /// Its own card is out in its place (ChatProjectCard).

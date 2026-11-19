@@ -18,8 +18,8 @@ import SwiftUI
 /// under ground, while its card is out, as the prototype draws it.
 struct ThemesDoor: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var card = ReaderCard.shared
+    var tab: Tab
+    private var card = ReaderCard.shared
     @Environment(\.tone) private var tone
     @Environment(\.doorSize) private var size
     @State private var hovering = false
@@ -66,25 +66,25 @@ private struct CardAnchor: NSViewRepresentable {
 }
 
 @MainActor
-final class ReaderCard: ObservableObject {
+@Observable final class ReaderCard {
     static let shared = ReaderCard()
 
     enum Page { case main, customize }
 
-    @Published private(set) var isOpen = false
-    @Published private(set) var tabID: Tab.ID?
-    @Published var page: Page = .main
+    private(set) var isOpen = false
+    private(set) var tabID: Tab.ID?
+    var page: Page = .main
     /// Customize's list of faces, open.
-    @Published var fonts = false
+    var fonts = false
     /// The light's menu, under ◐.
-    @Published var menu = false
+    var menu = false
     /// In or on its way out: what the card's scale and fade follow.
-    @Published fileprivate(set) var shown = false
+    fileprivate(set) var shown = false
     /// Whether the Mac reads dark where the card hangs, for Match the Mac.
-    @Published fileprivate(set) var systemDark = false
+    fileprivate(set) var systemDark = false
 
     /// Each tab's Aa, while it is in sight.
-    var doors: [Tab.ID: ViewBox] = [:]
+    @ObservationIgnored var doors: [Tab.ID: ViewBox] = [:]
 
     /// The card's own width, inside its inset, as drawn: 330 across.
     static let width: CGFloat = 306
@@ -94,14 +94,14 @@ final class ReaderCard: ObservableObject {
     static let margin: CGFloat = PullView.margin
     nonisolated static let space = "reader-card"
 
-    private weak var browser: Browser?
-    private weak var tab: Tab?
-    private weak var anchor: NSView?
-    private var host: Host?
-    private var monitors: [Any] = []
-    private var watchers: [NSObjectProtocol] = []
+    @ObservationIgnored private weak var browser: Browser?
+    @ObservationIgnored private weak var tab: Tab?
+    @ObservationIgnored private weak var anchor: NSView?
+    @ObservationIgnored private var host: Host?
+    @ObservationIgnored private var monitors: [Any] = []
+    @ObservationIgnored private var watchers: [NSObjectProtocol] = []
     /// The card, in the host's points from its top left.
-    fileprivate var cardRect: CGRect = .zero
+    @ObservationIgnored fileprivate var cardRect: CGRect = .zero
 
     func toggle(browser: Browser, tab: Tab, from view: NSView?) {
         if isOpen, tabID == tab.id { close() } else { present(browser, tab, from: view) }
@@ -259,8 +259,8 @@ final class ReaderCard: ObservableObject {
 }
 
 struct ReaderCardView: View {
-    @ObservedObject var card: ReaderCard
-    @ObservedObject var style: ReaderStyle
+    var card: ReaderCard
+    var style: ReaderStyle
     @Environment(\.accessibilityReduceMotion) private var still
     /// The window's light or dark, read outside the card's own: Match the
     /// Mac follows it while the card is out, not only as it opened.

@@ -11,7 +11,7 @@ import SwiftUI
 /// The list under it stays as it was until a row is taken: the words into
 /// the list, a person's mail, a thread opened.
 @MainActor
-final class MailSearch: ObservableObject {
+@Observable final class MailSearch {
     static let shared = MailSearch()
 
     /// A search gone through: words, a person, or a person and words.
@@ -65,7 +65,7 @@ final class MailSearch: ObservableObject {
     }
 
     /// The words in the field, while it is up.
-    @Published var typed = "" {
+    var typed = "" {
         didSet {
             guard typed != oldValue else { return }
             personLit = false
@@ -73,32 +73,32 @@ final class MailSearch: ObservableObject {
             refresh()
         }
     }
-    @Published private(set) var hits: [Hit] = []
+    private(set) var hits: [Hit] = []
     /// The row ↩ takes: the first, until the arrows or the pointer move it.
-    @Published var lit = 0
+    var lit = 0
     /// ⌫ once in the empty field: the person is chosen, ⌫ again takes them off.
-    @Published var personLit = false
+    var personLit = false
     /// The column's field in the window, for the search to stand over.
-    @Published var field: CGRect = .zero
+    var field: CGRect = .zero
     /// The field's ground and its words' gray, on the column's tone: the
     /// search starts in them, then takes its own as it grows.
-    var fieldGround = Palette.wash
-    var fieldInk = Palette.muted
+    @ObservationIgnored var fieldGround = Palette.wash
+    @ObservationIgnored var fieldInk = Palette.muted
     /// The search is on screen, growing, up or going back into the field:
     /// the field itself is not drawn under it.
-    @Published var covering = false
+    var covering = false
     /// Times it grew out of the field, for the bench: never while mail
     /// holds still (MailDesk.still), when it fades in at its place.
-    var grew = 0
-    @Published private(set) var recents: [Recent] = []
+    @ObservationIgnored var grew = 0
+    private(set) var recents: [Recent] = []
     /// Threads opened lately, "account|thread", newest first.
-    private(set) var opened: [String] = []
+    @ObservationIgnored private(set) var opened: [String] = []
 
     private static let kept = "mail.search.recent"
     private static let keptOpened = "mail.search.opened"
     private static let most = 5
-    private var bag: Set<AnyCancellable> = []
-    private lazy var away = ClickAway { [weak self] in self?.close() }
+    @ObservationIgnored private var bag: Set<AnyCancellable> = []
+    @ObservationIgnored private lazy var away = ClickAway { [weak self] in self?.close() }
     var desk: MailDesk { MailDesk.shared }
 
     private init() {
@@ -112,7 +112,7 @@ final class MailSearch: ObservableObject {
             // After the letter is drawn, not inside its key.
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.saw(shown) } }
         }.store(in: &bag)
-        MailDesk.shared.$searching.dropFirst().removeDuplicates().sink { [weak self] up in
+        MailDesk.shared.observed(\.searching).dropFirst().removeDuplicates().sink { [weak self] up in
             // After the change: @Published tells in its willSet.
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.opened(up) } }
         }.store(in: &bag)
@@ -136,7 +136,7 @@ final class MailSearch: ObservableObject {
     /// Up again: the words the list is searched by, to go on from, and
     /// what they find, ready before the search is drawn (MailSearchLayer),
     /// so it grows to its whole height at once.
-    private var prepared = false
+    @ObservationIgnored private var prepared = false
     func prepare() {
         guard desk.searching else { prepared = false; return }
         guard !prepared else { return }
@@ -149,9 +149,9 @@ final class MailSearch: ObservableObject {
 
     /// The words the rows under the field answer: behind `typed` while the
     /// word index looks for the newest ones.
-    @Published private(set) var answered: String?
+    private(set) var answered: String?
     /// Asks of the word index, the last one's answer the only one taken.
-    private var asked = 0
+    @ObservationIgnored private var asked = 0
 
     /// What the field's words find, in the rows' order. Words are looked
     /// for off the main thread (MailDesk.find), so a letter typed is in the
@@ -341,9 +341,9 @@ final class MailSearch: ObservableObject {
 /// held still (Reduce Motion, Animations off): it fades in and out at
 /// its place, nothing growing.
 struct MailSearchLayer: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var desk = MailDesk.shared
-    @ObservedObject private var search = MailSearch.shared
+    var browser: Browser
+    private var desk = MailDesk.shared
+    @Bindable private var search = MailSearch.shared
     @MailStill private var still
     /// On screen, growing or going.
     @State private var mounted = false
@@ -383,8 +383,8 @@ struct MailSearchLayer: View {
 
 /// The search itself: the field, a line, the rows.
 struct MailSearchFloat: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var search: MailSearch
+    var desk: MailDesk
+    @Bindable var search: MailSearch
     /// Wanted up; it grows once its rows are measured, and goes back into
     /// the field when this turns, then says so.
     let up: Bool

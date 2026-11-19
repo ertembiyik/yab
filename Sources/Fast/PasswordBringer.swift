@@ -6,7 +6,7 @@ import SwiftUI
 /// export goes to Passwords' own screen, which waits for the file; a CSV
 /// file is chosen and read in place.
 struct PasswordBringer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let anchor: String
     /// Worn where the rows around it wear theirs (Passwords), not on Bring
     /// in, whose rows go without.

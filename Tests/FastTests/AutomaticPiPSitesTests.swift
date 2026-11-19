@@ -110,13 +110,16 @@ struct AutomaticPiPSitesTests {
         try isolated { store in
             let sites = AutomaticPiPSites(store: store)
             let url = URL(string: "https://youtube.com/")!
-            var received: [Set<String>] = []
-            let observation = sites.$denied.sink { received.append($0) }
+            var received: [Set<String>] = [sites.denied]
+            let observation = ObservedWrites { _ = sites.denied }
             defer { observation.cancel() }
             sites.setAllowed(false, for: url)
+            received.append(sites.denied)
             let other = try #require(SiteControlsView.automaticPiPRow(url: url, globally: true, sites: sites))
             #expect(!other.on)
             other.act?()
+            received.append(sites.denied)
+            #expect(observation.count == 2)
             #expect(received == [[], ["youtube.com"], []])
             #expect(sites.allows(url))
         }

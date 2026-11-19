@@ -26,10 +26,10 @@ struct Veil: Codable, Identifiable, Equatable {
 }
 
 @MainActor
-final class Curtain: ObservableObject {
+@Observable final class Curtain {
     static let shared = Curtain()
-    @Published private(set) var byHost: [String: [Veil]] = [:]
-    private var saving = false
+    private(set) var byHost: [String: [Veil]] = [:]
+    @ObservationIgnored private var saving = false
 
     init() { load() }
 

@@ -1305,6 +1305,6 @@ final class Player {
 /// The room kept for the band under the rows: the one thing SwiftUI hears
 /// about the band, and only when it comes up or goes.
 @MainActor
-final class PlayerRoom: ObservableObject {
-    @Published var up = false
+@Observable final class PlayerRoom {
+    var up = false
 }

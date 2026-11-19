@@ -754,7 +754,7 @@ struct MailColumnDrop: DropDelegate {
 /// a notification, in the tables' language (MenuCell); Hide empty splits
 /// under them. One of yours goes on a right click.
 struct MailSplitSettings: View {
-    @ObservedObject private var list = MailList.shared
+    private var list = MailList.shared
 
     var body: some View {
         Section {

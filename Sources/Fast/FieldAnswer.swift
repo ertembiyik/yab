@@ -17,7 +17,7 @@ import SwiftUI
 
 struct FieldAnswer: View {
     let browser: Browser
-    @ObservedObject var commands: SelectionCommands
+    var commands: SelectionCommands
     var height: CGFloat
     /// The answer's foot in view (FieldAnswer's scroll, as ChatTranscript's).
     @State private var atEnd = true

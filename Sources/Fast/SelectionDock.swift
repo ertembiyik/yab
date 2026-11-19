@@ -3,8 +3,8 @@ import SwiftUI
 /// Content only. AgentDock owns the one persistent plate, its face,
 /// measured size, corners and transitions through running/result/receipt.
 struct SelectionDockContent: View {
-    @ObservedObject var commands: SelectionCommands
-    @ObservedObject var tab: Tab
+    var commands: SelectionCommands
+    var tab: Tab
 
     static func expanded(_ commands: SelectionCommands) -> Bool {
         commands.showsDockResult || (commands.stage == .failed && !commands.noChange)

@@ -27,7 +27,7 @@ enum PDFDeskMode: String, CaseIterable {
 }
 
 @MainActor
-final class PDFDesk: ObservableObject {
+@Observable final class PDFDesk {
     /// A step the mode took, and how to take it back and again.
     struct Step {
         let name: String
@@ -40,39 +40,39 @@ final class PDFDesk: ObservableObject {
     let source: URL?
     let sourceName: String?
 
-    @Published private(set) var mode: PDFDeskMode = .fill
-    private(set) var boxes: [PDFBox]
+    private(set) var mode: PDFDeskMode = .fill
+    @ObservationIgnored private(set) var boxes: [PDFBox]
     /// The box being filled, by its place in `boxes`.
-    @Published private(set) var current: Int?
+    private(set) var current: Int?
     /// What the box being filled holds as it is typed.
-    @Published var draft = "" { didSet { if draft != oldValue { scheduleWorkingSave() } } }
+    var draft = "" { didSet { if draft != oldValue { scheduleWorkingSave() } } }
     /// A line of text being typed, and its words so far.
-    @Published private(set) var writing: PDFAnnotation?
-    @Published var note = "" { didSet { if note != oldValue { scheduleWorkingSave() } } }
+    private(set) var writing: PDFAnnotation?
+    var note = "" { didSet { if note != oldValue { scheduleWorkingSave() } } }
     /// A signature or a line of text picked: ⌫ takes it away, its corners resize it.
-    @Published private(set) var selected: PDFAnnotation?
+    private(set) var selected: PDFAnnotation?
     /// The sheet a signature is made on, and what is on it.
-    @Published var sheet = false
+    var sheet = false
     let pad = SignatureSheetModel()
     /// Where the view shows an annotation: points under it and over it.
-    var room: ((PDFAnnotation) -> [CGFloat])?
+    @ObservationIgnored var room: ((PDFAnnotation) -> [CGFloat])?
     /// A place on a page brought into sight above the bar (for ./bench,
     /// whose pointer is no person's).
-    var bring: ((Int, CGRect) -> Void)?
+    @ObservationIgnored var bring: ((Int, CGRect) -> Void)?
     /// The same native page/zoom operation used by the persistence probe.
-    var position: ((Int, CGFloat, CGFloat, CGFloat) -> Void)?
-    var shownViewport: (() -> [String: Any])?
+    @ObservationIgnored var position: ((Int, CGFloat, CGFloat, CGFloat) -> Void)?
+    @ObservationIgnored var shownViewport: (() -> [String: Any])?
     /// The signature Sign puts down.
-    @Published private(set) var signature: Signature?
+    private(set) var signature: Signature?
     /// Where a signature follows the pointer, in a PDF with no box for one.
-    @Published var ghost: (page: Int, point: CGPoint)?
+    var ghost: (page: Int, point: CGPoint)?
     /// The page last written or signed on, for the signed file to open at.
-    private(set) var lastPage = 0
+    @ObservationIgnored private(set) var lastPage = 0
     /// Every change to what is drawn, for the view over the page.
-    @Published private(set) var version = 0
+    private(set) var version = 0
 
-    private(set) var steps: [Step] = []
-    private(set) var undone: [Step] = []
+    @ObservationIgnored private(set) var steps: [Step] = []
+    @ObservationIgnored private(set) var undone: [Step] = []
     /// Something was filled, typed or signed: esc asks before throwing it away.
     var changed: Bool { restoredChanges || !steps.isEmpty || writingChanged || draftChanged }
 
@@ -82,7 +82,7 @@ final class PDFDesk: ObservableObject {
     let shelf: SignatureShelf
     /// The scroll the web view was at as the mode began, as a share of the
     /// document's height, for the PDFView to start at.
-    var startedAt: CGFloat?
+    @ObservationIgnored var startedAt: CGFloat?
 
     init(document: PDFDocument, source: URL?, name: String? = nil, profile: Profile = Profile.load(),
          address: StreetAddress? = nil, today: Date = Date(), shelf: SignatureShelf = SignatureKeychain.shared) {
@@ -115,19 +115,19 @@ final class PDFDesk: ObservableObject {
 
     // MARK: - the editable working copy
 
-    private var working: PDFWorkingCopy?
-    private var pendingSave: DispatchWorkItem?
-    private var workingState: PDFWorkingState?
-    private var contentNeedsSave = true
-    private var restoredChanges = false
-    private var discardWorking = false
-    private var workingActive = true
-    var mailOrigin: PDFMailOrigin? { didSet { scheduleWorkingSave() } }
-    private var quitWatch: NSObjectProtocol?
-    private(set) var viewport: PDFWorkingState.Viewport?
-    private(set) var restored = false
-    private(set) var saveError: String?
-    private(set) var snapshots = 0
+    @ObservationIgnored private var working: PDFWorkingCopy?
+    @ObservationIgnored private var pendingSave: DispatchWorkItem?
+    @ObservationIgnored private var workingState: PDFWorkingState?
+    @ObservationIgnored private var contentNeedsSave = true
+    @ObservationIgnored private var restoredChanges = false
+    @ObservationIgnored private var discardWorking = false
+    @ObservationIgnored private var workingActive = true
+    @ObservationIgnored var mailOrigin: PDFMailOrigin? { didSet { scheduleWorkingSave() } }
+    @ObservationIgnored private var quitWatch: NSObjectProtocol?
+    @ObservationIgnored private(set) var viewport: PDFWorkingState.Viewport?
+    @ObservationIgnored private(set) var restored = false
+    @ObservationIgnored private(set) var saveError: String?
+    @ObservationIgnored private(set) var snapshots = 0
 
     /// A restored mode keeps its editor drafts separate from committed PDF
     /// values. Neither saving nor reopening commits an Undo step.
@@ -655,12 +655,12 @@ enum SignatureWay: String, Hashable { case trackpad, mouse, type }
 /// What is on the signature sheet: kept apart from the desk, so each point
 /// drawn redraws the pad and not the pages.
 @MainActor
-final class SignatureSheetModel: ObservableObject {
-    @Published var way = SignatureWay.trackpad
-    @Published var ink = PenInk()
-    @Published var name = ""
-    @Published var hand = SignatureInk.hands[0]
-    var initials = false
+@Observable final class SignatureSheetModel {
+    var way = SignatureWay.trackpad
+    var ink = PenInk()
+    var name = ""
+    var hand = SignatureInk.hands[0]
+    @ObservationIgnored var initials = false
 
     var empty: Bool { way == .type ? name.trimmingCharacters(in: .whitespaces).isEmpty : ink.isEmpty }
 
@@ -691,23 +691,23 @@ struct PDFMailOrigin: Codable, Equatable {
 /// whether it has boxes to fill, the mode while it is on, and the file
 /// Done made while the tab shows it.
 @MainActor
-final class PDFPaper: ObservableObject {
-    @Published private(set) var pdf = false
-    @Published private(set) var fillable = false
+@Observable final class PDFPaper {
+    private(set) var pdf = false
+    private(set) var fillable = false
     /// The pointer by the page's foot: the plate shows on a PDF with no boxes.
-    @Published var near = false
-    @Published private(set) var desk: PDFDesk?
+    var near = false
+    private(set) var desk: PDFDesk?
     /// The file Done made, while the tab shows it.
-    @Published private(set) var signed: URL?
+    private(set) var signed: URL?
     /// Opened from a mail: Done's corner offers the reply.
-    @Published var mail: PDFMailOrigin? { didSet { desk?.mailOrigin = mail } }
-    @Published private(set) var starting = false
+    var mail: PDFMailOrigin? { didSet { desk?.mailOrigin = mail } }
+    private(set) var starting = false
     /// The last main document's answer said PDF.
-    private var heardPDF = false
-    private var nativeAnalysis = ChromiumOriginalPDFAnalysisState()
-    private var generation = 0
+    @ObservationIgnored private var heardPDF = false
+    @ObservationIgnored private var nativeAnalysis = ChromiumOriginalPDFAnalysisState()
+    @ObservationIgnored private var generation = 0
     /// Timings, for ./bench.
-    private(set) var metrics: [String: Double] = [:]
+    @ObservationIgnored private(set) var metrics: [String: Double] = [:]
 
     /// Every type WebKit takes for a PDF (its MIMETypeRegistry's PDF
     /// types), not only application/pdf: a PDF a server sent as text/pdf,

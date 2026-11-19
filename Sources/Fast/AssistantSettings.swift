@@ -13,12 +13,12 @@ enum AssistantConnectIntent {
 }
 
 struct AssistantsPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var assistants = Assistants.shared
-    @ObservedObject private var host = AssistantHost.shared
-    @ObservedObject private var sync = SyncCenter.shared
-    @ObservedObject private var connect = AssistantConnect.shared
+    var browser: Browser
+    var model: SettingsModel
+    private var assistants = Assistants.shared
+    private var host = AssistantHost.shared
+    private var sync = SyncCenter.shared
+    private var connect = AssistantConnect.shared
     @State private var codeGeneration = 0
 
     var body: some View {
@@ -195,10 +195,10 @@ private extension AssistantRequest {
 /// switch; the row opens its page.
 private struct AssistantRow: View {
     let grant: AssistantGrant
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let open: () -> Void
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var approvals = AssistantApprovals.shared
+    private var agents = Agents.shared
+    private var approvals = AssistantApprovals.shared
 
     private var space: String { grant.spaceName(in: browser.spaces) }
 

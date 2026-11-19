@@ -622,8 +622,8 @@ enum WelcomeYours: WelcomeChapter {
     /// chapter 5 or 6 and the import is all in: nothing there says it.
     private static func watchToast(_ stage: WelcomeStage) {
         guard watch == nil else { return }
-        let changes = stage.$beat.map { _ in () }
-            .merge(with: stage.$words.map { _ in () }, stage.bringing.$state.map { _ in () })
+        let changes = stage.observed(\.beat).map { _ in () }
+            .merge(with: stage.observed(\.words).map { _ in () }, stage.bringing.observed(\.state).map { _ in () })
         watch = changes.receive(on: DispatchQueue.main).sink { [weak stage] in
             guard let stage else { return }
             sayToast(stage)

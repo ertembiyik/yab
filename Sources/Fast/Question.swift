@@ -116,8 +116,8 @@ struct Question: Identifiable, Equatable {
         let words: String
     }
 
-    final class Field: ObservableObject {
-        @Published var text: String
+    @Observable final class Field {
+        var text: String
         let prompt: String
         init(_ text: String, prompt: String) {
             self.text = text
@@ -127,12 +127,12 @@ struct Question: Identifiable, Equatable {
     }
 
     /// The ticked boxes, read by whoever asked once it is answered.
-    final class Ticks: ObservableObject {
-        @Published var on: Set<String> = []
+    @Observable final class Ticks {
+        var on: Set<String> = []
     }
 
-    final class Enablement: ObservableObject {
-        @Published var allowed: Bool
+    @Observable final class Enablement {
+        var allowed: Bool
         init(_ allowed: Bool = false) { self.allowed = allowed }
     }
 
@@ -148,20 +148,20 @@ struct Question: Identifiable, Equatable {
 }
 
 @MainActor
-final class Questions: ObservableObject {
+@Observable final class Questions {
     static let shared = Questions()
 
-    @Published private(set) var current: Question?
+    private(set) var current: Question?
     /// The box on the question now, or on the one just answered.
-    @Published var ticked = false
+    var ticked = false
     /// The question now's folded lines open, under "N more".
-    @Published var unfolded = false
-    private var owed: CheckedContinuation<Bool, Never>?
-    private var waiting: [(Question, CheckedContinuation<Bool, Never>)] = []
-    private var keys: Any?
-    private var closing: Any?
+    var unfolded = false
+    @ObservationIgnored private var owed: CheckedContinuation<Bool, Never>?
+    @ObservationIgnored private var waiting: [(Question, CheckedContinuation<Bool, Never>)] = []
+    @ObservationIgnored private var keys: Any?
+    @ObservationIgnored private var closing: Any?
     /// The windows whose stand shows the card now, by number (Bench).
-    var shownIn: Set<Int> = []
+    @ObservationIgnored var shownIn: Set<Int> = []
 
     /// Asked where it belongs, once the one before has been answered.
     func ask(_ question: Question) async -> Bool {
@@ -348,8 +348,8 @@ final class Questions: ObservableObject {
 // MARK: - the card
 
 struct QuestionCard: View {
-    @ObservedObject var questions: Questions = .shared
-    @ObservedObject private var confirmation = Keymap.shared.slot(.confirmDanger)
+    @Bindable var questions: Questions = .shared
+    private var confirmation = Keymap.shared.slot(.confirmDanger)
     @Environment(\.colorScheme) private var scheme
     let question: Question
     /// Whether Return and Escape would reach it, so the buttons say so.
@@ -608,7 +608,7 @@ struct QuestionCard: View {
 /// words picked so typing replaces them, Return for yes once something is
 /// there, Escape for no.
 private struct QuestionField: View {
-    @ObservedObject var field: Question.Field
+    @Bindable var field: Question.Field
     let questions: Questions
     @FocusState private var typing: Bool
 
@@ -627,7 +627,7 @@ private struct QuestionField: View {
 
 /// Yes, waiting for something typed.
 private struct QuestionYes<Label: View>: View {
-    @ObservedObject var field: Question.Field
+    @Bindable var field: Question.Field
     @ViewBuilder let label: () -> Label
 
     var body: some View {
@@ -636,7 +636,7 @@ private struct QuestionYes<Label: View>: View {
 }
 
 private struct QuestionEnabled<Label: View>: View {
-    @ObservedObject var enablement: Question.Enablement
+    var enablement: Question.Enablement
     @ViewBuilder let label: () -> Label
     var body: some View { label().disabled(!enablement.allowed) }
 }
@@ -645,7 +645,7 @@ private struct QuestionEnabled<Label: View>: View {
 /// state and lands at once. Long words wrap within the card.
 private struct QuestionBoxes: View {
     let boxes: [Question.Box]
-    @ObservedObject var ticks: Question.Ticks
+    var ticks: Question.Ticks
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -674,7 +674,7 @@ private struct QuestionBoxes: View {
 
 /// Over the browser's window: in its middle, over the dimming or not.
 struct QuestionLayer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         QuestionStand { question in question.place == .page || (!browser.editing && browser.active?.typing != true) }
@@ -686,7 +686,7 @@ struct QuestionLayer: View {
 /// Only the window it was asked from shows it, the small window in front of
 /// the browser's included (#178), not every window on every screen (#1097).
 struct QuestionStand: View {
-    @ObservedObject var questions: Questions = .shared
+    @Bindable var questions: Questions = .shared
     @Environment(\.colorScheme) private var scheme
     /// Whether Return and Escape reach it in this window, so the buttons say so.
     let keyed: (Question) -> Bool
@@ -771,7 +771,7 @@ extension Question {
 /// In Settings' own window over it (SettingsCards): the card at its
 /// middle, nothing dimmed, the rest held still under it.
 struct SettingsQuestionLayer: View {
-    @ObservedObject var questions: Questions = .shared
+    @Bindable var questions: Questions = .shared
     /// How tall the card may be: the screen's height less a margin.
     let room: CGFloat
 

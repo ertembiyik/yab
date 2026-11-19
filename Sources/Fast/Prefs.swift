@@ -20,8 +20,16 @@ enum Density: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     /// The one the column draws with: the saved one, then kept in step
-    /// with Preferences.density.
-    nonisolated(unsafe) static var current: Density = saved
+    /// with Preferences.density. Observed, so a body drawing a size from it
+    /// redraws when it changes.
+    static var current: Density {
+        get { held.value }
+        set { if held.value != newValue { held.value = newValue } }
+    }
+    fileprivate static let held = Held()
+    @Observable fileprivate final class Held: @unchecked Sendable {
+        var value: Density = Density.saved
+    }
     static var saved: Density { Store.settings.string(forKey: key).flatMap(Density.init) ?? .comfortable }
     static let key = "sidebar.density"
 
@@ -193,17 +201,10 @@ enum GlassExperiment {
 
 @MainActor
 @Observable
-final class Preferences: ObservableObject, Relaying {
+final class Preferences: Relaying {
     /// Each setting's new values for Combine (`changes(\.name)`), and any of them
     /// about to change (`relay.any`), as @Published told them.
     @ObservationIgnored let relay = ChangeRelay<Preferences>()
-    /// ObservableObject's publisher, kept here. With no @Published left
-    /// (the state is @Observable), Combine's own `objectWillChange` found
-    /// it by walking every stored property through reflection on each
-    /// read, and SwiftUI reads it for every @ObservedObject on every
-    /// update: about 0.1 ms a read of a Browser or a Tab (bench
-    /// willchange), many times over in every pass (feedback #120).
-    nonisolated let objectWillChange = ObservableObjectPublisher()
     /// A word saved in the British spelling yab once wrote, as it is
     /// spelled now.
     private static func american(_ word: String?) -> String? {
@@ -215,7 +216,6 @@ final class Preferences: ObservableObject, Relaying {
     }
 
     @ObservationIgnored private let store = Store.settings
-    @ObservationIgnored private var displayWatch: AnyCancellable?
     /// A synced default is kept globally; a window can still wear its
     /// selected space's paint without writing that paint back as a default.
     @ObservationIgnored private var projectingSpacePaint = false
@@ -463,17 +463,13 @@ final class Preferences: ObservableObject, Relaying {
         didSet { store.set(glyph.rawValue, forKey: "tabs.glyph") }
     }
     /// How roomy the column is (Density). One size for every window: the
-    /// sizes are read from Density.current, so each window's column is
-    /// told and drawn anew.
+    /// sizes are read from Density.current, which is observed, so each
+    /// window's views that draw a size redraw.
     var density: Density {
         willSet { relay.send(\.density, newValue) }
         didSet {
             guard density != oldValue else { return }
             Density.current = density
-            // The column reads its sizes from Density.current, which nothing
-            // observes: every view of the window is told, as every setting
-            // once told it (Browser forwards this).
-            objectWillChange.send()
             store.set(density.rawValue, forKey: Density.key)
             for browser in BrowserWindows.shared.browsers where browser.prefs.density != density {
                 browser.prefs.density = density
@@ -1210,12 +1206,6 @@ final class Preferences: ObservableObject, Relaying {
         for key in ["mind.model", "mind.effort", "mind.acting", "mind.width", "mind.open", "autocorrect"] {
             store.removeObject(forKey: key)
         }
-        displayWatch = NSWorkspace.shared.notificationCenter
-            .publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in self?.objectWillChange.send() }
-            }
     }
 
     /// WebKit's text checker takes its orders from the app's standard

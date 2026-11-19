@@ -6,7 +6,7 @@ import SwiftUI
 /// lists with their source and a ··· menu; Add List… checks a list before
 /// it is added (row 1108's redesign, variants A and C).
 struct ShieldSourceSettings: View {
-    @ObservedObject private var shield = Shield.shared
+    private var shield = Shield.shared
     /// The bench opens the card with an optional address, or closes it
     /// (false), for pictures (Bench "shield").
     static let benchAdding = Notification.Name("yab.shield.bench-adding")
@@ -99,7 +99,7 @@ struct ShieldSourceSettings: View {
 
 /// Uses the same Settings panel and card frame as Air Traffic Control.
 @MainActor
-final class ShieldSourceEditing: ObservableObject {
+@Observable final class ShieldSourceEditing {
     static let shared = ShieldSourceEditing()
 
     struct Draft: Identifiable {
@@ -107,14 +107,14 @@ final class ShieldSourceEditing: ObservableObject {
         let url: String
     }
 
-    @Published private(set) var draft: Draft?
+    private(set) var draft: Draft?
 
     func open(url: String = "") { draft = Draft(url: url) }
     func close() { draft = nil }
 }
 
 struct ShieldSourceCardLayer: View {
-    @ObservedObject private var editing = ShieldSourceEditing.shared
+    private var editing = ShieldSourceEditing.shared
 
     var body: some View {
         ZStack {
@@ -133,7 +133,7 @@ struct ShieldSourceCardLayer: View {
 
 private struct ShieldSourceCard: View {
     let done: () -> Void
-    @ObservedObject private var shield = Shield.shared
+    private var shield = Shield.shared
     @State private var url: String
     @State private var check = ShieldAddCheck.idle
     @State private var looking: Task<Void, Never>?

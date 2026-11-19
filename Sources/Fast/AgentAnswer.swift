@@ -26,12 +26,18 @@ enum AnswerKey: Hashable { case send, rewrite, insert, copy, ask, pick(Int) }
 /// card offers ⌘R it is Rewrite rather than Reload, and while it doesn't,
 /// every key is what it always is.
 @MainActor
-final class AnswerKeys: ObservableObject {
+@Observable final class AnswerKeys {
     static let shared = AnswerKeys()
 
     /// What each tab's card answers to right now.
-    var offers: [UUID: Set<AnswerKey>] = [:]
-    @Published var pressed: (tab: UUID, key: AnswerKey, at: Date)?
+    @ObservationIgnored var offers: [UUID: Set<AnswerKey>] = [:]
+    struct Press: Equatable {
+        let tab: UUID
+        let key: AnswerKey
+        let at: Date
+    }
+
+    var pressed: Press?
 
     func take(_ event: NSEvent, in browser: Browser) -> Bool {
         guard let tab = browser.active, let offered = offers[tab.id], !offered.isEmpty else { return false }
@@ -54,7 +60,7 @@ final class AnswerKeys: ObservableObject {
                     if !picked.isEmpty, let web {
                         NSApp.sendAction(#selector(NSText.copy(_:)), to: web, from: nil)
                     } else {
-                        self?.pressed = (id, .copy, Date())
+                        self?.pressed = Press(tab: id, key: .copy, at: Date())
                     }
                 }
             }
@@ -69,17 +75,17 @@ final class AnswerKeys: ObservableObject {
                 if !picked.isEmpty, let page {
                     NSApp.sendAction(#selector(NSText.copy(_:)), to: page, from: nil)
                 } else {
-                    self?.pressed = (id, .copy, Date())
+                    self?.pressed = Press(tab: id, key: .copy, at: Date())
                 }
             }
             return true
         }
-        pressed = (tab.id, which, Date())
+        pressed = Press(tab: tab.id, key: which, at: Date())
         return true
     }
 
     /// Whether a press was for this tab, and just now.
-    func fresh(_ press: (tab: UUID, key: AnswerKey, at: Date)?, _ tab: Tab) -> AnswerKey? {
+    func fresh(_ press: Press?, _ tab: Tab) -> AnswerKey? {
         guard let press, press.tab == tab.id, Date().timeIntervalSince(press.at) < 1 else { return nil }
         return press.key
     }
@@ -103,7 +109,7 @@ private struct Said {
 }
 
 struct AgentAnswer: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let session: String
     let text: String
     let draft: Skills.Draft?
@@ -189,7 +195,7 @@ struct AgentAnswer: View {
 
 private struct AnswerShortcutLabel: View {
     let words: String
-    @ObservedObject var slot: KeySlot
+    var slot: KeySlot
     var tint: Color? = nil
     var holding: String? = nil
 
@@ -211,12 +217,12 @@ private struct AnswerShortcutLabel: View {
 // MARK: - a draft in the page
 
 private struct DraftLine: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let session: String
     let draft: Skills.Draft
     let notes: String
     let embedded: Bool
-    @ObservedObject private var keys = AnswerKeys.shared
+    private var keys = AnswerKeys.shared
     @State private var open = false
     @State private var rewriting = false
     @State private var words = ""
@@ -279,7 +285,7 @@ private struct DraftLine: View {
         .onChange(of: rewriting) { _, _ in offer() }
         .onChange(of: words.isEmpty) { _, _ in offer() }
         .onDisappear { keys.offers[tab.id] = nil }
-        .onReceive(keys.$pressed) { press in
+        .onChange(of: keys.pressed, initial: true) { _, press in
             switch keys.fresh(press, tab) {
             case .send: send()
             case .rewrite: rewriting = true
@@ -372,7 +378,7 @@ private struct DraftLine: View {
 // MARK: - an answer to read
 
 private struct AnswerCard: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let session: String
     let text: String
     /// For a draft that couldn't go in the page: why, in a line.
@@ -381,7 +387,7 @@ private struct AnswerCard: View {
     let embedded: Bool
     let sharedActions: Bool
     let onFieldChange: ((Bool) -> Void)?
-    @ObservedObject private var keys = AnswerKeys.shared
+    private var keys = AnswerKeys.shared
     @State private var more = ""
     @State private var whole = false
     @State private var copiedAll = false
@@ -527,7 +533,7 @@ private struct AnswerCard: View {
         .onChange(of: asking) { _, _ in offer() }
         .onChange(of: field) { _, now in offer(); onFieldChange?(now) }
         .onDisappear { keys.offers[tab.id] = nil }
-        .onReceive(keys.$pressed) { press in
+        .onChange(of: keys.pressed, initial: true) { _, press in
             switch keys.fresh(press, tab) {
             case .copy: copyAll()
             case .ask: typing = true

@@ -20,8 +20,8 @@ private struct BoostEditorAnchor: NSViewRepresentable {
 /// One surface over the real page. Site Controls hands over its old pixels
 /// and rectangle; the new surface grows there instead of opening a second popover.
 struct BoostEditorLayer: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var editor = BoostEditor.shared
+    var browser: Browser
+    private var editor = BoostEditor.shared
     @State private var box = ViewBox()
     @Environment(\.accessibilityReduceMotion) private var still
 
@@ -80,7 +80,7 @@ struct BoostEditorLayer: View {
 private struct BoostEditorSurface: View {
     let room: CGSize
     let root: ViewBox
-    @ObservedObject private var editor = BoostEditor.shared
+    private var editor = BoostEditor.shared
     @Environment(\.accessibilityReduceMotion) private var still
     @State private var arrived = false
     @State private var contentHeight: CGFloat = 550
@@ -182,9 +182,9 @@ private struct BoostEditorFlight: View {
 }
 
 struct BoostEditorView: View {
-    @ObservedObject private var editor = BoostEditor.shared
-    @ObservedObject private var looks = BoostEditorLooks.shared
-    @ObservedObject private var boosts = Boosts.shared
+    private var editor = BoostEditor.shared
+    private var looks = BoostEditorLooks.shared
+    private var boosts = Boosts.shared
     @Environment(\.accessibilityReduceMotion) private var still
     @Namespace private var selection
     @State private var ask = ""
@@ -248,7 +248,7 @@ struct BoostEditorView: View {
             let turn = UUID(); flight = turn; flying = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { if flight == turn { flying = false } }
         }
-        .onReceive(boosts.$trials) { _ in DispatchQueue.main.async { editor.agentChanged() } }
+        .onChange(of: Set(boosts.trials.values.map { "\($0.id) \($0.fitted)" }), initial: true) { _, _ in editor.agentChanged() }
         .onDisappear { editor.cancelOriginal() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Customize \(editor.host)")
@@ -514,7 +514,7 @@ struct BoostEditorView: View {
 
 /// Hide Elements: lit while the page is taking clicks.
 private struct BoostEditorPickButton: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     var body: some View {
         Button { BoostEditor.shared.pick() } label: {
             HStack(spacing: 6) {
@@ -529,7 +529,7 @@ private struct BoostEditorPickButton: View {
 /// thing clicked: Only This One, or All of them.
 struct BoostEditorPick: View {
     let choice: BoostEditor.Choice
-    @ObservedObject private var editor = BoostEditor.shared
+    private var editor = BoostEditor.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -565,7 +565,7 @@ private struct BoostEditorStagger: ViewModifier {
 
 private struct BoostEditorHiddenRow: View {
     let group: BoostEditor.HiddenGroup
-    @ObservedObject private var editor = BoostEditor.shared
+    private var editor = BoostEditor.shared
     @State private var box = ViewBox()
     var body: some View {
         HStack(spacing: 8) {

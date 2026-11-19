@@ -59,7 +59,7 @@ enum SiteEngineWords {
 
 /// The three choices, the persisted one checked.
 struct OpensInChoices: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var done: () -> Void = {}
 
     var body: some View {
@@ -79,7 +79,7 @@ struct OpensInChoices: View {
 
 /// "Opens in ›" in the foot menu.
 struct OpensInMenu: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var done: () -> Void = {}
 
     var body: some View {

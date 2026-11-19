@@ -8,7 +8,7 @@ import SwiftUI
 /// Add a Mail Account's sheet filled and pressed by the bench on a --test
 /// run, through the sheet's own state and buttons: what a person types and
 /// presses, without a pointer. Nothing reaches it outside a test world.
-@MainActor final class MailSheetDrive: ObservableObject {
+@MainActor @Observable final class MailSheetDrive {
     static let shared = MailSheetDrive()
 
     struct Poke: Equatable {
@@ -20,11 +20,11 @@ import SwiftUI
     }
 
     /// The address a sheet is opened with, from Settings › Mail.
-    @Published var open: String?
-    var provider: String?
-    @Published var poke: Poke?
+    var open: String?
+    @ObservationIgnored var provider: String?
+    var poke: Poke?
     /// What the open sheet shows, as it last said (never the password).
-    var seen: [String: Any] = [:]
+    @ObservationIgnored var seen: [String: Any] = [:]
 }
 
 /// Which address Add a Mail Account's sheet opens on, as an item: the
@@ -42,7 +42,7 @@ struct MailSheetOpened: ViewModifier {
     @Binding var asked: MailSheetStart?
 
     func body(content: Content) -> some View {
-        content.onReceive(MailSheetDrive.shared.$open) { start in
+        content.onChange(of: MailSheetDrive.shared.open, initial: true) { _, start in
             guard Store.testing, let start else { return }
             asked = MailSheetStart(address: start, provider: MailSheetDrive.shared.provider)
             DispatchQueue.main.async { MailSheetDrive.shared.open = nil }

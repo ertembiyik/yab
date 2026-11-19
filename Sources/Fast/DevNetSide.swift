@@ -10,8 +10,8 @@ import SwiftUI
 /// response, matched as typed, the case or a regular expression if asked.
 struct NetSearchSide: View {
     let browser: Browser
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
+    var log: NetLog
+    @Bindable var panel: NetPanel
     @FocusState private var focused: Bool
 
     struct Hit: Identifiable {
@@ -83,7 +83,7 @@ struct NetSearchSide: View {
         }
         guard !wanted.isEmpty else { return }
         panel.searching = true
-        browser.netLoadBodies(wanted, limit: 400) { _ in panel.searching = false; log.objectWillChange.send() }
+        browser.netLoadBodies(wanted, limit: 400) { _ in panel.searching = false }
     }
 
     @ViewBuilder private var results: some View {
@@ -92,12 +92,14 @@ struct NetSearchSide: View {
             NetNote(words: "Search headers, payloads and responses of every request.")
             Spacer(minLength: 0)
         } else {
+            // Bodies are kept unobserved: the search runs again when their loading ends.
+            let searching = panel.searching
             let hits = Self.search(query, in: log, matchCase: panel.matchCase, regex: panel.regex)
             let grouped = Dictionary(grouping: hits, by: \.row.id)
             let order = hits.map(\.row.id).reduce(into: [Int]()) { if !$0.contains($1) { $0.append($1) } }
             ThreadScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    Text(hits.isEmpty ? (panel.searching ? "Searching…" : "No matches found.") : "Found \(hits.count) matching line\(hits.count == 1 ? "" : "s") in \(order.count) request\(order.count == 1 ? "" : "s").")
+                    Text(hits.isEmpty ? (searching ? "Searching…" : "No matches found.") : "Found \(hits.count) matching line\(hits.count == 1 ? "" : "s") in \(order.count) request\(order.count == 1 ? "" : "s").")
                         .font(.system(size: 11.5))
                         .foregroundStyle(Palette.muted)
                         .padding(8)
@@ -169,9 +171,9 @@ struct NetSearchSide: View {
 
 struct NetDrawerView: View {
     let browser: Browser
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
-    @ObservedObject var prefs: NetPrefs
+    var log: NetLog
+    @Bindable var panel: NetPanel
+    @Bindable var prefs: NetPrefs
     let drawer: NetDrawer
     var pick: ((NetDrawer) -> Void)? = nil
     var close: (() -> Void)? = nil

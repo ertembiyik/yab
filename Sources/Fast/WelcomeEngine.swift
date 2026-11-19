@@ -348,9 +348,9 @@ struct WelcomeBoard {
 /// line, the terminal's. Its own object, so a letter draws that field and
 /// nothing else. A field shows its board's words until something is typed.
 @MainActor
-final class WelcomeTyping: ObservableObject {
+@Observable final class WelcomeTyping {
     static let shared = WelcomeTyping()
-    @Published private(set) var typed: [String: String] = [:]
+    private(set) var typed: [String: String] = [:]
 
     func set(_ text: String?, for field: String) {
         guard typed[field] != text else { return }

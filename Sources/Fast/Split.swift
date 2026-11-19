@@ -100,17 +100,17 @@ enum Side: Equatable {
 /// halves stand in: it changes on every move of the mouse, and watched by the
 /// window the whole window was worked out again each time.
 @MainActor
-final class SplitDrag: ObservableObject {
-    @Published var share: CGFloat?
+@Observable final class SplitDrag {
+    var share: CGFloat?
     /// The halves are held and the hand's moves may reach them.
-    var armed = false
+    @ObservationIgnored var armed = false
     /// The share when the divider was taken.
-    var grabbed: CGFloat?
+    @ObservationIgnored var grabbed: CGFloat?
     /// The last share asked for before the halves were held.
-    var waiting: CGFloat?
+    @ObservationIgnored var waiting: CGFloat?
     /// The divider is moved by SplitRule's layers, not by SwiftUI: its own
     /// grip gives way to theirs.
-    @Published var ruled = false
+    var ruled = false
 }
 
 /// What the pointer is on that a half answers to, watched only by the
@@ -118,9 +118,9 @@ final class SplitDrag: ObservableObject {
 /// outlined faintly, and a half's cross, whose half dims and whose chip is
 /// outlined, it being the one to go back to the list.
 @MainActor
-final class SplitHint: ObservableObject {
-    @Published var hinted: Tab.ID?
-    @Published var leaving: Tab.ID?
+@Observable final class SplitHint {
+    var hinted: Tab.ID?
+    var leaving: Tab.ID?
 
     func hint(_ id: Tab.ID, _ on: Bool) {
         let next = on ? id : (hinted == id ? nil : hinted)
@@ -138,16 +138,16 @@ final class SplitHint: ObservableObject {
 /// which places the page in the half it keeps, that page's band and paper,
 /// and its stage, held while it moves.
 @MainActor
-final class SplitPreview: ObservableObject {
+@Observable final class SplitPreview {
     /// The side the carried tab would take.
-    @Published var room: Side?
+    var room: Side?
     /// Being made or given back: the page held, WebKit following.
-    @Published var moving = false
+    var moving = false
     /// A tab is in the hand over a lone page: the band a half has is built
     /// under it already, out of sight and no height, so making room only
     /// lays it out. Built when room was made, it was a third of that
     /// frame (SplitDeck.begin).
-    @Published var warm = false
+    var warm = false
 
     /// The side a lone page in front is laid in, `laid` otherwise.
     func side(_ laid: Side, alone: Bool) -> Side {
@@ -1377,8 +1377,8 @@ extension View {
 /// The halves' room, the only thing that watches the divider while it is in
 /// the hand. What stands in it is built by the window and handed in whole.
 struct SplitRoom<Content: View>: View {
-    @ObservedObject var drag: SplitDrag
-    @ObservedObject var preview: SplitPreview
+    var drag: SplitDrag
+    var preview: SplitPreview
     let share: CGFloat
     let book: SplitBook
     /// The room changed width: the window's least width follows.
@@ -1400,8 +1400,8 @@ struct SplitRoom<Content: View>: View {
 /// under the pointer the resize cursor and a short grip. Drag to move it,
 /// double-click to make the halves even again.
 struct SplitDivider: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var drag: SplitDrag
+    var browser: Browser
+    var drag: SplitDrag
     /// The window's ground shows between two pages laid edge to edge.
     let flat: Bool
 
@@ -1547,7 +1547,7 @@ struct ReadingFill<Outline: Shape>: Shape {
 /// under the pointer is left as it is: the page grayed over read as gone
 /// before anything was pressed.
 struct HalfHint: View {
-    @ObservedObject var hint: SplitHint
+    var hint: SplitHint
     let id: Tab.ID
     let corner: CGFloat
 
@@ -1565,7 +1565,7 @@ struct HalfHint: View {
 /// On a chip, the outline of the one whose half's cross is under the
 /// pointer: it goes back to the list.
 struct LeaveMark: View {
-    @ObservedObject var hint: SplitHint
+    var hint: SplitHint
     let id: Tab.ID
 
     var body: some View {

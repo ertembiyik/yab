@@ -8,9 +8,18 @@ import SyncKit
 // the page goes as a `send` of kind `open` addressed to it, which the
 // iPhone takes once. From iPhone, the other way, is SyncPhoneFront.
 
+/// Bumped as capability records come in; their journal isn't observed.
+@MainActor
+@Observable
+private final class CapabilitiesHeard {
+    static let shared = CapabilitiesHeard()
+    var count = 0
+}
+
 extension SyncCenter {
     /// The iPhones of the account that take pages from this Mac, by name.
     var phones: [SyncClient.Listed] {
+        _ = CapabilitiesHeard.shared.count
         guard let journal else { return [] }
         return devices.filter { device in
             device.id != thisDevice && !device.revoked && device.isMobile
@@ -21,6 +30,7 @@ extension SyncCenter {
     /// The other devices of the account that show an assistant's question
     /// and answer it, as they say in their own commandcap record.
     var assistantAnswerers: [SyncClient.Listed] {
+        _ = CapabilitiesHeard.shared.count
         guard on, let journal else { return [] }
         return devices.filter { device in
             device.id != thisDevice && !device.revoked
@@ -50,7 +60,7 @@ extension SyncCenter {
         refreshAssistantAnswererNames()
         let known = Set(devices.map(\.id))
         if records.contains(where: { $0.id != Self.deviceID && !known.contains($0.id) }) { refreshDevicesSoon() }
-        objectWillChange.send()
+        CapabilitiesHeard.shared.count += 1
     }
 
     /// The device list read again, at most every ten seconds.
@@ -93,9 +103,9 @@ enum SyncPhones {
 /// "Send to <iPhone>" for each iPhone that takes pages, in a tab's menu and
 /// Site Controls' ⋯; nothing at all without one.
 struct PhoneSend: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let tab: Tab
-    @ObservedObject private var sync = SyncCenter.shared
+    private var sync = SyncCenter.shared
 
     var body: some View {
         let phones = sync.on ? sync.phones : []

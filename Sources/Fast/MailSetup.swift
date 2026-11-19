@@ -98,7 +98,7 @@ enum MailSignedIn {
 /// The one setup an agent is doing, for the sheet to show and the agent's
 /// mail_setup to move along.
 @MainActor
-final class MailSetup: ObservableObject {
+@Observable final class MailSetup {
     static let shared = MailSetup()
 
     enum Step: String, CaseIterable {
@@ -121,10 +121,10 @@ final class MailSetup: ObservableObject {
         var done: Bool { at >= steps.count }
     }
 
-    @Published private(set) var run: Run?
+    private(set) var run: Run?
     /// What Yab took off the page, for hiding it from the agent. Never shown.
-    private var taken: String?
-    private var watch: Timer?
+    @ObservationIgnored private var taken: String?
+    @ObservationIgnored private var watch: Timer?
 
     nonisolated static let hidden = "•••• (kept by Yab)"
 

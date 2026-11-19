@@ -102,11 +102,11 @@ enum SkillFiles {
 
 /// The skills on disk, read for the page, and what the page does to them.
 @MainActor
-final class SkillShelf: ObservableObject {
+@Observable final class SkillShelf {
     static let shared = SkillShelf()
 
-    @Published private(set) var skills: [Skills.Skill] = []
-    private var watcher: DispatchSourceFileSystemObject?
+    private(set) var skills: [Skills.Skill] = []
+    @ObservationIgnored private var watcher: DispatchSourceFileSystemObject?
 
     private init() {}
 
@@ -231,8 +231,8 @@ enum SkillAsk {
 // MARK: - the page
 
 struct AgentSkillsPage: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var shelf = SkillShelf.shared
+    var model: SettingsModel
+    private var shelf = SkillShelf.shared
 
     var body: some View {
         if let opened = model.opened {
@@ -360,9 +360,9 @@ private struct SkillRow: View {
 /// its actions and reads, and the page itself; yours to change here.
 private struct SkillPage: View {
     let name: String
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var shelf = SkillShelf.shared
-    @ObservedObject private var askKey = Keymap.shared.slot(.agentAsk)
+    var model: SettingsModel
+    private var shelf = SkillShelf.shared
+    private var askKey = Keymap.shared.slot(.agentAsk)
 
     @State private var text: String
     @State private var trouble: String?

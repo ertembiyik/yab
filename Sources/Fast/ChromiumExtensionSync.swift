@@ -57,7 +57,7 @@ extension ChromiumExtensions {
                 MainActor.assumeIsolated {
                     guard let self else { return }
                     self.compose()
-                    self.objectWillChange.send()
+                    self.oneList?.revision &+= 1
                     self.converge()
                 }
             }

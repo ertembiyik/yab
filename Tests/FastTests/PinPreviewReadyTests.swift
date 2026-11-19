@@ -40,9 +40,7 @@ struct PinPreviewReadyTests {
             var reply: Reply?
             glance.pinLoader = { _, _, _, done in reply = done }
             var visibleCounts: [Int] = []
-            let observation = glance.$shownFolder.sink { key in
-                if key != nil { visibleCounts.append(glance.pinItems.count) }
-            }
+            let observation = ObservedWrites({ _ = glance.shownFolder }, told: { visibleCounts.append(glance.pinItems.count) })
             glance.pretendFolder(TabGlance.pinKey(pin.id), true)
             #expect(glance.shownFolder == nil && !glance.searching && !glance.taking)
             reply?(rows("loaded"))

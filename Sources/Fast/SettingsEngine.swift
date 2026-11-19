@@ -1,12 +1,11 @@
-import Combine
 import SwiftUI
 
 /// General's engine row: the default with its mark, and at the foot of its
 /// list the way to the sites' table. Watching only the rules, so General
 /// isn't drawn for them.
 struct EngineGeneralRows: View {
-    @ObservedObject private var engine = EngineRulesModel.shared
-    @ObservedObject var model: SettingsModel
+    private var engine = EngineRulesModel.shared
+    var model: SettingsModel
 
     var body: some View {
         if EngineRules.available {
@@ -47,8 +46,8 @@ private extension EngineDefault {
 /// muted group, each with its reason, each overridable. Its search and
 /// Add Site… stand in the toolbar (EngineToolbar).
 struct EnginePage: View {
-    @ObservedObject private var model = EngineRulesModel.shared
-    @ObservedObject var search: EngineSearch
+    private var model = EngineRulesModel.shared
+    var search: EngineSearch
 
     private func shown(_ text: String) -> Bool {
         let needle = search.words.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -83,8 +82,8 @@ struct EnginePage: View {
 
 /// What the page's search holds, for the table and the toolbar's field.
 @MainActor
-final class EngineSearch: ObservableObject {
-    @Published var words = ""
+@Observable final class EngineSearch {
+    var words = ""
 }
 
 /// The page's glass in the toolbar, beside back and forward: Shortcuts'
@@ -98,14 +97,15 @@ final class EngineToolbar: NSObject {
 
     let search: ToolbarSearch
     private weak var toolbar: NSToolbar?
-    private var following: AnyCancellable?
+    private var following: ObservationLoop?
 
     init(search words: EngineSearch, window: NSWindow) {
         search = ToolbarSearch(id: Self.searchID, label: "Search sites", prompt: "Search sites", window: window,
                                words: { words.words }, typed: { words.words = $0 })
         super.init()
-        following = words.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.search.sync() }
+        following = ObservationLoop { [weak self] in
+            _ = words.words
+            self?.search.sync()
         }
     }
 
@@ -207,7 +207,7 @@ private struct EngineBuiltInRow: View {
 
 /// Add Site…'s card over Settings, as Air Traffic Control's is.
 @MainActor
-final class EngineSiteEditing: ObservableObject {
+@Observable final class EngineSiteEditing {
     static let shared = EngineSiteEditing()
 
     struct Draft: Identifiable {
@@ -216,7 +216,7 @@ final class EngineSiteEditing: ObservableObject {
         var kind: PageEngineKind = .chromium
     }
 
-    @Published var draft: Draft?
+    var draft: Draft?
 
     func open(site: String = "", kind: PageEngineKind = .chromium) { draft = Draft(site: site, kind: kind) }
     func close() { draft = nil }
@@ -232,7 +232,7 @@ final class EngineSiteEditing: ObservableObject {
 }
 
 struct EngineSiteCardLayer: View {
-    @ObservedObject private var editing = EngineSiteEditing.shared
+    private var editing = EngineSiteEditing.shared
 
     var body: some View {
         ZStack {

@@ -173,8 +173,8 @@ extension Browser {
 /// on the field. Pressed, the choices drop from it (Browser.chooseFilter).
 struct FieldFilterButton: View {
     let browser: Browser
-    @ObservedObject var query: Query
-    @ObservedObject private var shortcut = Keymap.shared.slot(.fieldFilter)
+    var query: Query
+    private var shortcut = Keymap.shared.slot(.fieldFilter)
 
     var body: some View {
         let label = browser.filterLabel

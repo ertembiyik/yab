@@ -467,7 +467,7 @@ enum DarkPages {
         // Dark Reader the extension turned on or off: Yab's own stands
         // aside, or comes back.
         if #available(macOS 15.4, *) {
-            extensionWatch = Extensions.shared.$installed
+            extensionWatch = Extensions.shared.observed(\.installed)
                 .map { list in list.contains { $0.id == DarkPages.extensionID && $0.enabled } }
                 .removeDuplicates()
                 .dropFirst()

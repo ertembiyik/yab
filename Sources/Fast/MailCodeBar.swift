@@ -3,7 +3,7 @@ import SwiftUI
 struct MailCodeBar: View {
     let item: MailCodeItem
     var browser: Browser?
-    @ObservedObject private var codes = MailCodeState.shared
+    private var codes = MailCodeState.shared
 
     var body: some View {
         let state = codes.state(item)

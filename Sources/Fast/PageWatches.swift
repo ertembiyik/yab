@@ -152,16 +152,16 @@ enum PageWatchCheck {
 }
 
 @MainActor
-final class PageWatches: ObservableObject {
+@Observable final class PageWatches {
     static let shared = PageWatches()
 
     /// Bumped when what a row or a menu shows changes, not at every read.
-    @Published private(set) var revision = 0
-    private(set) var all: [PageWatch] = []
+    private(set) var revision = 0
+    @ObservationIgnored private(set) var all: [PageWatch] = []
     /// What each hit said, for the bench: the notification's words.
-    private(set) var told: [[String: String]] = []
-    private var reading: Set<String> = []
-    private var timer: Timer?
+    @ObservationIgnored private(set) var told: [[String: String]] = []
+    @ObservationIgnored private var reading: Set<String> = []
+    @ObservationIgnored private var timer: Timer?
     private var file: URL { Store.file("page-watches.json") }
 
     private init() {
@@ -408,9 +408,9 @@ private extension JSONDecoder {
 /// across the top, with room for little more than its name, says only
 /// "Watching" (`short`).
 struct WatchWords: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var short = false
-    @ObservedObject private var watches = PageWatches.shared
+    private var watches = PageWatches.shared
     @Environment(\.tone) private var tone
 
     var body: some View {

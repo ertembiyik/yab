@@ -18,11 +18,11 @@ import SwiftUI
 // while this answers yes.
 
 @MainActor
-final class SpaceDrop: ObservableObject {
+@Observable final class SpaceDrop {
     static let shared = SpaceDrop()
 
     /// The capsule under a tab in the hand, before the tray opens.
-    @Published private(set) var hot = false
+    private(set) var hot = false
 
     /// How long the hand rests on the capsule before the tray opens: a tab
     /// dragged past it on the way somewhere else doesn't open it.
@@ -33,14 +33,14 @@ final class SpaceDrop: ObservableObject {
 
     /// The foot's space under the hand, retained after spring-loading so
     /// letting go on that same door still means top of today.
-    @Published private(set) var slot: UUID?
+    private(set) var slot: UUID?
 
-    private var carrying: [Tab] = []
+    @ObservationIgnored private var carrying: [Tab] = []
     /// The folder they are, when a folder of yours is in the hand.
-    private var folder: Nest?
-    private var waiting: DispatchWorkItem?
-    private var springing: DispatchWorkItem?
-    private weak var owner: Browser?
+    @ObservationIgnored private var folder: Nest?
+    @ObservationIgnored private var waiting: DispatchWorkItem?
+    @ObservationIgnored private var springing: DispatchWorkItem?
+    @ObservationIgnored private weak var owner: Browser?
 
     /// The hand moved, carrying these tabs, or `folder` whole. Yes while it
     /// is over the capsule, the tray or a space in the foot: the row it came

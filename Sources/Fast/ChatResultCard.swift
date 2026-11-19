@@ -56,8 +56,8 @@ struct ChatResultCard: View {
     @FocusState private var focused: Bool
     /// The row ↑↓ lit while the card is focused.
     @State private var lit = 0
-    @ObservedObject private var watches = PageWatches.shared
-    @ObservedObject private var routines = Routines.shared
+    private var watches = PageWatches.shared
+    private var routines = Routines.shared
 
     var body: some View {
         framed

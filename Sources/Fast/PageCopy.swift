@@ -18,37 +18,37 @@ import SwiftUI
 // up where the first one was.
 
 @MainActor
-final class PageCopy: ObservableObject {
+@Observable final class PageCopy {
     enum Pick: Equatable { case copy, markdown, file }
     enum Stage: Equatable { case offering, done(Pick) }
 
-    @Published private(set) var stage: Stage?
+    private(set) var stage: Stage?
     /// What was taken, kept until the next offer rather than cleared with
     /// the stage: the pill leaves as the one part it had become, instead of
     /// opening back into three on its way out.
-    @Published private(set) var picked: Pick?
+    private(set) var picked: Pick?
     /// The selection's words when offered, the page's in Markdown once taken.
-    @Published private(set) var words = 0
+    private(set) var words = 0
     /// Private tabs keep nothing on disk, so they are offered no file.
-    @Published private(set) var canSave = true
+    private(set) var canSave = true
     /// A video with a transcript: what it says is the page, not the page
     /// around it, so Markdown and the file are its transcript.
-    @Published private(set) var transcript = false
+    private(set) var transcript = false
     /// What was picked while it is still being gathered: a transcript
     /// takes its panel a moment. Nothing else is taken meanwhile.
-    @Published private(set) var reading: Pick?
+    private(set) var reading: Pick?
     /// Over this, the file is the better way, and the pill says so with a dot.
     static let long = 8000
 
-    private(set) var tab: UUID?
-    private(set) var saved: URL?
-    private weak var web: NSView?
-    private var hush: DispatchWorkItem?
-    private var watch: Any?
-    private var hovering = false
+    @ObservationIgnored private(set) var tab: UUID?
+    @ObservationIgnored private(set) var saved: URL?
+    @ObservationIgnored private weak var web: NSView?
+    @ObservationIgnored private var hush: DispatchWorkItem?
+    @ObservationIgnored private var watch: Any?
+    @ObservationIgnored private var hovering = false
     /// Counts offers and dismissals, so an offer still on its way out is
     /// dropped once put away or offered again.
-    private var turn = 0
+    @ObservationIgnored private var turn = 0
 
     var offering: Bool { stage == .offering }
 
@@ -622,7 +622,7 @@ extension Browser {
 /// others fold into it.
 struct CopyPill: View {
     let browser: Browser
-    @ObservedObject var copier: PageCopy
+    var copier: PageCopy
     /// The tab in front, so a pill for another one is never shown.
     let active: UUID?
     var top: CGFloat
@@ -714,8 +714,8 @@ struct CopyPill: View {
     }
 
     private struct Part: View {
-        @ObservedObject private var markdownKey = Keymap.shared.slot(.pageCopyMarkdown)
-        @ObservedObject private var fileKey = Keymap.shared.slot(.pageCopyFile)
+        private var markdownKey = Keymap.shared.slot(.pageCopyMarkdown)
+        private var fileKey = Keymap.shared.slot(.pageCopyFile)
         let pick: PageCopy.Pick
         let picked: PageCopy.Pick?
         let words: Int

@@ -4,42 +4,42 @@ import SwiftUI
 import WebKit
 
 @MainActor
-final class BoostEditor: ObservableObject {
+@Observable final class BoostEditor {
     static let shared = BoostEditor()
-    @Published private(set) var open = false
-    @Published var look = BoostEditorLook()
-    @Published var code = false
-    @Published var draft = ""
-    @Published var original = false
-    @Published var swatches: [String] = []
-    @Published var choice: Choice?
-    @Published var flights: [Flight] = []
-    @Published var traveling: Set<String> = []
-    @Published var agentRows: [String] = []
-    @Published var problem: String?
+    private(set) var open = false
+    var look = BoostEditorLook()
+    var code = false
+    var draft = ""
+    var original = false
+    var swatches: [String] = []
+    var choice: Choice?
+    var flights: [Flight] = []
+    var traveling: Set<String> = []
+    var agentRows: [String] = []
+    var problem: String?
     /// The site's own line height as a multiple of its text size, read before any edit.
-    @Published var baseLine = 1.4
-    private(set) weak var browser: Browser?
-    private(set) weak var tab: Tab?
-    private(set) var host = ""
-    private var profile: UUID?
-    private var keys: Any?
+    var baseLine = 1.4
+    @ObservationIgnored private(set) weak var browser: Browser?
+    @ObservationIgnored private(set) weak var tab: Tab?
+    @ObservationIgnored private(set) var host = ""
+    @ObservationIgnored private var profile: UUID?
+    @ObservationIgnored private var keys: Any?
     enum OriginalInput: Hashable { case pointer, option }
-    private var originalInputs: Set<OriginalInput> = []
-    private var session = UUID()
+    @ObservationIgnored private var originalInputs: Set<OriginalInput> = []
+    @ObservationIgnored private var session = UUID()
     var identity: UUID { session }
-    private var group: Task<Void, Never>?
-    private var agentTrial: String?
-    private var openingURL: URL?
-    private var rearming: DispatchWorkItem?
-    var origin: CGRect?
+    @ObservationIgnored private var group: Task<Void, Never>?
+    @ObservationIgnored private var agentTrial: String?
+    @ObservationIgnored private var openingURL: URL?
+    @ObservationIgnored private var rearming: DispatchWorkItem?
+    @ObservationIgnored var origin: CGRect?
     /// The explicit placement hint, separate from the door used to close.
-    var placementOrigin: CGRect?
-    var oldCard: NSImage?
-    var oldFrame: CGRect?
-    var rowBoxes: [String: ViewBox] = [:]
-    private var images: [String: NSImage] = [:]
-    private var returningSelector: String?
+    @ObservationIgnored var placementOrigin: CGRect?
+    @ObservationIgnored var oldCard: NSImage?
+    @ObservationIgnored var oldFrame: CGRect?
+    @ObservationIgnored var rowBoxes: [String: ViewBox] = [:]
+    @ObservationIgnored private var images: [String: NSImage] = [:]
+    @ObservationIgnored private var returningSelector: String?
 
     struct Choice {
         let selector: String

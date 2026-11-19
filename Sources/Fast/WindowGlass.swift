@@ -1,3 +1,4 @@
+import YabDesign
 import AppKit
 
 /// A resolved material, separate from the look's own glass step.
@@ -32,8 +33,8 @@ enum WindowGlassPolicy {
 
     @MainActor static func current(enabled: Bool, dark: Bool) -> WindowGlassStyle {
         resolve(enabled: enabled, dark: dark, supported: supported,
-                reduceTransparency: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency,
-                increaseContrast: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast)
+                reduceTransparency: DisplayOptions.shared.reduceTransparency,
+                increaseContrast: DisplayOptions.shared.increaseContrast)
     }
 
     /// How see-through the color lies on the glass, as a transparency

@@ -19,7 +19,7 @@ import SwiftUI
 // time, up to fifteen.
 
 @MainActor
-final class MailCenter: ObservableObject {
+@Observable final class MailCenter {
     static let shared = MailCenter()
 
     struct Engine {
@@ -64,24 +64,24 @@ final class MailCenter: ObservableObject {
     static var agentsAllowed: Bool { Store.settings.bool(forKey: MailConsent.agentsKey) }
 
     /// Threads that need you, over every account: the mail pin says it.
-    @Published private(set) var needYou = 0
+    private(set) var needYou = 0
     /// The one number the mail pin, the column's door and the Dock show,
     /// as Settings › Mail's Count says (MailNotify.Badge); 0 shows none.
-    @Published private(set) var counted = 0
-    @Published private(set) var accounts: [String] = []
+    private(set) var counted = 0
+    private(set) var accounts: [String] = []
     /// Accounts kept out of All Accounts (Settings › Mail's Show in All
     /// Accounts, off): their own inbox and count stay, the combined lists,
     /// counts, the pin and the Dock leave them out (MailAllAccounts).
-    @Published private(set) var apart: Set<String> = []
-    @Published private(set) var status: [String: Status] = [:]
+    private(set) var apart: Set<String> = []
+    private(set) var status: [String: Status] = [:]
     /// Moves every time a store changes, for whatever shows mail: a beat
     /// after the change (`note`), all the changes of one turn of the run
     /// loop together. Told inside a key, it drew everything that watches
     /// the center again before the key's own screen was drawn.
-    @Published private(set) var changed = 0 {
+    private(set) var changed = 0 {
         didSet { recount() }
     }
-    private var noting = false
+    @ObservationIgnored private var noting = false
 
     /// A store changed: `changed` moves once the screen in front is drawn.
     private func note() {
@@ -96,55 +96,55 @@ final class MailCenter: ObservableObject {
         }
     }
     /// A sign-in waiting for Google's answer.
-    @Published private(set) var connecting = false
+    private(set) var connecting = false
     /// Google said no, or its window was closed: mail's front door says so
     /// (MailFrontDoor) and offers it again.
-    @Published private(set) var connectFailed = false
+    private(set) var connectFailed = false
     /// An account just connected from Settings › Mail, until its way in
     /// has said once where mail is (MailArrival).
-    @Published private(set) var landed: String?
+    private(set) var landed: String?
     /// The mail pin, a door to mail's space: put when the first account
     /// comes in, and on until you take it away (unpin it, or
     /// Settings › Mail); back from there, or the field's Pin Mail.
-    @Published private(set) var pinWanted = Store.settings.object(forKey: "mail.pin") as? Bool ?? true
+    private(set) var pinWanted = Store.settings.object(forKey: "mail.pin") as? Bool ?? true
 
-    private(set) var engines: [String: Engine] = [:] { didSet { relink() } }
+    @ObservationIgnored private(set) var engines: [String: Engine] = [:] { didSet { relink() } }
     /// The next beat: set for when the soonest ask is due, not a tick.
-    private var timer: Timer?
-    private var last: [String: Date] = [:]
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var last: [String: Date] = [:]
     /// Accounts asking Gmail now, and those asked again meanwhile, which
     /// ask once more as soon as the first is done.
-    private var running: Set<String> = []
+    @ObservationIgnored private var running: Set<String> = []
     /// Each account's sync running now, stopped when the account goes.
-    private var syncing: [String: Task<Void, Never>] = [:]
-    private var again: Set<String> = []
+    @ObservationIgnored private var syncing: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var again: Set<String> = []
     /// When each account last heard from Gmail, told or not (Status.synced
     /// is told at most once a minute while nothing changes).
-    private(set) var heard: [String: Date] = [:]
+    @ObservationIgnored private(set) var heard: [String: Date] = [:]
     /// Asks made at once, by why, for the bench: wake, unlock, network.
-    private(set) var checks: [String: Int] = [:]
-    private var network: MailNetwork?
-    private var unlock: MailUnlock?
+    @ObservationIgnored private(set) var checks: [String: Int] = [:]
+    @ObservationIgnored private var network: MailNetwork?
+    @ObservationIgnored private var unlock: MailUnlock?
     /// Accounts Gmail told to slow down: not asked again before then, and
     /// how long the last rest was.
-    private var rest: [String: (until: Date, length: TimeInterval)] = [:]
-    private var quickUntil = Date.distantPast
+    @ObservationIgnored private var rest: [String: (until: Date, length: TimeInterval)] = [:]
+    @ObservationIgnored private var quickUntil = Date.distantPast
     /// The mail page is in front (MailPage): asked every 10 seconds.
-    var pageInFront = false {
+    @ObservationIgnored var pageInFront = false {
         didSet { if pageInFront != oldValue { schedule() } }
     }
-    private var signIn: MailSignIn?
+    @ObservationIgnored private var signIn: MailSignIn?
     /// The Mac's sign-in sheet Google's consent page is in (#456).
-    private var signInSheet: GoogleSignInSheet?
-    private var signInTab: Tab.ID?
+    @ObservationIgnored private var signInSheet: GoogleSignInSheet?
+    @ObservationIgnored private var signInTab: Tab.ID?
     /// The space the sign-in's tab was opened in, when that meant leaving
     /// the one on screen: gone back to once Google has answered.
-    private var signInLeft: UUID?
+    @ObservationIgnored private var signInLeft: UUID?
     /// Whether the sign-in's peek is over the mail page.
-    private var signInOver = false
-    private var signInFromSettings = false
-    private var asleep = false
-    private var on = false { didSet { relink() } }
+    @ObservationIgnored private var signInOver = false
+    @ObservationIgnored private var signInFromSettings = false
+    @ObservationIgnored private var asleep = false
+    @ObservationIgnored private var on = false { didSet { relink() } }
 
     private init() {
         accounts = Store.settings.stringArray(forKey: "mail.accounts") ?? []
@@ -205,7 +205,7 @@ final class MailCenter: ObservableObject {
 
     /// Stores being opened, off the main thread (`open`): mail shows each
     /// account once its store is ready, the front door not offered meanwhile.
-    @Published private(set) var opening: Set<String> = []
+    private(set) var opening: Set<String> = []
 
     /// An account's engine, its store opened (and brought up to date by its
     /// migrations) off the main thread, the engine made on it after.
@@ -500,12 +500,12 @@ final class MailCenter: ObservableObject {
     /// When each account last asked the site about all its mail's read
     /// statuses (MailReads), each thread asked about on its own, and the
     /// accounts asking now.
-    private var readsAsked: [String: Date] = [:]
-    private var threadsAsked: [String: Date] = [:]
-    private var readsAsking: Set<String> = []
+    @ObservationIgnored private var readsAsked: [String: Date] = [:]
+    @ObservationIgnored private var threadsAsked: [String: Date] = [:]
+    @ObservationIgnored private var readsAsking: Set<String> = []
     /// A mail sent (⌘↩): from when it has gone, its undo window over, the
     /// next sync asks, not five minutes on.
-    private var readsSoon: [String: Date] = [:]
+    @ObservationIgnored private var readsSoon: [String: Date] = [:]
 
     /// After a sync: every five minutes while Yab is active, or mail is in
     /// front, the site asked about the mail of the last 30 days, and after
@@ -555,16 +555,16 @@ final class MailCenter: ObservableObject {
     }
 
     /// Threads opened while their account's reads were being asked about.
-    private var readsAfter: [String: Set<String>] = [:]
+    @ObservationIgnored private var readsAfter: [String: Set<String>] = [:]
 
     /// Accounts whose new mail is being sorted now, and those to sort again after.
-    private(set) var sensing: Set<String> = []
-    private var senseAgain: Set<String> = []
+    @ObservationIgnored private(set) var sensing: Set<String> = []
+    @ObservationIgnored private var senseAgain: Set<String> = []
 
     /// Accounts whose new mail Skip the inbox looks at now, and those to
     /// look at again after.
-    private var skipping: Set<String> = []
-    private var skipAgain: Set<String> = []
+    @ObservationIgnored private var skipping: Set<String> = []
+    @ObservationIgnored private var skipAgain: Set<String> = []
 
     /// Mail that came into a split that skips the inbox, archived as soon
     /// as the sync that brought it is done (MailSkip), not behind the
@@ -767,7 +767,7 @@ final class MailCenter: ObservableObject {
         note()
     }
 
-    private var counting = false
+    @ObservationIgnored private var counting = false
 
     /// How many need you, and the Dock's badge, counted a beat after the
     /// stores change; notifications whose mail was dealt with go.
@@ -998,8 +998,8 @@ final class MailCenter: ObservableObject {
     // MARK: - connecting
 
     /// An OAuth attempt belongs to one initiator through profile verification.
-    private var connectAttempt: UUID?
-    private var connectReply: ((Result<String, Error>) -> Void)?
+    @ObservationIgnored private var connectAttempt: UUID?
+    @ObservationIgnored private var connectReply: ((Result<String, Error>) -> Void)?
 
     static let newGmailConnectionNotice = "New Gmail accounts connect with an app password. Open Settings > Mail > Add Account and choose Google Account."
 
@@ -1145,7 +1145,7 @@ final class MailCenter: ObservableObject {
 
     /// What the last sign-in opened, for a --test run (agent-mail-settings):
     /// the presenter and Google's address, its client named only as there.
-    private(set) var signInShown: [String: String] = [:]
+    @ObservationIgnored private(set) var signInShown: [String: String] = [:]
 
     static func described(_ page: URL, presenter: OAuthPresenter) -> [String: String] {
         let items = URLComponents(url: page, resolvingAgainstBaseURL: false)?.queryItems ?? []

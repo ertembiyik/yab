@@ -46,7 +46,7 @@ import SwiftUI
 //   reduce motion  the ink fades in and out whole and never trembles.
 
 @MainActor
-final class UpdateNews: ObservableObject {
+@Observable final class UpdateNews {
     static let shared = UpdateNews()
 
     enum Phase: Equatable {
@@ -60,28 +60,28 @@ final class UpdateNews: ObservableObject {
         case updated(version: String, changelog: URL?)
     }
 
-    @Published private(set) var phase = Phase.none
+    private(set) var phase = Phase.none
     /// Put off with "not now": the ink is gone for this version. With the
     /// tabs on top the button stays, quiet; in the column nothing does.
-    @Published private(set) var tucked = false
+    private(set) var tucked = false
     /// The zigzag through the note, drawn before the ink is taken back.
-    @Published private(set) var striking = false
+    private(set) var striking = false
     /// The ink being taken back before what it said goes: "not now", or
     /// done with.
-    @Published private(set) var wiping = false
+    private(set) var wiping = false
     /// The pointer on the Update button: the ink trembles faster.
-    @Published var pointed = false
+    var pointed = false
     /// The Update button at the far end of the strip, in the window's
     /// space, for the note written on the page under it.
-    @Published var stripButton: CGRect?
+    var stripButton: CGRect?
     /// The button's width in the column's foot, where the plus stands
     /// otherwise: the spaces' row lends it the difference (SpaceRowPlan).
-    @Published var sideButton: CGFloat = 0
+    var sideButton: CGFloat = 0
 
     /// Back from a restart, and not yet on screen: the button's first frame
     /// is the one the last Yab left.
-    private var arriving = false
-    private var watch: AnyCancellable?
+    @ObservationIgnored private var arriving = false
+    @ObservationIgnored private var watch: AnyCancellable?
 
     private enum Key {
         static let pending = "update.pending"
@@ -109,7 +109,7 @@ final class UpdateNews: ObservableObject {
         } else {
             Store.settings.removeObject(forKey: Key.shown)
         }
-        watch = Updater.shared.$stage.sink { [weak self] stage in
+        watch = Updater.shared.observed(\.stage).sink { [weak self] stage in
             DispatchQueue.main.async { self?.follow(stage) }
         }
     }
@@ -248,10 +248,10 @@ enum UpdatePlace { case strip, side }
 
 /// Update, Restarting…, What's new ↗: one button, only its words changing.
 struct UpdateButton: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let place: UpdatePlace
-    @ObservedObject var news: UpdateNews = .shared
-    @ObservedObject var share: Share = .shared
+    var news: UpdateNews = .shared
+    var share: Share = .shared
 
     var body: some View {
         // Nothing about updates on a screen others see.
@@ -292,10 +292,10 @@ struct UpdateButton: View {
 /// capsule comes back once it is done with or put off. On a call, the
 /// capsule.
 struct UpdateOrCapsule<Capsule: View>: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var calls: Calls
-    @ObservedObject var news: UpdateNews = .shared
-    @ObservedObject var share: Share = .shared
+    var browser: Browser
+    var calls: Calls
+    var news: UpdateNews = .shared
+    var share: Share = .shared
     @ViewBuilder let capsule: () -> Capsule
 
     var body: some View {
@@ -316,9 +316,9 @@ struct UpdateOrCapsule<Capsule: View>: View {
 /// The room over the foot the note is written in, which the rows keep
 /// clear (UpdateRoom).
 struct UpdateSlot: View {
-    @ObservedObject var calls: Calls
-    @ObservedObject var news: UpdateNews = .shared
-    @ObservedObject var share: Share = .shared
+    var calls: Calls
+    var news: UpdateNews = .shared
+    var share: Share = .shared
 
     var body: some View {
         Color.clear
@@ -343,9 +343,9 @@ struct UpdateSlot: View {
 /// In the column's rows, the room the note takes over the foot, as
 /// BandRoom keeps the band's.
 struct UpdateRoom: View {
-    @ObservedObject var calls: Calls
-    @ObservedObject var news: UpdateNews = .shared
-    @ObservedObject var share: Share = .shared
+    var calls: Calls
+    var news: UpdateNews = .shared
+    var share: Share = .shared
 
     var body: some View {
         Color.clear.frame(height: UpdateSlot.height(news, calls: calls))
@@ -373,7 +373,7 @@ struct UpdateMarks {
 /// nothing plays; over the band when it does.
 struct UpdateNoteInColumn: View {
     let marks: UpdateMarks
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -393,9 +393,9 @@ struct UpdateNoteInColumn: View {
 /// button at the far end of the strip, over everything, taking no clicks
 /// but its "not now".
 struct UpdateInkOver: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var news: UpdateNews = .shared
+    var browser: Browser
+    var prefs: Preferences
+    var news: UpdateNews = .shared
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -431,7 +431,7 @@ private struct OnPage<Content: View>: View {
     }
 
     private struct Shade: View {
-        @ObservedObject var tab: Tab
+        var tab: Tab
         let content: () -> Content
         @Environment(\.colorScheme) private var scheme
 
@@ -720,7 +720,7 @@ enum UpdateInk {
         /// What the ink lies on, when that is the space's own color: the
         /// column, or the strip's blank page. Absent over a site's page.
         var ground: NSColor? = nil
-        @ObservedObject var news: UpdateNews = .shared
+        var news: UpdateNews = .shared
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @Environment(\.colorScheme) private var scheme
         /// What is on the paper, kept while it is taken back.
@@ -940,7 +940,7 @@ enum UpdateInk {
 /// let you press (0.0.17's second build took every click in it). The same
 /// steps as ⌘K's Check for Updates and Restart to Update.
 struct UpdateMenu: View {
-    @ObservedObject private var updater = Updater.shared
+    private var updater = Updater.shared
     let browser: () -> Browser
 
     init(browser: @escaping () -> Browser) { self.browser = browser }

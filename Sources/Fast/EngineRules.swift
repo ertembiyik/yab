@@ -266,13 +266,13 @@ extension EngineRules {
 
 /// The page's view of the rules, refreshed when the defaults change.
 @MainActor
-final class EngineRulesModel: ObservableObject {
+@Observable final class EngineRulesModel {
     static let shared = EngineRulesModel()
 
-    @Published private(set) var own: [SiteEngineSettings.OwnRule] = []
-    @Published private(set) var standard: EngineDefault = .webKit
-    @Published private(set) var builtIn: [String: PageEngineKind] = [:]
-    private var watch: NSObjectProtocol?
+    private(set) var own: [SiteEngineSettings.OwnRule] = []
+    private(set) var standard: EngineDefault = .webKit
+    private(set) var builtIn: [String: PageEngineKind] = [:]
+    @ObservationIgnored private var watch: NSObjectProtocol?
 
     private init() {
         reload()

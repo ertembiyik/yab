@@ -252,13 +252,13 @@ struct Chat: Codable, Identifiable, Equatable {
 /// Every chat kept, newest first. Read once from `chats/` in the app's
 /// folder, written a moment after each change, off the main thread.
 @MainActor
-final class Chats: ObservableObject {
+@Observable final class Chats {
     static let shared = Chats()
 
-    @Published private(set) var all: [Chat] = []
-    private(set) var loaded = false
-    private var waiting: [String: Chat] = [:]
-    private var writing = false
+    private(set) var all: [Chat] = []
+    @ObservationIgnored private(set) var loaded = false
+    @ObservationIgnored private var waiting: [String: Chat] = [:]
+    @ObservationIgnored private var writing = false
     private static let disk = DispatchQueue(label: "yab.chats", qos: .utility)
     private let storage: URL
 
@@ -266,7 +266,7 @@ final class Chats: ObservableObject {
 
     /// The projects its chats are in (Chat.project); a test gives its own.
     var projects: Projects { ownProjects ?? .shared }
-    private var ownProjects: Projects?
+    @ObservationIgnored private var ownProjects: Projects?
 
     init(folder: URL = Chats.folder, projects: Projects? = nil) {
         storage = folder

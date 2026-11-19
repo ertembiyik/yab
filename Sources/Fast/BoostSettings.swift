@@ -97,11 +97,11 @@ enum BoostActions {
 // MARK: - the page
 
 struct BoostsSettings: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var boosts = Boosts.shared
-    @ObservedObject private var scripts = Userscripts.shared
+    var browser: Browser
+    var prefs: Preferences
+    var model: SettingsModel
+    private var boosts = Boosts.shared
+    private var scripts = Userscripts.shared
 
     var body: some View {
         if boosts.records.isEmpty, scripts.records.isEmpty {
@@ -125,7 +125,7 @@ struct BoostsSettings: View {
 /// Nothing kept yet: the way in, in the middle of the pane, as Spaces and
 /// Extensions have before there is one.
 struct BoostsArrival: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
 
     var body: some View {
         ArrivalPage(page: .boosts, title: "Boosts", blurb: SettingsPage.boosts.blurb ?? "") {
@@ -162,11 +162,11 @@ enum BoostsBench {
 }
 
 private struct BoostsList: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var boosts = Boosts.shared
-    @ObservedObject private var scripts = Userscripts.shared
-    @ObservedObject private var catalog = StoreCatalog.shared
+    var browser: Browser
+    var model: SettingsModel
+    private var boosts = Boosts.shared
+    private var scripts = Userscripts.shared
+    private var catalog = StoreCatalog.shared
 
     @State private var selecting = false
     @State private var picks = BoostPicks()
@@ -604,10 +604,10 @@ private struct BoostSites: View {
 
 struct BoostDetail: View {
     let id: String
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var boosts = Boosts.shared
-    @ObservedObject private var catalog = StoreCatalog.shared
+    var browser: Browser
+    var model: SettingsModel
+    private var boosts = Boosts.shared
+    private var catalog = StoreCatalog.shared
     @State private var comparing: BoostRevision?
     @State private var restoring = false
 
@@ -713,9 +713,9 @@ struct BoostDetail: View {
 
 struct UserscriptDetail: View {
     let id: String
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var scripts = Userscripts.shared
+    var browser: Browser
+    var model: SettingsModel
+    private var scripts = Userscripts.shared
 
     var body: some View {
         let signIn = boostsSign(browser, model).signIn

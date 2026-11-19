@@ -97,7 +97,6 @@ extension Bench {
         if root.routine == nil, !root.sealed { root.title = words.isEmpty ? nil : String(words.prefix(40)) }
         let progress = (request["progress"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !progress.isEmpty, root.state.live { root.progress = String(progress.prefix(24)) }
-        agents.objectWillChange.send()
         answer(["ok": true])
     }
 

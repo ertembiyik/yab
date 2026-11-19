@@ -38,7 +38,7 @@ import WebKit
 
 @available(macOS 15.4, *)
 @MainActor
-final class ExtensionDebugger: ObservableObject {
+@Observable final class ExtensionDebugger {
     static let shared = ExtensionDebugger()
 
     /// The native port a worker's shim opens for events.
@@ -54,14 +54,14 @@ final class ExtensionDebugger: ObservableObject {
     }
 
     /// Who controls each tab, for the dock at its foot.
-    @Published private(set) var holders: [UUID: [Holder]] = [:]
+    private(set) var holders: [UUID: [Holder]] = [:]
 
-    private var sessions: [String: Session] = [:]
-    private var ports: [String: WKWebExtension.MessagePort] = [:]
-    private var nextContext = 1
+    @ObservationIgnored private var sessions: [String: Session] = [:]
+    @ObservationIgnored private var ports: [String: WKWebExtension.MessagePort] = [:]
+    @ObservationIgnored private var nextContext = 1
     /// Why the last Page.handleJavaScriptDialog found nothing to answer,
     /// for the bench (evals/extensions/debugger.py).
-    var missed = ""
+    @ObservationIgnored var missed = ""
 
     /// One extension attached to one tab.
     final class Session {
@@ -1152,8 +1152,8 @@ final class ExtensionDebugger: ObservableObject {
 /// dock and Measure's are. Stop lets go, as Chromium's bar's Cancel does.
 @available(macOS 15.4, *)
 struct ExtensionDebuggerDock: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var debugger = ExtensionDebugger.shared
+    var tab: Tab
+    private var debugger = ExtensionDebugger.shared
 
     var body: some View {
         if let holders = debugger.holders[tab.id], let first = holders.first {

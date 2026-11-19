@@ -182,7 +182,6 @@ enum ChromiumExtensionCommands {
         Task { @MainActor [weak extensions] in
             do { try await native.setCommandKey(id, command: command, to: hotkey) }
             catch { native.failure = "\(command): \(error.localizedDescription)" }
-            extensions?.objectWillChange.send()
             extensions?.actionsChanged += 1
         }
     }

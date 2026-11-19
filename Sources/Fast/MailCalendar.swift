@@ -351,7 +351,7 @@ extension MailInvite.Answer {
 /// Called off, it says so and asks nothing.
 struct MailInviteCard: View {
     let card: MailDesk.Invite
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     /// In the letter in front: one going out is only shown.
     var live = true
 

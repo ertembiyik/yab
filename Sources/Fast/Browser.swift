@@ -8,17 +8,10 @@ import Combine
 
 @MainActor
 @Observable
-final class Browser: NSObject, ObservableObject, Relaying {
+final class Browser: NSObject, Relaying {
     /// Each formerly published property's new values for Combine (`changes(\.name)`), and any of
     /// them about to change (`relay.any`), as @Published told them (Observed.swift).
     @ObservationIgnored let relay = ChangeRelay<Browser>()
-    /// ObservableObject's publisher, kept here. With no @Published left
-    /// (the state is @Observable), Combine's own `objectWillChange` found
-    /// it by walking every stored property through reflection on each
-    /// read, and SwiftUI reads it for every @ObservedObject on every
-    /// update: about 0.1 ms a read of a Browser or a Tab (bench
-    /// willchange), many times over in every pass (feedback #120).
-    nonisolated let objectWillChange = ObservableObjectPublisher()
     let pageTranslation = PageTranslation()
     @ObservationIgnored private var fieldNavigationInput: String?
     let selectionCommands = SelectionCommands()
@@ -212,7 +205,7 @@ final class Browser: NSObject, ObservableObject, Relaying {
             // A peek belongs to the page it was opened over: put by with it,
             // and back with it.
             followPeek()
-            watchBlank()
+            watchImmersed()
             // In mail: its page, or one of the space's tabs (MailTabRows).
             if inMail { mailFollows() }
             findFollows(left: oldValue)
@@ -537,7 +530,6 @@ final class Browser: NSObject, ObservableObject, Relaying {
             let icons = Chromium.icons(in: source, for: urls)
             Task { @MainActor in
                 for (host, data) in icons { await Favicons.shared.adopt(data, for: host) }
-                self.objectWillChange.send()
             }
         }
     }
@@ -2661,34 +2653,18 @@ final class Browser: NSObject, ObservableObject, Relaying {
         }
     }
 
-    /// The tab in front going from blank to somewhere, told to the window:
-    /// the bar comes with the page, and the tab's doors move up into it. A
-    /// tab is an object of its own, and nothing else here would say so.
-    @ObservationIgnored private var blankWatch: AnyCancellable?
-
     /// Whether the page in front has the screen: a copy the window's body
     /// reads, changed only when it does (ContentView's frontImmersed).
     private(set) var frontImmersed = false
 
-    private func watchBlank() {
+    private func watchImmersed() {
         let immersed = active?.immersed == true
         if frontImmersed != immersed { frontImmersed = immersed }
-        blankWatch = active?.changes(\.address)
-            .map { $0 == nil }
-            .removeDuplicates()
-            .dropFirst()
-            .sink { [weak self] _ in self?.objectWillChange.send() }
-        // And the page in front taking the screen and giving it back: the
-        // column lays itself out from `sideShown`, which reads it, but is
-        // drawn in a host of its own that hears only the browser. Untold,
-        // a column emptied as the page went full screen stayed empty after
-        // it came back, until a click told the browser something (#46).
         immersedWatch = active?.changes(\.immersed)
             .removeDuplicates()
             .dropFirst()
             .sink { [weak self] now in
                 if self?.frontImmersed != now { self?.frontImmersed = now }
-                self?.objectWillChange.send()
             }
     }
     @ObservationIgnored private var immersedWatch: AnyCancellable?
@@ -3014,9 +2990,6 @@ final class Browser: NSObject, ObservableObject, Relaying {
         // menu watches the history itself (RecentlyVisited), and nothing else
         // drawn from the browser reads it.
         if windowID == nil { AppStartup.desks(for: self) }
-        bookmarks.objectWillChange
-            .sink { [weak self] in self?.objectWillChange.send() }
-            .store(in: &bag)
         NotificationCenter.default.publisher(for: Spaces.changed)
             .sink { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -3259,7 +3232,7 @@ final class Browser: NSObject, ObservableObject, Relaying {
         // asking on its own ground. Every tab it makes is private
         // (`open`), so it needs no empty one of its own to say so.
         windowPurpose.begin(normal: { restoreInitialRow() }, privateOnly: {
-            let folders = Folders(emptiesFile: nil, forwardingTo: .shared)
+            let folders = Folders(emptiesFile: nil)
             ownFolders = folders
             folders.browser = self
             askNew()
@@ -3570,8 +3543,8 @@ final class Browser: NSObject, ObservableObject, Relaying {
         passwordSource = prefs.passwordSource
         Publishers.MergeMany(
             prefs.changes(\.usesYabPasswords).map { _ in () }.eraseToAnyPublisher(),
-            PasswordManagers.Connections.shared.$list.map { _ in () }.eraseToAnyPublisher(),
-            Extensions.shared.$installed.map { _ in () }.eraseToAnyPublisher()
+            PasswordManagers.Connections.shared.observed(\.list).map { _ in () }.eraseToAnyPublisher(),
+            Extensions.shared.observed(\.installed).map { _ in () }.eraseToAnyPublisher()
         )
         .receive(on: DispatchQueue.main)
         .sink { [weak self] in self?.passwordSourceMaybeChanged() }
@@ -3602,14 +3575,6 @@ final class Browser: NSObject, ObservableObject, Relaying {
                     self.guess(completing: self.searchCompleting)
                 }
             }
-            .store(in: &bag)
-
-        // Preferences is observed setting by setting (Observation): a view
-        // that draws one redraws for it alone. What still comes through
-        // here is the rare word for everyone, the density and the Mac's
-        // display options, which views read from outside Preferences.
-        prefs.objectWillChange
-            .sink { [weak self] in self?.objectWillChange.send() }
             .store(in: &bag)
 
     }

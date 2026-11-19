@@ -46,7 +46,7 @@ struct ReaderThemeTile: View {
 }
 
 struct ReadingModePage: View {
-    @ObservedObject private var style = ReaderStyle.shared
+    private var style = ReaderStyle.shared
     @Environment(\.colorScheme) private var scheme
 
     /// The theme the pointer is over among the tiles, tried on in the head.
@@ -202,8 +202,8 @@ struct ReadingModePage: View {
 /// Reading mode on Websites: one row, the theme in use small and named
 /// beside it, as App icon's row, opening Reading Mode's page.
 struct ReadingModeRow: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var style = ReaderStyle.shared
+    var model: SettingsModel
+    private var style = ReaderStyle.shared
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {

@@ -27,7 +27,7 @@ final class MailEmptyMemory {
     /// Watches the list for Needs you emptying; the list view starts it.
     func start() {
         guard bag == nil else { return }
-        bag = MailDesk.shared.$rows.sink { [weak self] rows in
+        bag = MailDesk.shared.observed(\.rows).sink { [weak self] rows in
             MainActor.assumeIsolated { self?.saw(rows.count) }
         }
     }
@@ -194,11 +194,11 @@ private struct MailPile: View {
 
 /// What an empty list in mail shows, picked from where the page is.
 struct MailEmptyState: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
-    @ObservedObject var center: MailCenter
+    var desk: MailDesk
+    var list: MailList
+    var center: MailCenter
     /// Gmail's answers to searches, which a search with nothing here waits on.
-    @ObservedObject private var server = MailServerSearch.shared
+    private var server = MailServerSearch.shared
 
     private struct Said {
         let kind: String
@@ -413,8 +413,8 @@ struct MailEmptyState: View {
 /// Google asks over the page (MailCenter.connect); the card says what it is
 /// waiting for, what went wrong, and that mail is being read.
 struct MailFrontDoor: View {
-    @ObservedObject var center: MailCenter
-    @ObservedObject private var mailKey = Keymap.shared.slot(.mail)
+    var center: MailCenter
+    private var mailKey = Keymap.shared.slot(.mail)
     @MailStill private var still
     let browser: Browser?
 

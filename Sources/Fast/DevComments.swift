@@ -11,7 +11,7 @@ struct DevComment: Identifiable {
 
 struct DevCommentsPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     @State private var text = ""
     @State private var adding = false
     var body: some View {

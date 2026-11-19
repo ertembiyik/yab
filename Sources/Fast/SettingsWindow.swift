@@ -421,40 +421,40 @@ enum SettingsPage: String, CaseIterable, Identifiable {
 
 /// Which page is showing, the way back to the ones before it, and the search.
 @MainActor
-final class SettingsModel: ObservableObject {
+@Observable final class SettingsModel {
     let shortcutFilters = ShortcutFilter.Selection()
     let engineSearch = EngineSearch()
-    @Published private(set) var page: SettingsPage
-    @Published var search = ""
+    private(set) var page: SettingsPage
+    var search = ""
     /// The row a search has picked out on the page: brought into view and
     /// washed gray while it is picked, and for a moment after it is taken.
-    @Published var spot: SettingsItem?
-    private var letGo: DispatchWorkItem?
+    var spot: SettingsItem?
+    @ObservationIgnored private var letGo: DispatchWorkItem?
     /// Whether the window is the key one, only then do the browser's
     /// notices show up here as well as over the page.
-    @Published var key = false
+    var key = false
     /// One extension's own page, over Extensions: its id while it is open.
-    @Published private(set) var opened: String?
+    private(set) var opened: String?
     /// A space just made from Settings: its row in the list is washed for
     /// a moment, so the eye finds where it went.
-    @Published var madeSpace: UUID?
+    var madeSpace: UUID?
     /// Whose extensions Extensions lists, by a space signed in with them,
     /// when picked there; nil for the window's space's (ExtensionSignIns).
-    @Published var extensionsSpace: UUID?
+    var extensionsSpace: UUID?
     /// Whose boosts Boosts lists, by a space signed in with them, when
     /// picked there; nil for the window's space's (BoostsSignIn).
-    @Published var boostsSpace: UUID?
+    var boostsSpace: UUID?
 
     /// Where back and forward go: a page, or an extension's page on it.
     private struct Place: Equatable {
         let page: SettingsPage
         var opened: String? = nil
     }
-    private var history: [Place]
-    private var place = 0
+    @ObservationIgnored private var history: [Place]
+    @ObservationIgnored private var place = 0
     /// How far down each place in back and forward was left, by its index:
     /// a new page opens at its top, back and forward come back to where it was.
-    private var scrolled: [Int: CGFloat] = [:]
+    @ObservationIgnored private var scrolled: [Int: CGFloat] = [:]
 
     init() {
         page = .general
@@ -736,8 +736,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate, NSToolbarDelegate {
     private var extensionPickerMenu: NSMenu?
     private var extensionPickerObserver: NSObjectProtocol?
     private var extensionPickerItems: [[String: Any]] = []
-    private var watchExtensions: AnyCancellable?
-    private weak var watchedExtensions: ChromiumExtensions?
     private var watchExtensionList: AnyCancellable?
     private var master: NSSwitch?
     /// The page's name in the toolbar, beside back and forward, shown once
@@ -746,10 +744,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate, NSToolbarDelegate {
     /// The page the heading was last set for: a new page starts at its
     /// top, its hero in view, so the heading goes.
     private var headingPage: SettingsPage?
-    private var watch: AnyCancellable?
+    private var watch: ObservationLoop?
     private var watchPrefs: AnyCancellable?
-    private var watchAgents: AnyCancellable?
-    private var watchMail: AnyCancellable?
     private weak var browser: Browser?
     /// Set while the window is on its way out, so the browser hearing that
     /// it closed doesn't try to close it a second time.
@@ -1171,16 +1167,8 @@ final class SettingsWindow: NSObject, NSWindowDelegate, NSToolbarDelegate {
         self.window = window
         SettingsCards.shared.attach(to: window, browser: browser)
 
-        watch = model.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateNavigation() }
-        }
+        watch = ObservationLoop { [weak self] in self?.updateNavigation() }
         watchPrefs = browser.prefs.relay.any.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateNavigation() }
-        }
-        watchAgents = AgentSetupModel.shared.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateNavigation() }
-        }
-        watchMail = MailCenter.shared.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateNavigation() }
         }
     }
@@ -1216,12 +1204,6 @@ final class SettingsWindow: NSObject, NSWindowDelegate, NSToolbarDelegate {
             engineToolbar?.attach(to: toolbar, visible: model.page == .engine)
             if let browser, #available(macOS 15.4, *) {
                 let native = ChromiumExtensions.of(browser)
-                if watchedExtensions !== native {
-                    watchedExtensions = native
-                    watchExtensions = native.objectWillChange.sink { [weak self] _ in
-                        DispatchQueue.main.async { self?.updateNavigation() }
-                    }
-                }
                 let list = model.page == .extensions && model.opened == nil && PageEngineFactory.chromiumEnabled
                 extensionToolbar?.attach(to: toolbar, visible: list,
                     canImport: list && native.canImportWebKitList(browser), busy: native.busy)
@@ -1442,7 +1424,7 @@ final class SettingsFrame: NSWindow {
 // MARK: - the sidebar
 
 struct SettingsSidebar: View {
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
     @AppStorage(MailExperiment.key, store: Store.settings) private var mailExperiment = false
 
     private static let searchPadding: CGFloat = 8
@@ -1508,7 +1490,7 @@ struct SettingsSidebar: View {
 /// The search at the top of the sidebar: typing narrows the pages, the
 /// arrows walk what answered and Return takes it.
 private struct SidebarSearch: View {
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
     /// No bezel: the glass around it is the field.
     var bare = false
 
@@ -1544,7 +1526,7 @@ private struct SidebarSearch: View {
 private struct GlassSearch: View {
     static let height: CGFloat = 32
 
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
@@ -2811,7 +2793,7 @@ struct ChoiceRow<Option: Hashable>: View {
 /// way of sitting the page is seen as a window rather than read as a word,
 /// and the site's color shows what it takes from the site.
 private struct WindowPicture: View {
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     let mode: Backdrop
     @Environment(\.colorScheme) private var scheme
 
@@ -2961,7 +2943,7 @@ private struct WindowPicture: View {
 /// window in small, the chosen one small beside its name in the row, as
 /// Raycast shows its themes.
 struct WindowMenu: View {
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     @Environment(\.colorScheme) private var scheme
     @State private var pictures = Pictures()
 
@@ -3021,7 +3003,7 @@ enum AddressShow: Hashable {
 /// back stands in the bottom corner with its Undo, as the windows' corner
 /// has it, off the page's head (Memory › Days' Forget This Thread).
 private struct SettingsNotice: View {
-    @ObservedObject var toaster: Toaster
+    var toaster: Toaster
     @Environment(\.accessibilityReduceMotion) private var still
 
     var body: some View {
@@ -3046,9 +3028,9 @@ private struct SettingsNotice: View {
 /// only what it shows (SettingsCorePages and the pages' own files); this
 /// keeps what lasts while the window is open and brings a found row into view.
 private struct SettingsDetail: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var prefs: Preferences
+    var model: SettingsModel
 
     @State private var isDefault = Links.isDefault
     /// General's other browsers, counted once while the window is open.
@@ -3169,18 +3151,18 @@ private struct SettingsDetail: View {
 /// or its rows. Its own view, so a mail or a sync coming in asks this again
 /// and not the whole pane.
 private struct SettingsWayIn<Rows: View>: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var prefs: Preferences
+    var model: SettingsModel
     let rows: Rows
 
-    @ObservedObject private var agentSetup = AgentSetupModel.shared
-    @ObservedObject private var memory = MemoryShelf.shared
-    @ObservedObject private var sync = SyncCenter.shared
-    @ObservedObject private var mail = MailCenter.shared
-    @ObservedObject private var assistants = Assistants.shared
-    @ObservedObject private var apiKeys = APIKeys.shared
-    @ObservedObject private var geminiChoices = GeminiChoices.shared
+    private var agentSetup = AgentSetupModel.shared
+    private var memory = MemoryShelf.shared
+    private var sync = SyncCenter.shared
+    private var mail = MailCenter.shared
+    private var assistants = Assistants.shared
+    private var apiKeys = APIKeys.shared
+    private var geminiChoices = GeminiChoices.shared
 
     /// Settings › Mail is its way in: no account yet, or one just in.
     private var mailArriving: Bool { mail.accounts.isEmpty || mail.landed != nil }
@@ -3247,10 +3229,10 @@ private struct SettingsWayIn<Rows: View>: View {
 /// color editor, the dots and the button alone, the editor being the row.
 /// Matched once, it is gone for good: the look is worn, no more offer.
 struct BrowserLook: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
     var under = false
-    @ObservedObject private var finder = BrowserLookFinder.shared
+    private var finder = BrowserLookFinder.shared
     @AppStorage("browserLookMatched", store: Store.settings) private var matched = false
 
     var body: some View {
@@ -3319,11 +3301,11 @@ struct BrowserLook: View {
 /// wear colors. Read once, off the main thread, every browser at once: one
 /// slow to read doesn't hold up the rest.
 @MainActor
-final class BrowserLookFinder: ObservableObject {
+@Observable final class BrowserLookFinder {
     static let shared = BrowserLookFinder()
     typealias Found = (source: Chromium.Source, places: [TabImport.Place])
-    @Published private(set) var found: Found?
-    private var started = false
+    private(set) var found: Found?
+    @ObservationIgnored private var started = false
 
     /// `among`: the browsers to look in, the ones on this Mac unless named.
     func load(among named: [Chromium.Source]? = nil) {

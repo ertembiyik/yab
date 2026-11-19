@@ -115,15 +115,15 @@ extension Share {
 /// to the site's menu opens nothing; gone 0.5 s after it leaves. The tag and
 /// the chip are one share's, so they hold this together.
 @MainActor
-final class ShareFold: ObservableObject {
-    @Published private(set) var open = false
+@Observable final class ShareFold {
+    private(set) var open = false
     /// The tag's panel takes the open size before the shape grows in it,
     /// and its small one after the shape has gathered.
-    var opening: () -> Void = {}
-    var closed: () -> Void = {}
-    private var pointers = 0
-    private var coming: DispatchWorkItem?
-    private var going: DispatchWorkItem?
+    @ObservationIgnored var opening: () -> Void = {}
+    @ObservationIgnored var closed: () -> Void = {}
+    @ObservationIgnored private var pointers = 0
+    @ObservationIgnored private var coming: DispatchWorkItem?
+    @ObservationIgnored private var going: DispatchWorkItem?
     static let intent: TimeInterval = 0.08
     static let shown: TimeInterval = 2.5
     static let held: TimeInterval = 0.5
@@ -182,9 +182,9 @@ final class ShareFold: ObservableObject {
 /// whatever is there, the words and Stop. Over: the site and the doors stay
 /// where they are.
 struct ShareChip: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let tab: Tab?
-    @ObservedObject private var share = Share.shared
+    private var share = Share.shared
 
     var body: some View {
         if let status = share.status(in: browser, over: tab) {
@@ -196,8 +196,8 @@ struct ShareChip: View {
 private struct ShareChipFace: View {
     let browser: Browser
     let status: ShareStatus
-    @ObservedObject var fold: ShareFold
-    @ObservedObject private var share = Share.shared
+    var fold: ShareFold
+    private var share = Share.shared
     @Environment(\.tone) private var tone
     @Environment(\.accessibilityReduceMotion) private var still
     @State private var full: CGFloat = 0
@@ -270,10 +270,10 @@ private struct ShareChipFace: View {
 
 /// What the tag's panel holds, and the sizes it was measured at.
 @MainActor
-final class ShareTagWords: ObservableObject {
-    @Published var status: ShareStatus?
-    var open = CGSize.zero
-    var standing = CGSize.zero
+@Observable final class ShareTagWords {
+    var status: ShareStatus?
+    @ObservationIgnored var open = CGSize.zero
+    @ObservationIgnored var standing = CGSize.zero
 
     func say(_ next: ShareStatus?) {
         guard next != status else { return }
@@ -333,8 +333,8 @@ struct ShareTagPaused: View {
 /// out of it, on the same curve as the column, the words and Stop. Its own
 /// small panel, kept out of every share; the shape grows inside it.
 struct ShareTag: View {
-    @ObservedObject var words: ShareTagWords
-    @ObservedObject var fold: ShareFold
+    var words: ShareTagWords
+    var fold: ShareFold
     let browser: () -> Browser?
     @Environment(\.accessibilityReduceMotion) private var still
     static let thread = CGSize(width: 44, height: 4)

@@ -394,7 +394,6 @@ extension Agents {
         guard let session = session(root(of: id)), session.origin == .here, !session.task, session.draft == nil,
               session.state.live, !session.quiet else { return }
         session.task = true
-        objectWillChange.send()
         if let browser, browser.active?.guest == session.id { browser.showChat(session.id) }
     }
 
@@ -422,7 +421,6 @@ extension Agents {
         its last line `~ ` and what changed in a few words, like `~ 2 dropped, they don't ship to Portugal`.
         """
         _ = run(prompt: prompt, cli: nil, access: "browser", resume: session.id)
-        objectWillChange.send()
     }
 
     /// A message in a chat with tabs of theirs attached: about those tabs,
@@ -558,15 +556,15 @@ enum AskOpens: String, CaseIterable {
 
 /// The task line, on the one tab it is up on.
 @MainActor
-final class TaskLine: ObservableObject {
+@Observable final class TaskLine {
     static let shared = TaskLine()
 
-    @Published private(set) var tab: UUID?
-    @Published var words = ""
-    @Published var context: [TaskContext] = []
-    @Published var focusRequest = 0
+    private(set) var tab: UUID?
+    var words = ""
+    var context: [TaskContext] = []
+    var focusRequest = 0
     let attach = ChatAttach()
-    lazy var away = ClickAway { [weak self] in self?.close() }
+    @ObservationIgnored lazy var away = ClickAway { [weak self] in self?.close() }
 
     /// The whole line owns Escape, including while the answer or page has
     /// focus. The text field's onExitCommand alone cannot cover that.
@@ -578,15 +576,15 @@ final class TaskLine: ObservableObject {
     }
     /// No agent connected: the line says where to get one, or answers on
     /// this Mac (here).
-    @Published private(set) var alone = false
+    private(set) var alone = false
     /// Alone, with Apple's model here: asks go to it (MacAnswer).
-    @Published private(set) var here = false
+    private(set) var here = false
     /// This Mac's answer, as it comes.
-    @Published private(set) var answer = ""
-    @Published private(set) var answering = false
+    private(set) var answer = ""
+    private(set) var answering = false
     /// Words that ask for a task, alone: an agent's work, not this Mac's.
-    @Published private(set) var needsAgent = false
-    private var asking: Task<Void, Never>?
+    private(set) var needsAgent = false
+    @ObservationIgnored private var asking: Task<Void, Never>?
 
     /// ⌘J on a page, or Ask about this… on what is selected: the line, or
     /// a chat about the page, as Settings › AI › Agents says. Asked again
@@ -947,9 +945,9 @@ final class TaskLine: ObservableObject {
 /// The line at the page's foot, where the dock lives, in the page's light:
 /// you are the one driving it.
 struct TaskLineView: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var line = TaskLine.shared
-    @ObservedObject private var attach = TaskLine.shared.attach
+    var tab: Tab
+    @Bindable private var line = TaskLine.shared
+    private var attach = TaskLine.shared.attach
     @FocusState private var typing: Bool
     @State private var cardHeight: CGFloat = 0
 

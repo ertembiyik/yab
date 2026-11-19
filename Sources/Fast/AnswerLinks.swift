@@ -7,14 +7,14 @@ import SwiftUI
 /// site's own arrives, and the tip is a panel of its own: nothing in the
 /// line moves.
 @MainActor
-final class AnswerLinks: ObservableObject {
+@Observable final class AnswerLinks {
     static let shared = AnswerLinks()
 
     /// Bumped when an icon a link asked for arrives: the words with links
     /// draw again, wearing it.
-    @Published private(set) var arrivals = 0
-    private var asked: Set<String> = []
-    private var drawn: [String: NSImage] = [:]
+    private(set) var arrivals = 0
+    @ObservationIgnored private var asked: Set<String> = []
+    @ObservationIgnored private var drawn: [String: NSImage] = [:]
     /// The words with links on screen, in a test run (bench answer-links).
     let live = NSHashTable<LinkSpots>.weakObjects()
 

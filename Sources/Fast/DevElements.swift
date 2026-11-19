@@ -10,7 +10,7 @@ import AppKit
 /// overrides, the inherited ones, the attributes' style.
 struct DevElementsPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     @State private var editingHTML: String?
     @State private var editingAttributes: Int?
     @State private var attributesText = ""

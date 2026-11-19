@@ -8,9 +8,9 @@ import SwiftUI
 /// a rule opens its card to change or remove it. A list that
 /// belongs to spaces, so a group on their page and not a page of its own.
 struct LinkRouteSettings: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var routes = LinkRoutes.shared
-    @ObservedObject private var editing = LinkRouteEditing.shared
+    var browser: Browser
+    private var routes = LinkRoutes.shared
+    private var editing = LinkRouteEditing.shared
 
     var body: some View {
         let spaces = browser.spaces
@@ -153,7 +153,7 @@ struct HostMark: View {
 /// Add Site…'s card, over the whole of the settings as Search's is, and
 /// the same card for a rule clicked, with its text to change.
 @MainActor
-final class LinkRouteEditing: ObservableObject {
+@Observable final class LinkRouteEditing {
     static let shared = LinkRouteEditing()
 
     struct Draft: Identifiable {
@@ -165,7 +165,7 @@ final class LinkRouteEditing: ObservableObject {
         var opensInMain: Bool = false
     }
 
-    @Published private(set) var draft: Draft?
+    private(set) var draft: Draft?
 
     func open(spaces: [Space], space: UUID, site: String? = nil) {
         draft = Draft(spaces: spaces, space: space, site: site,
@@ -192,7 +192,7 @@ final class LinkRouteEditing: ObservableObject {
 }
 
 struct LinkRouteCardLayer: View {
-    @ObservedObject private var editing = LinkRouteEditing.shared
+    private var editing = LinkRouteEditing.shared
 
     var body: some View {
         ZStack {

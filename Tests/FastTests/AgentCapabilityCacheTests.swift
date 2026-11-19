@@ -101,10 +101,10 @@ struct AgentCapabilityCacheTests {
         agents.register(first)
         _ = agents.assistantStarted("one")
         var notifications = 0
-        let observation = agents.$sessions.dropFirst().sink { _ in
+        let observation = ObservedWrites({ _ = agents.sessions }, told: {
             notifications += 1
             _ = agents.assistantStarted("one")
-        }
+        })
         let next = Agents.Session(id: "next", cli: "codex", name: "Fixture", prompt: "", state: .done)
         next.assistant = "one"
         agents.register(next)

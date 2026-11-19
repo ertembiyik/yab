@@ -80,25 +80,25 @@ struct HeardPlan: Codable, Equatable {
 }
 
 @MainActor
-final class PlanAccounts: ObservableObject {
+@Observable final class PlanAccounts {
     static let shared = PlanAccounts()
 
     /// The extra accounts, and the order every account is tried in.
-    @Published private(set) var extras: [PlanAccount] = []
-    @Published private(set) var order: [String] = []
-    @Published private(set) var quotas: [String: PlanQuota] = [:]
+    private(set) var extras: [PlanAccount] = []
+    private(set) var order: [String] = []
+    private(set) var quotas: [String: PlanQuota] = [:]
     /// Plans the server said ahead of the token, by account.
-    private(set) var heardPlans: [String: HeardPlan] = [:]
+    @ObservationIgnored private(set) var heardPlans: [String: HeardPlan] = [:]
     /// What each usual account is, read from its CLI.
-    @Published private(set) var usual: [String: PlanAccount] = [:]
+    private(set) var usual: [String: PlanAccount] = [:]
     /// Accounts whose CLI says they are signed out.
-    @Published private(set) var signedOut: Set<String> = []
+    private(set) var signedOut: Set<String> = []
     /// The CLI an account is being added to, while its sign-in is open.
-    @Published private(set) var adding: String?
+    private(set) var adding: String?
     /// Where the add is, for its row's words.
-    @Published private(set) var step: Step?
+    private(set) var step: Step?
     /// Why the last add stopped, in the row until the next press.
-    @Published private(set) var trouble: String?
+    private(set) var trouble: String?
     enum Step: Equatable {
         case opening
         /// The page in a private Yab tab.
@@ -409,10 +409,10 @@ final class PlanAccounts: ObservableObject {
 
     /// When each account was last asked, so one whose CLI didn't say isn't
     /// asked again before every task.
-    private var asked: [String: Date] = [:]
+    @ObservationIgnored private var asked: [String: Date] = [:]
 
     /// A picker and a starting task can ask for the same account together.
-    private var asking: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var asking: [String: Task<Void, Never>] = [:]
 
     /// Asks every account of this agent not heard from lately how much room
     /// it has, all at once, and waits for their answers: a second or two,
@@ -462,7 +462,7 @@ final class PlanAccounts: ObservableObject {
 
     /// When each account's token was last renewed for a plan the server
     /// said ahead of it.
-    private var renewed: [String: Date] = [:]
+    @ObservationIgnored private var renewed: [String: Date] = [:]
     /// Renewed at most this often for one account: a renewal that didn't
     /// change the token isn't tried again before every task.
     nonisolated static let renewEvery: TimeInterval = 3600
@@ -703,8 +703,8 @@ final class PlanAccounts: ObservableObject {
 
     // MARK: - who they are
 
-    private var looking = 0
-    private var identityChanges: [String: Int] = [:]
+    @ObservationIgnored private var looking = 0
+    @ObservationIgnored private var identityChanges: [String: Int] = [:]
 
     func identityRevision(_ id: String) -> Int { identityChanges[id, default: 0] }
 

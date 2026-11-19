@@ -295,7 +295,7 @@ final class ExtensionGroups {
         lastMembers = snapshot()["members"] as? [Int] ?? []
         lastByTab = byTab()
         lastOrder = Self.order(Array(lastMembers.prefix(browser?.tabs.count ?? 0)))
-        watch = Folders.shared.$folders.sink { [weak self] _ in
+        watch = Folders.shared.observed(\.folders).sink { [weak self] _ in
             DispatchQueue.main.async { self?.changed() }
         }
     }
@@ -339,8 +339,8 @@ final class ExtensionGroups {
         lastOrder = order
         // A folder renamed or shut by hand changes no tab: heard from it.
         nestWatches = now.values.flatMap { nest in
-            [nest.$name.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.changed() } },
-             nest.$open.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.changed() } }]
+            [nest.observed(\.name).dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.changed() } },
+             nest.observed(\.open).dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.changed() } }]
         }
         let message: [String: Any] = ["e": events, "t": regrouped, "s":["members": members, "groups": Array(described.values)]]
         for port in ports.values.joined() where !port.isDisconnected { port.sendMessage(message) { _ in } }

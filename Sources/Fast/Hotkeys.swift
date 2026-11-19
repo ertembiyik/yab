@@ -19,11 +19,11 @@ import SwiftUI
 // the key, capital, or a word for the few that have one (esc, tab).
 
 @MainActor
-final class Hotkeys: ObservableObject {
+@Observable final class Hotkeys {
     static let shared = Hotkeys()
 
     /// Changes whenever any shortcut might have: views that name one watch it.
-    @Published private(set) var version = 0
+    private(set) var version = 0
 
     /// Every shortcut yab has a menu item for: the item's title, as macOS's
     /// App Shortcuts names it, and its keys out of the box.
@@ -51,13 +51,13 @@ final class Hotkeys: ObservableObject {
         ("Show Address Bar", "⇧⌘D"), ("Mute Call", "⌃⌘M"), ("Send Feedback…", "⌥⇧I"),
     ]
 
-    private var now: [String: String] = [:]
-    private var watching: [Any] = []
-    private var windowWatch: AnyCancellable?
-    private var browserWatch: [AnyCancellable] = []
-    private var pinWatch: AnyCancellable?
-    private weak var watchedBrowser: Browser?
-    private weak var watchedTab: Tab?
+    @ObservationIgnored private var now: [String: String] = [:]
+    @ObservationIgnored private var watching: [Any] = []
+    @ObservationIgnored private var windowWatch: AnyCancellable?
+    @ObservationIgnored private var browserWatch: [AnyCancellable] = []
+    @ObservationIgnored private var pinWatch: AnyCancellable?
+    @ObservationIgnored private weak var watchedBrowser: Browser?
+    @ObservationIgnored private weak var watchedTab: Tab?
 
     private init() {
         refresh()
@@ -84,7 +84,7 @@ final class Hotkeys: ObservableObject {
         ]
         // These menu titles change with the selected window, sidebar and
         // pinned tab. Keep App Shortcuts' active title in the same Keymap slot.
-        windowWatch = BrowserWindows.shared.$focusedID.dropFirst().sink { [weak self] _ in
+        windowWatch = BrowserWindows.shared.observed(\.focusedID).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async {
                 self?.watchBrowser()
                 self?.refresh()
@@ -126,9 +126,9 @@ final class Hotkeys: ObservableObject {
 
     /// Asked again once things settle: defaults change for every setting yab
     /// writes, a burst of them at a time, and the keys only rarely.
-    private var pending = false
+    @ObservationIgnored private var pending = false
     /// A refresh for the window's own changes is on its way (watchBrowser).
-    private var queued = false
+    @ObservationIgnored private var queued = false
 
     private func watchBrowser() {
         let browser = BrowserWindows.shared.activeBrowser
@@ -768,7 +768,7 @@ struct KeyTipView: View {
 private struct KeyTipRows: View {
     let title: String
     var surface: HUD.Surface = .dark
-    @ObservedObject private var option = OptionKey.shared
+    private var option = OptionKey.shared
 
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
@@ -818,10 +818,10 @@ private struct KeyTipHows: View {
 /// Whether ⌥ is held, for what changes while it is: a tip's lines, a
 /// button's keys.
 @MainActor
-final class OptionKey: ObservableObject {
+@Observable final class OptionKey {
     static let shared = OptionKey()
-    @Published private(set) var down = NSEvent.modifierFlags.contains(.option)
-    private var watch: Any?
+    private(set) var down = NSEvent.modifierFlags.contains(.option)
+    @ObservationIgnored private var watch: Any?
 
     private init() {
         watch = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
@@ -895,7 +895,7 @@ private struct KeyTipped: ViewModifier {
     /// with the view: one for every tipped button was most of what a screen
     /// of mail cost to bring up (a letter's ••• and its people's chevron).
     @State private var placed = false
-    @ObservedObject private var hotkeys = Hotkeys.shared
+    private var hotkeys = Hotkeys.shared
 
     func body(content: Content) -> some View {
         content

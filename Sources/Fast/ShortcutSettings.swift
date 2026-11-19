@@ -6,11 +6,11 @@ import SwiftUI
 /// 12,000 point page alive and works them all out as it scrolls.
 @MainActor
 struct ShortcutsPage: View {
-    @ObservedObject var selection: ShortcutFilter.Selection
-    @StateObject private var changes = ShortcutFilter.Changes()
+    var selection: ShortcutFilter.Selection
+    @State private var changes = ShortcutFilter.Changes()
     @AppStorage(MailExperiment.key, store: Store.settings) private var mailExperiment = false
-    @ObservedObject private var snippets = MailSnippets.shared
-    @ObservedObject private var here = ExtensionsHere.shared
+    private var snippets = MailSnippets.shared
+    private var here = ExtensionsHere.shared
 
     /// What a row of the list holds.
     private enum Cell {
@@ -38,7 +38,7 @@ struct ShortcutsPage: View {
     }
 
     var body: some View {
-        let _ = changes
+        let _ = changes.revision
         let groups = Shortcut.all.filter { mailExperiment || $0.title != "Mail" }
         let entries = ShortcutFilter.catalog(groups: groups, snippets: snippets.ordered)
         let visible = ShortcutFilter.visible(entries, search: selection.search, modifications: selection.modifications,
@@ -235,7 +235,7 @@ private struct ShortcutRow: View {
 struct ShortcutActionRow: View {
     let does: String
     let action: Shortcut.Action
-    @ObservedObject var slot: KeySlot
+    var slot: KeySlot
     /// Raycast's hotkey row: the keys on a filled button, and a reset
     /// button beside it while they are not the default.
     var pill = false
@@ -285,7 +285,7 @@ struct ShortcutActionRow: View {
 /// Command rows use the same recorder, conflict confirmation and reset menu.
 private struct CommandShortcutRow: View {
     let command: Command
-    @ObservedObject var slot: KeySlot
+    var slot: KeySlot
 
     var body: some View {
         HStack(spacing: 12) {
@@ -307,7 +307,7 @@ private struct CommandShortcutRow: View {
 /// would look as if it worked.
 struct GlobalKeyWords: View {
     let does: String
-    @ObservedObject var key: GlobalKey
+    var key: GlobalKey
     /// What is said while it is off; nil where off only means no key yet.
     var off: String?
 

@@ -9,7 +9,7 @@ import SwiftUI
 // per message, with no script of its own (MailBody).
 
 @MainActor
-final class MailDesk: ObservableObject {
+@Observable final class MailDesk {
     static let shared = MailDesk()
 
     enum Screen: Equatable { case list, thread, compose }
@@ -441,11 +441,11 @@ final class MailDesk: ObservableObject {
     /// which was most of what the key cost. The one after the letter in
     /// front, made once that letter is at rest and its mail is here
     /// (`planAhead`), the one before it, and the one J or K just left.
-    @Published private(set) var ahead: [Letter] = []
+    private(set) var ahead: [Letter] = []
     /// What making each of them read, by row, for its letter to be shown
     /// without reading it again: its mail's ids, whom a reply goes to.
     private var made: [String: (ids: [String], people: [Bool: [MailPerson]], crowded: Bool, heard: Bool)] = [:]
-    private var aheadWork: DispatchWorkItem?
+    @ObservationIgnored private var aheadWork: DispatchWorkItem?
 
     /// Where a letter stands among those drawn.
     enum Place { case before, front, after }
@@ -478,54 +478,61 @@ final class MailDesk: ObservableObject {
     private(set) var leaving: Letter?
     private(set) var changing = false
 
-    @Published private(set) var screen: Screen = .list
-    @Published private(set) var rows: [Row] = []
+    private(set) var screen: Screen = .list
+    private(set) var rows: [Row] = []
     /// How many threads the list holds in all: a split of a whole inbox
     /// is read a page at a time (`more`), its head counts them all.
-    @Published private(set) var total = 0
+    private(set) var total = 0
     /// How many rows the list reads now: a page, and a page more each time
     /// the end comes in sight.
     private var depth = MailSplit.page
-    @Published var sel = 0 {
+    var sel = 0 {
         didSet { if sel != oldValue { rested() } }
     }
     /// Rows picked to act on together (X, ⇧J, ⇧K, ⌘A, ⇧⌘A): E, H, U, S, #
     /// and ! act on all of them; none picked, on the row the cursor is on.
-    @Published private(set) var selection = MailSelection()
+    private(set) var selection = MailSelection()
     /// The list narrowed (⇧U, ⇧S, ⇧R); nil, the whole of it (`narrow`).
-    @Published private(set) var only: Only?
+    private(set) var only: Only?
     /// Unread rows that stay while the list shows only unread: opening one
     /// reads it, and the list doesn't change under J and K for that.
     private var held: Set<String> = []
     /// G pressed, waiting for the key that says where (MailGo).
     private var going: Date?
-    @Published private(set) var open: Row?
-    @Published private(set) var messages: [Message] = []
+    private(set) var open: Row?
+    private(set) var messages: [Message] = []
     /// The open thread's invitations, a card each over it (MailCalendar).
-    @Published var invites: [Invite] = []
+    var invites: [Invite] = []
     /// Messages whose invitation, a file, was asked of Gmail already.
     var invitesAsked: Set<String> = []
     /// Where the caret stood in the words when ⇧⌘A raised the slots.
     var slotsRange: NSRange?
     /// Earlier messages opened out of their one line.
-    @Published var unfolded: Set<String> = []
-    @Published private(set) var ready: [Ready] = []
+    var unfolded: Set<String> = []
+    private(set) var ready: [Ready] = []
     /// Which of them is shown, 1, 2 or 3.
-    @Published var pick = 0
-    @Published private(set) var person: Person?
+    var pick = 0
+    private(set) var person: Person?
     /// The draft being written. Its words change at every key without
     /// drawing mail's views again (`write(words:html:)`).
     var draft: Draft? {
-        willSet { if !quietly { objectWillChange.send() } }
+        get {
+            access(keyPath: \.draft)
+            return draftValue
+        }
+        set {
+            if quietly { draftValue = newValue } else { withMutation(keyPath: \.draft) { draftValue = newValue } }
+        }
     }
-    private var quietly = false
+    @ObservationIgnored private var draftValue: Draft?
+    @ObservationIgnored private var quietly = false
     /// The draft as it was given, by you earlier or by Claude: while it is
     /// still this, esc keeps nothing and Kept gets nothing.
     private(set) var given: Draft?
     /// The new mail is up over a page, from a mailto: link clicked there
     /// (Browser.mailto), not on mail's page: there it is drawn as it
     /// stands, and only mail's keys for a draft are heard.
-    @Published private(set) var outside = false
+    private(set) var outside = false
     /// The window whose page it is over, told when it goes (sent, closed).
     private weak var outsideHost: Browser?
     /// The drafts mailto: links left in Kept, by whom they are to: the
@@ -535,21 +542,21 @@ final class MailDesk: ObservableObject {
     /// shows while it goes back into the link.
     private(set) var outsideLast: Draft?
     /// Who wrote the words in the reply, while nobody changed them.
-    @Published private(set) var writtenBy = ""
+    private(set) var writtenBy = ""
     /// Space in an empty reply: what to ask Claude to write, being typed.
-    @Published var asking: String?
+    var asking: String?
     /// Claude is writing the reply, or rewriting it.
-    @Published private(set) var writing = false
+    private(set) var writing = false
     /// Why a send was refused, under the reply.
-    @Published var why = ""
+    var why = ""
     /// The words the list is searched by, set from the search (MailSearch).
-    @Published var query = ""
+    var query = ""
     /// The search is up over the column and has the keys (MailSearch).
-    @Published var searching = false
+    var searching = false
     /// Threads that came in above the cursor since you looked.
-    @Published private(set) var fresh = 0
+    private(set) var fresh = 0
     /// Which way the last move went, for the new screen's 4 pt: +1 down, -1 up.
-    @Published private(set) var way: CGFloat = 1
+    private(set) var way: CGFloat = 1
     /// How the screen in front last changed, for how the pane moves it
     /// (MailPane.transition): the row becoming the letter and back, a step
     /// to the next, a thread gone, one taken back (⌘Z) and a sent one back
@@ -559,14 +566,9 @@ final class MailDesk: ObservableObject {
     /// Animations says, nothing travelling, fading or springing (asked for
     /// on 1 October 2026, Needs you kept as it was).
     enum Move: Equatable { case plain, open, close, cut, step(CGFloat), gone, restore, unsend, compose, uncompose, list(CGFloat) }
-    @Published private(set) var move: Move = .plain
-    /// Parts hidden while their pictures travel to them (MailMorph). Said
-    /// after the change, not before as @Published says it: SwiftUI can draw
-    /// a part inside the notice, and one drawn there with the set still
-    /// holding it stayed hidden until something else in the desk changed.
-    var flying: Set<String> = [] {
-        didSet { if flying != oldValue { objectWillChange.send() } }
-    }
+    private(set) var move: Move = .plain
+    /// Parts hidden while their pictures travel to them (MailMorph).
+    var flying: Set<String> = []
     /// Another list chosen: the list in front is a new one.
     /// Where the list stands (MailListView): set as a letter leaves, its
     /// row where the one opened stood, so esc finds the list as it was.
@@ -579,39 +581,39 @@ final class MailDesk: ObservableObject {
     private var listSpot: CGFloat?
     private var listShown = MailList.shared.split
     /// The search narrowed to a person: their name in the column's search.
-    @Published var who: Filter? {
+    var who: Filter? {
         didSet { if who != oldValue { sel = 0; depth = MailSplit.page; load() } }
     }
     /// Everyone on the thread but you, for its head.
-    @Published private(set) var crowd: [MailPerson] = []
+    private(set) var crowd: [MailPerson] = []
     /// A long thread's middle, opened out of its one line.
-    @Published var earlierOpen = false
+    var earlierOpen = false
     /// Mails whose quoted part is shown.
-    @Published var quotes: Set<String> = []
+    var quotes: Set<String> = []
     /// Mail that came into the open thread while it was read: the pill
     /// at the foot says so, the thread doesn't jump.
-    @Published private(set) var newer: (count: Int, from: String)?
+    private(set) var newer: (count: Int, from: String)?
     /// The mail the arrows are on in a thread; R answers it.
-    @Published var focus: Int?
+    var focus: Int?
     /// The To field's suggestions are up: esc is theirs.
-    @Published var suggesting = false
+    var suggesting = false
     /// A chip chosen in the To field (⌫ once, or a click): ⌘C copies its
     /// address, and the chip says so.
-    @Published var chosenChip: String?
+    var chosenChip: String?
     /// The words of the draft in front, their own view: what ⌘K's marks and
     /// an insert (a snippet, free times) act on.
     weak var words: MailWordsView?
     /// A file chip of the draft chosen (a click on it), by its file's id:
     /// ⌫ takes it off, ← and → choose the one beside it, esc lets it go.
     /// A thread's chips are `chip`'s.
-    @Published private(set) var draftChip: String?
-    @Published private(set) var chipCopied = 0
+    private(set) var draftChip: String?
+    private(set) var chipCopied = 0
     /// Who a reply ready under the thread goes to, answering the sender
     /// alone (false) or everyone on it (true); your own draft's, either way.
-    @Published private(set) var readyPeople: [Bool: [MailPerson]] = [:]
+    private(set) var readyPeople: [Bool: [MailPerson]] = [:]
     /// More people on the thread than you and one other: a reply ready under
     /// it goes to all of them, as ↩ sends one.
-    @Published private(set) var crowded = false
+    private(set) var crowded = false
     /// Whether the reply shown under the thread goes to everyone: as it says
     /// (an agent's), else as the thread has it.
     var readyAll: Bool { (ready.indices.contains(pick) ? ready[pick].everyone : nil) ?? crowded }
@@ -619,13 +621,13 @@ final class MailDesk: ObservableObject {
     var replyTo: [MailPerson] { readyPeople[readyAll] ?? [] }
     /// Rows of the draft asked for beyond To and the words (Cc, Bcc, a
     /// reply's subject), and the one asked to take the keyboard.
-    @Published var parts: Set<Part> = []
-    @Published private(set) var partFocus: PartFocus?
+    var parts: Set<Part> = []
+    private(set) var partFocus: PartFocus?
     /// Everyone you write with, for suggestions, read once a change.
     private var contacts: [Contact]?
     /// Asks the reply's words to take the keyboard, the caret at `caret`
     /// (after Quick Quote's words; else at their start).
-    @Published private(set) var focusBody = 0
+    private(set) var focusBody = 0
     private(set) var caret = 0
     /// A reply made before the mail it answers had its Reply-To here: its
     /// id, that mail's, and whether it went to everyone.
@@ -640,10 +642,10 @@ final class MailDesk: ObservableObject {
     }
     /// The chip chosen: Space looks at its file, ↩ opens it, ⌘S saves it,
     /// ← and → choose the one beside it, esc lets it go.
-    @Published private(set) var chip: Chip?
+    private(set) var chip: Chip?
     /// Chips whose files are coming from Gmail, and those Gmail wouldn't give.
-    @Published private(set) var getting: Set<Chip> = []
-    @Published private(set) var failed: Set<Chip> = []
+    private(set) var getting: Set<Chip> = []
+    private(set) var failed: Set<Chip> = []
     /// The last file opened in its app and saved to Downloads, for the bench.
     private(set) var opened: URL?
     private(set) var saved: URL?
@@ -724,14 +726,14 @@ final class MailDesk: ObservableObject {
     /// Acts ⌘Z can take back, for the bench.
     var undoable: Int { undo.count }
     /// Rows coming back into the list (⌘Z), in from the side they left by.
-    @Published private(set) var returning: Set<String> = []
+    private(set) var returning: Set<String> = []
     private var trail: [(Screen, Row?)] = []
     private var onward: [(Screen, Row?)] = []
-    private var bag: Set<AnyCancellable> = []
+    @ObservationIgnored private var bag: Set<AnyCancellable> = []
 
     private init() {
         let list = MailList.shared
-        MailCenter.shared.$changed.dropFirst()
+        MailCenter.shared.observed(\.changed).dropFirst()
             .debounce(for: .milliseconds(120), scheduler: RunLoop.main)
             .sink { [weak self] _ in MainActor.assumeIsolated { self?.changed() } }
             .store(in: &bag)
@@ -1375,7 +1377,7 @@ final class MailDesk: ObservableObject {
     }
 
     /// The rows are what a draft's words find, not yet a list's: drawn pale.
-    @Published private(set) var ghost = false
+    private(set) var ghost = false
 
     /// The people you write with most.
     func topContacts(_ limit: Int, leaving: Set<String> = []) -> [Contact] {
@@ -1661,7 +1663,7 @@ final class MailDesk: ObservableObject {
             self.way = way
             self.move = move
             changes()
-            self.flying = flying
+            if self.flying != flying { self.flying = flying }
             self.screen = screen
             open = screen == .list ? nil : row
             if screen != .thread { messages = []; ready = []; person = nil; invites = []; ahead = []; made = [:] }
@@ -1909,7 +1911,7 @@ final class MailDesk: ObservableObject {
     }
 
     /// Fetches ahead going now, by row.
-    private var fetching: [String: Task<Void, Never>] = [:]
+    @ObservationIgnored private var fetching: [String: Task<Void, Never>] = [:]
     /// The threads being fetched ahead now, for the bench.
     var fetchingAhead: [String] { fetching.keys.sorted() }
 
@@ -1928,7 +1930,7 @@ final class MailDesk: ObservableObject {
     private var people: [String: (person: Person?, at: Date)] = [:]
     private var finding: Set<String> = []
 
-    private var resting: DispatchWorkItem?
+    @ObservationIgnored private var resting: DispatchWorkItem?
 
     /// The cursor came to rest on a row in the list: who wrote it is looked
     /// up for its rail, so ↩ opens it with the rail there at once.

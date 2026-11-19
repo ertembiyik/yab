@@ -124,7 +124,7 @@ extension MailRule {
 /// the splits' sort over all of them a store, as a split's own count is
 /// made (MailSplitCache), never a wait on a key.
 @MainActor
-final class MailFilterCounts: ObservableObject {
+@Observable final class MailFilterCounts {
     static let shared = MailFilterCounts()
 
     struct Count: Equatable, Sendable {
@@ -135,20 +135,20 @@ final class MailFilterCounts: ObservableObject {
     }
 
     /// By the account, the split's line now and the line asked.
-    private(set) var known: [String: Count] = [:]
+    @ObservationIgnored private(set) var known: [String: Count] = [:]
     /// Bumped as counts come in.
-    @Published private(set) var version = 0
-    private var asking: Set<String> = []
-    @Published private(set) var epoch = 0
-    private var watching: Set<AnyCancellable> = []
+    private(set) var version = 0
+    @ObservationIgnored private var asking: Set<String> = []
+    private(set) var epoch = 0
+    @ObservationIgnored private var watching: Set<AnyCancellable> = []
 
     private init() {
         // Published values arrive before the store/account is replaced.
         // Invalidate on the next turn, when a new request can see it.
-        MailCenter.shared.$changed.dropFirst().sink { [weak self] _ in
+        MailCenter.shared.observed(\.changed).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.forget() }
         }.store(in: &watching)
-        MailList.shared.$account.removeDuplicates().dropFirst().sink { [weak self] _ in
+        MailList.shared.observed(\.account).removeDuplicates().dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.forget() }
         }.store(in: &watching)
     }
@@ -248,20 +248,20 @@ final class MailFilterCounts: ObservableObject {
 
 /// Suggestions from the chosen account, rebuilt off the main thread when mail changes.
 @MainActor
-final class MailFilterContacts: ObservableObject {
+@Observable final class MailFilterContacts {
     static let shared = MailFilterContacts()
-    @Published private(set) var version = 0
-    private var account = ""
-    private var known: [MailDesk.Contact] = []
-    private var generation = 0
-    private var stale = true
-    private var watching: Set<AnyCancellable> = []
+    private(set) var version = 0
+    @ObservationIgnored private var account = ""
+    @ObservationIgnored private var known: [MailDesk.Contact] = []
+    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var stale = true
+    @ObservationIgnored private var watching: Set<AnyCancellable> = []
 
     private init() {
-        MailCenter.shared.$changed.dropFirst().sink { [weak self] _ in
+        MailCenter.shared.observed(\.changed).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.invalidate() }
         }.store(in: &watching)
-        MailList.shared.$account.removeDuplicates().dropFirst().sink { [weak self] _ in
+        MailList.shared.observed(\.account).removeDuplicates().dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.invalidate() }
         }.store(in: &watching)
     }
@@ -360,7 +360,7 @@ struct MailFilterRow: Identifiable {
 /// over the list (MailFilterLayer). ↑ ↓ walk its rows and ↩ takes one
 /// (MailDesk.take); esc, a click elsewhere or any other key puts it away.
 @MainActor
-final class MailFilterMenu: ObservableObject {
+@Observable final class MailFilterMenu {
     static let shared = MailFilterMenu()
 
     enum Open: Equatable {
@@ -369,34 +369,34 @@ final class MailFilterMenu: ObservableObject {
         case temp
     }
 
-    @Published private(set) var open: Open?
+    private(set) var open: Open?
     /// A kind picked from + Add Filter with nothing in it yet, or whose
     /// last value went while its menu was open: its pill stands, empty,
     /// until the menu goes.
-    @Published private(set) var fresh: MailFilter?
+    private(set) var fresh: MailFilter?
     /// The words in its field.
-    @Published var typed = "" { didSet { if typed != oldValue { lit = 0 } } }
+    var typed = "" { didSet { if typed != oldValue { lit = 0 } } }
     /// The row the keys are on.
-    @Published var lit = 0
+    var lit = 0
     /// A pill something was just added to (⌘K's Add to Split): it shines once.
-    @Published private(set) var shine: (filter: MailFilter?, n: Int) = (nil, 0)
+    private(set) var shine: (filter: MailFilter?, n: Int) = (nil, 0)
     /// Asks the menu's field for the keyboard.
-    @Published private(set) var focus = 0
+    private(set) var focus = 0
 
-    lazy var away = ClickAway { [weak self] in self?.close() }
+    @ObservationIgnored lazy var away = ClickAway { [weak self] in self?.close() }
     /// A menu to open once the split it is for is on screen (Build Your Own).
-    private var waiting: Open?
-    private var watching: AnyCancellable?
-    private var contactsWatching: AnyCancellable?
-    @Published private var contactsVersion = 0
+    @ObservationIgnored private var waiting: Open?
+    @ObservationIgnored private var watching: AnyCancellable?
+    @ObservationIgnored private var contactsWatching: AnyCancellable?
+    private var contactsVersion = 0
 
     private init() {
         // Another list: a menu waiting for it opens, one open for the last
         // goes; once the list is chosen, not while it is being chosen.
-        contactsWatching = MailFilterContacts.shared.$version.dropFirst().sink { [weak self] version in
+        contactsWatching = MailFilterContacts.shared.observed(\.version).dropFirst().sink { [weak self] version in
             DispatchQueue.main.async { self?.contactsVersion = version }
         }
-        watching = MailList.shared.$split.removeDuplicates().dropFirst().sink { [weak self] _ in
+        watching = MailList.shared.observed(\.split).removeDuplicates().dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.arrived() }
         }
     }
@@ -735,8 +735,8 @@ struct MailFilterAnchors: PreferenceKey {
 struct MailFilterBar: View {
     let saved: MailList.Split
     let draft: Bool
-    @ObservedObject var desk: MailDesk
-    @ObservedObject private var menu = MailFilterMenu.shared
+    var desk: MailDesk
+    @Bindable private var menu = MailFilterMenu.shared
 
     var body: some View {
         MailPills(spacing: 6) {
@@ -928,9 +928,9 @@ struct MailPills: Layout {
 /// The menu that is open, under what it hangs from, held inside the list.
 struct MailFilterLayer: View {
     let anchors: [String: Anchor<CGRect>]
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
-    @ObservedObject private var menu = MailFilterMenu.shared
+    var desk: MailDesk
+    var list: MailList
+    @Bindable private var menu = MailFilterMenu.shared
     @MailStill private var still
     @State private var menuHeight: CGFloat = 0
 
@@ -965,9 +965,9 @@ private struct MailFilterPopover: View {
     let account: String
     /// The height it has under its pill, down to the list's foot.
     let room: CGFloat
-    @ObservedObject var desk: MailDesk
-    @ObservedObject private var menu = MailFilterMenu.shared
-    @ObservedObject private var counts = MailFilterCounts.shared
+    var desk: MailDesk
+    @Bindable private var menu = MailFilterMenu.shared
+    private var counts = MailFilterCounts.shared
     @FocusState private var focus: Bool
     /// What each row's end says, kept while new counts are on their way.
     @State private var ends: [String: (words: String, faint: Bool)] = [:]
@@ -1283,7 +1283,7 @@ private struct MailTick: View {
 /// starts it with its name to say; and the splits mail has ready, each
 /// with what of your mail it would gather now.
 @MainActor
-final class MailSplitLibrary: ObservableObject {
+@Observable final class MailSplitLibrary {
     static let shared = MailSplitLibrary()
 
     struct Card: Identifiable {
@@ -1331,15 +1331,15 @@ final class MailSplitLibrary: ObservableObject {
         }
     }
 
-    @Published private(set) var previews: [String: Preview] = [:]
-    private var generation = 0
-    private var watching: Set<AnyCancellable> = []
+    private(set) var previews: [String: Preview] = [:]
+    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var watching: Set<AnyCancellable> = []
 
     private init() {
-        MailCenter.shared.$changed.dropFirst().sink { [weak self] _ in
+        MailCenter.shared.observed(\.changed).dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshIfOpen() }
         }.store(in: &watching)
-        MailList.shared.$account.removeDuplicates().dropFirst().sink { [weak self] _ in
+        MailList.shared.observed(\.account).removeDuplicates().dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshIfOpen() }
         }.store(in: &watching)
     }
@@ -1444,7 +1444,7 @@ final class MailSplitLibrary: ObservableObject {
 struct MailLibraryPreview: View {
     /// The row chosen: "build", "describe", or a card's id.
     let chosen: String?
-    @ObservedObject private var library = MailSplitLibrary.shared
+    private var library = MailSplitLibrary.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

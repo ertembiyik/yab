@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import SwiftUI
 import SyncKit
 
@@ -18,56 +17,56 @@ import SyncKit
 
 /// What the tray is making, guessed from the name until changed by hand.
 @MainActor
-final class SpaceDraft: ObservableObject {
+@Observable final class SpaceDraft {
     enum Step: Int { case spaces, start, name, emoji, color, signIns }
 
-    @Published var step: Step = .start
-    @Published var name = "" { didSet { heard() } }
-    @Published var icon = "🌱"
-    @Published var swatch: Swatch = .gray
-    @Published var custom: NSColor
-    @Published var transparency: Double
-    @Published var grain: Double
-    @Published var colors: [String]
+    var step: Step = .start
+    var name = "" { didSet { heard() } }
+    var icon = "🌱"
+    var swatch: Swatch = .gray
+    var custom: NSColor
+    var transparency: Double
+    var grain: Double
+    var colors: [String]
     /// What the look card adds: Shift with tabs, the site's color, drawings.
-    @Published var shift: Bool
-    @Published var site: Bool
-    @Published var drawings: String
-    @Published var strength: Double
+    var shift: Bool
+    var site: Bool
+    var drawings: String
+    var strength: Double
     /// The window as Liquid Glass, the wave's step past its end.
-    @Published var glass = false
-    @Published var own = false
+    var glass = false
+    var own = false
     /// The tab to take along, when there is one to take.
     let tab: Tab?
-    var taking = false
+    @ObservationIgnored var taking = false
     /// Tabs picked with it, taken along with it.
-    var more: [Tab] = []
+    @ObservationIgnored var more: [Tab] = []
     var takenWords: String { folder?.name ?? (more.isEmpty ? "1 tab" : "\(more.count + 1) tabs") }
     /// A folder of yours taken whole, its tabs the ones above, into the new
     /// space as a folder (Browser.moveFolder).
-    var folder: Nest?
+    @ObservationIgnored var folder: Nest?
     /// Came to New Space from the list of spaces, so back goes there.
-    var fromSpaces = false
+    @ObservationIgnored var fromSpaces = false
     /// The space the keys are on in the list, when the arrows have moved.
-    @Published var focus: Int?
+    var focus: Int?
     /// The space whose emoji the emoji step is changing, from its menu in
     /// the list, rather than a new one's.
-    var editing: UUID?
+    @ObservationIgnored var editing: UUID?
     /// Opened for that one change, from the space's name in the column:
     /// Done or back puts the tray away rather than going to the list.
-    var alone = false
+    @ObservationIgnored var alone = false
     /// Tabs held over the tray, from the column or the strip: the list is
     /// where they go (SpaceDrop).
-    @Published var carrying: [Tab] = []
+    var carrying: [Tab] = []
     /// The row they are over: a space's place, or -1 for New Space.
-    @Published var over: Int?
+    var over: Int?
     /// Tabs let go into a space, counted, so its emoji gives once.
-    @Published var landed: [UUID: Int] = [:]
+    var landed: [UUID: Int] = [:]
     /// How far the list is scrolled, for SpaceDrop to find a row under
     /// the hand. Not published: nothing is drawn from it.
-    var scrolled: CGFloat = 0
-    private var iconByHand = false
-    private var swatchByHand = false
+    @ObservationIgnored var scrolled: CGFloat = 0
+    @ObservationIgnored private var iconByHand = false
+    @ObservationIgnored private var swatchByHand = false
 
     /// The first emoji no space wears yet: a new one's, until its name
     /// suggests another or one is picked.
@@ -472,7 +471,7 @@ final class SpaceTray: NSView {
     /// The window wears the new space's look while it is picked (preview).
     private var previewing = false
     private var making = false
-    private var watch: AnyCancellable?
+    private var watch: ObservationLoop?
 
     private final class Panel: NSView {
         override var isFlipped: Bool { true }
@@ -484,8 +483,12 @@ final class SpaceTray: NSView {
         self.browser = browser
         self.draft = draft
         super.init(frame: .zero)
-        // After each change has landed: objectWillChange comes before it.
-        watch = draft.objectWillChange.receive(on: DispatchQueue.main).sink { [weak self] _ in self?.preview() }
+        var first = true
+        watch = ObservationLoop { [weak self, draft] in
+            _ = (draft.editing, draft.step, draft.paint)
+            // Out of the loop: the wash's own state, read while it fades, must not run it again.
+            if first { first = false } else { DispatchQueue.main.async { self?.preview() } }
+        }
         wantsLayer = true
         layer?.masksToBounds = false
         layer?.isGeometryFlipped = true
@@ -1304,7 +1307,7 @@ private extension CAMediaTimingFunction {
 
 /// The tray's title, what the step sets, and its two doors.
 struct TrayHead: View {
-    @ObservedObject var draft: SpaceDraft
+    @Bindable var draft: SpaceDraft
     let back: () -> Void
     let close: () -> Void
 
@@ -1390,7 +1393,7 @@ private struct CardDoor: View {
 
 /// The button at the tray's foot, in the same place on every step.
 struct TrayFoot: View {
-    @ObservedObject var draft: SpaceDraft
+    @Bindable var draft: SpaceDraft
     let press: () -> Void
 
     private var label: String {
@@ -1684,7 +1687,7 @@ private struct ScrollEdges: ViewModifier {
 /// New Space's look: the look card's own controls on the draft, the
 /// color made your own as it moves.
 struct TrayLook: View {
-    @ObservedObject var draft: SpaceDraft
+    @Bindable var draft: SpaceDraft
     let width: CGFloat
 
     var body: some View {
@@ -1698,7 +1701,7 @@ struct TrayLook: View {
 
 /// One step's body.
 struct TrayStep: View {
-    @ObservedObject var draft: SpaceDraft
+    @Bindable var draft: SpaceDraft
     /// The step it was made for, kept while it fades under the next one:
     /// read from the draft, it turned into the next step as it left.
     let step: SpaceDraft.Step

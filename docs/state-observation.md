@@ -44,16 +44,15 @@ UserDefaults key, its `didSet` that writes it, and its place in sync
 and the Settings index. The objects and their property names are the
 same, so no call site that reads or writes them changed.
 
-Transitional, until no view holds them with a property wrapper: the three
-classes still conform to `ObservableObject`. A view with
-`@ObservedObject var browser: Browser` compiles and is tracked by
-Observation like any other; the wrapper only listens to explicit
-`objectWillChange.send()` calls, which are kept as a broadcast to every
-such view for the few changes that views read from outside the object (the
-column's `Density.current`, the Mac's display options, a bookmark icon
-arriving, a dev server turned on). Removing the conformance is the last
-step, once the column's rewrite on AppKit has landed and no
-`@ObservedObject` of these remains.
+The conformance to `ObservableObject` is gone from these three and from
+every other model, with every `objectWillChange` broadcast. The few
+changes views read from outside the object, which the broadcast once
+covered, are observed state now: `Density.current` lives in an observed
+holder, so a body drawing a size from it depends on it; the Mac's display
+options are `DisplayOptions.shared` (Prefs.swift); a bookmark icon
+arriving moves a tracked revision on Favicons that its readers read; a
+dev server's choice is kept in an observed store (`DevSites`); and Mail's
+look and place carry a tracked revision read with them (MailSpace.swift).
 
 ## Inventory
 
@@ -173,9 +172,11 @@ For new state and for views touched from now on:
    takes the transaction of the change it depends on, not the last change
    anywhere in the object. `Browser.quietly {}` still puts several writes
    into one transaction.
-8. `objectWillChange.send()` is only for "every view, redraw": the rare
-   change read from outside the object. Prefer making the outside value an
-   observed property.
+8. There is no "every view, redraw". A value views draw that Observation
+   can't see (a static, a cache, a plain class, a store on disk) is made
+   observed: an `@Observable` holder for it, or a tracked
+   `private(set) var revision` bumped where it changes and read where it
+   is read.
 
 ## Following state from Combine and AppKit
 

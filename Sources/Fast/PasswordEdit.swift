@@ -33,15 +33,15 @@ extension Browser {
 /// What the card edits. Plain strings, so the real controls can be tested
 /// without a browser, an authentication prompt or a Keychain.
 @MainActor
-final class PasswordEditModel: ObservableObject {
+@Observable final class PasswordEditModel {
     let entry: Vault.Entry
-    @Published var website: String
-    @Published var userName: String
-    @Published var password = ""
-    @Published var showing = false
-    @Published var error: String?
-    @Published var waiting = false
-    @Published var finished = false
+    var website: String
+    var userName: String
+    var password = ""
+    var showing = false
+    var error: String?
+    var waiting = false
+    var finished = false
 
     init(entry: Vault.Entry) {
         self.entry = entry
@@ -122,7 +122,7 @@ final class PasswordEditController: NSObject {
 
 /// The approved form inside the Passwords preview. Its actions live in the foot.
 struct PasswordEditForm: View {
-    @ObservedObject var model: PasswordEditModel
+    @Bindable var model: PasswordEditModel
     let save: () -> Void
     let cancel: () -> Void
     @FocusState private var focus: Field?

@@ -435,42 +435,42 @@ extension NetRow {
 /// The tab's requests as the card heard them, kept as Chromium keeps its
 /// Network log: from the moment the card's inspector came up, cleared by a
 /// new page unless Keep log is on, cleared by hand, paused by Record.
-final class NetLog: ObservableObject {
+@Observable final class NetLog {
     /// Every resource in the order it was first heard; its rows in Chrome's
     /// order, each redirect's hops before where it ended.
-    @Published private(set) var rows: [NetRow] = []
+    private(set) var rows: [NetRow] = []
     /// Moves each time the rows are built again, for what is drawn from them.
-    private(set) var generation = 0
+    @ObservationIgnored private(set) var generation = 0
     /// Moments of the page in front, on the same clock as the rows.
-    @Published private(set) var contentLoaded: Double?
-    @Published private(set) var loaded: Double?
+    private(set) var contentLoaded: Double?
+    private(set) var loaded: Double?
     /// Pictures of the page as it loaded, for Screenshots.
-    @Published private(set) var shots: [(at: Double, image: NSImage)] = []
+    private(set) var shots: [(at: Double, image: NSImage)] = []
     /// The bridge couldn't be set up in this inspector: WebKit changed.
-    @Published var unavailable = false
+    var unavailable = false
     /// Record: off, nothing new is taken in.
-    @Published var recording = true
+    var recording = true
 
-    private var resources: [Int: NetResource] = [:]
-    private var order: [Int] = []
+    @ObservationIgnored private var resources: [Int: NetResource] = [:]
+    @ObservationIgnored private var order: [Int] = []
     /// Resources a new page let go of: what still comes for them is late.
-    private var gone = Set<Int>()
+    @ObservationIgnored private var gone = Set<Int>()
     /// When the page in front began, on the inspector's clock: a request
     /// first heard after it but sent before it was the page gone's.
-    private var pageStart: Double?
-    private var importedNext = 0
+    @ObservationIgnored private var pageStart: Double?
+    @ObservationIgnored private var importedNext = 0
     /// Bodies asked for, kept while the log keeps their rows.
-    private(set) var bodies: [Int: NetBody] = [:]
+    @ObservationIgnored private(set) var bodies: [Int: NetBody] = [:]
     /// What the page's hook heard from each EventSource, by address.
-    private var streams: [String: [NetResource.Event]] = [:]
+    @ObservationIgnored private var streams: [String: [NetResource.Event]] = [:]
     /// The newest batch's version: rows are built again only when it moved.
-    private var changed = false
-    private var publishing: DispatchWorkItem?
+    @ObservationIgnored private var changed = false
+    @ObservationIgnored private var publishing: DispatchWorkItem?
     /// Each new connection of the inspector starts this again.
-    private(set) var session = 0
+    @ObservationIgnored private(set) var session = 0
 
     /// Keep log is the browser's, not the tab's (Browser.netKeepLog).
-    var keepLog: () -> Bool = { false }
+    @ObservationIgnored var keepLog: () -> Bool = { false }
 
     var isEmpty: Bool { rows.isEmpty }
 
@@ -501,7 +501,7 @@ final class NetLog: ObservableObject {
     }
 
     /// Called when a new page starts in the top frame, for Screenshots.
-    var navigated: (() -> Void)?
+    @ObservationIgnored var navigated: (() -> Void)?
 
     /// The inspector has just come up for this tab: what it hands over now is
     /// what the page holds, and the log starts again unless Keep log is on.
@@ -529,9 +529,9 @@ final class NetLog: ObservableObject {
     }
 
     /// Rows kept over a return, by method and address, not yet found again.
-    private var handedOver: [String: [Int]] = [:]
+    @ObservationIgnored private var handedOver: [String: [Int]] = [:]
     /// The top frame's loader on the page kept over a return.
-    private var returnedLoader: String?
+    @ObservationIgnored private var returnedLoader: String?
 
     /// The log's own number for a resource the bridge numbered: the
     /// bridge counts from one again in each new inspector.

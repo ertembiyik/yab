@@ -7,7 +7,7 @@ import AppKit
 /// going, in that site's icon, and "Always allow on <site>".
 struct WindowChip: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     @State private var hovering = false
     @State private var box = ViewBox()
 

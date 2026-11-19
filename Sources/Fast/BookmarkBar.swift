@@ -15,8 +15,8 @@ import SwiftUI
 ///
 /// Nothing in it moves on the frequent path: another tab is the same row.
 struct BookmarkBar: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var bookmarks: Bookmarks
+    var browser: Browser
+    var bookmarks: Bookmarks
     /// The row's whole room, and where in it the line of bookmarks stands.
     let height: CGFloat
     let top: CGFloat
@@ -813,10 +813,10 @@ private struct More: View {
 /// away; and the bookmarks you already have, in the browser you came
 /// from, when one on this Mac keeps any.
 private struct ShelfEmpty: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// How wide the place for a page is, told to the row.
     let measured: (CGFloat) -> Void
-    @ObservedObject private var elsewhere = Elsewhere.shared
+    private var elsewhere = Elsewhere.shared
 
     @Environment(\.tone) private var tone
 
@@ -910,7 +910,7 @@ private struct Offer<Label: View>: View {
 /// default, then the one whose bookmarks changed last. Looked for once, off
 /// the main thread, the first time an empty row is shown.
 @MainActor
-final class Elsewhere: ObservableObject {
+@Observable final class Elsewhere {
     static let shared = Elsewhere()
 
     struct Found {
@@ -918,9 +918,9 @@ final class Elsewhere: ObservableObject {
         let count: Int
     }
 
-    @Published var found: Found?
-    @Published var bringing = false
-    private var looked = false
+    var found: Found?
+    var bringing = false
+    @ObservationIgnored private var looked = false
 
     func look() {
         guard !looked else { return }

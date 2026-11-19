@@ -24,7 +24,6 @@ extension Agents {
         Bench.shared.rest(tab)
         if tab.guest == session.id { tab.guest = nil }
         if tab.agent == session.id { tab.agent = nil }
-        objectWillChange.send()
         return true
     }
 

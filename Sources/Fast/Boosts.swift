@@ -2,7 +2,7 @@ import AppKit
 import WebKit
 
 @MainActor
-final class Boosts: ObservableObject {
+@Observable final class Boosts {
     static let shared = Boosts()
     struct Trial: Identifiable {
         let id: UUID
@@ -31,24 +31,24 @@ final class Boosts: ObservableObject {
         /// The two as files, for Quick Look to open as a chat's pictures.
         var files: [URL] = []
     }
-    @Published private(set) var records: [BoostRecord] = []
+    private(set) var records: [BoostRecord] = []
     /// Whether the library's index was read: false when it is there and
     /// couldn't be (a later Yab's rung, a broken file), and `records` is
     /// empty for that, not for being empty (sync takes nothing away for it).
-    private(set) var loaded = false
-    @Published private(set) var trials: [UUID: Trial] = [:]
-    @Published private(set) var trouble: String?
+    @ObservationIgnored private(set) var loaded = false
+    private(set) var trials: [UUID: Trial] = [:]
+    private(set) var trouble: String?
     /// By chat (the task's root session): the last quiet trial that passed.
-    @Published private(set) var pictures: [String: Pictures] = [:]
+    private(set) var pictures: [String: Pictures] = [:]
     let library: BoostLibrary
-    private(set) var packages: [String: BoostPackage] = [:]
-    private var attempts: [String: Int] = [:]
-    private var busy: Set<UUID> = []
-    private var checked: Set<String> = []
-    private var repairing: [String: BoostRecord] = [:]
+    @ObservationIgnored private(set) var packages: [String: BoostPackage] = [:]
+    @ObservationIgnored private var attempts: [String: Int] = [:]
+    @ObservationIgnored private var busy: Set<UUID> = []
+    @ObservationIgnored private var checked: Set<String> = []
+    @ObservationIgnored private var repairing: [String: BoostRecord] = [:]
     /// Quiet trials' pages, by session, and the sessions with a try under way.
-    private var rooms: [String: Tab] = [:]
-    private var fitting: Set<String> = []
+    @ObservationIgnored private var rooms: [String: Tab] = [:]
+    @ObservationIgnored private var fitting: Set<String> = []
     let safeMode: Bool
 
     /// ⌥ held while Yab opened (docs/boosts.md, "Off for a start"), read
@@ -221,11 +221,11 @@ final class Boosts: ObservableObject {
     /// with the same boosts compares equal and is sent nothing.
     /// The package each was made from: the same package is the same
     /// script, without writing its source out again on every navigation.
-    private var madeScripts: [String: (package: BoostPackage, script: WKUserScript)] = [:]
+    @ObservationIgnored private var madeScripts: [String: (package: BoostPackage, script: WKUserScript)] = [:]
     /// Every boost script made this run, kept so no other object takes its
     /// identifier; old ones are still taken out of a tab armed again.
-    private var everMade: Set<ObjectIdentifier> = []
-    private var everMadeScripts: [WKUserScript] = []
+    @ObservationIgnored private var everMade: Set<ObjectIdentifier> = []
+    @ObservationIgnored private var everMadeScripts: [WKUserScript] = []
     private func script(for package: BoostPackage) -> WKUserScript {
         if let made = madeScripts[package.id], made.package == package { return made.script }
         let source = BoostScript.source(package)

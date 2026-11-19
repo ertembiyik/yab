@@ -87,7 +87,7 @@ final class MenuFront {
 /// every page that finished loading recorded a visit, and the menu bar's
 /// whole body ran again for it, on the way to the page's frames.
 @MainActor
-final class RecentMenu: ObservableObject {
+@Observable final class RecentMenu {
     static let shared = RecentMenu(History.shared)
     private static var profiles: [ObjectIdentifier: RecentMenu] = [:]
 
@@ -100,14 +100,16 @@ final class RecentMenu: ObservableObject {
         return made
     }
 
-    @Published private(set) var visited: [History.Trace] = []
-    private var watch: AnyCancellable?
-    private var due = false
+    private(set) var visited: [History.Trace] = []
+    @ObservationIgnored private var watch: ObservationLoop?
+    @ObservationIgnored private var due = false
 
     init(_ history: History) {
         visited = history.recent()
-        watch = history.objectWillChange.sink { [weak self, weak history] _ in
-            guard let self, let history, !self.due else { return }
+        watch = ObservationLoop { [weak self, weak history] in
+            guard let self, let history else { return }
+            history.followVisits()
+            guard !self.due else { return }
             self.due = true
             DispatchQueue.main.asyncAfter(deadline: .now() + MenuFront.delay) { [weak self, weak history] in
                 guard let self, let history else { return }

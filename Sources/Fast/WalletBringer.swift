@@ -5,7 +5,7 @@ import SwiftUI
 /// under the row when done. Safari's export needs Autofill's own screen,
 /// where Yab waits for the file, so that one goes there.
 struct WalletBringer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let anchor: String
     /// Worn where the rows around it wear theirs (Passwords), not on Bring
     /// in, whose rows go without.

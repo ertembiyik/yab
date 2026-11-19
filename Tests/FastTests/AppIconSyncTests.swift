@@ -7,7 +7,7 @@ import SyncKit
 struct AppIconSyncTests {
     @MainActor @Test func receivingAwardsAndColorsRefreshesAnOpenPicker() {
         var changes = 0
-        let watch = Invites.shared.objectWillChange.sink { changes += 1 }
+        let watch = ObservedWrites({ _ = Invites.shared.revision }, told: { changes += 1 })
         AppIconStyle.sharedSettingsChanged(["look"])
         #expect(changes == 0)
         AppIconStyle.sharedSettingsChanged([AppIconCatalog.bracelet.grantKey])

@@ -92,7 +92,7 @@ final class ItemRelay: NSObject, PageScriptReceiving {
 }
 
 @MainActor
-final class SiteItems: ObservableObject {
+@Observable final class SiteItems {
     static let shared = SiteItems()
 
     /// What you said no to, kept as one record.
@@ -129,13 +129,13 @@ final class SiteItems: ObservableObject {
     static let quietAfter = 14
     static let key = "siteItems"
 
-    @Published private(set) var kept: Kept
+    private(set) var kept: Kept
     /// The thing the pointer is on, by tab, for ⌘J.
-    @Published var pointed: [UUID: SiteItem] = [:]
+    var pointed: [UUID: SiteItem] = [:]
     /// What the foot's offer on a tab is about (`mine:`).
-    private(set) var offered: [UUID: SiteItem] = [:]
+    @ObservationIgnored private(set) var offered: [UUID: SiteItem] = [:]
     /// Offered once: a key a page said again is not offered again.
-    private var told: Set<String> = []
+    @ObservationIgnored private var told: Set<String> = []
     private let store: UserDefaults
 
     init(store: UserDefaults = Store.settings) {
@@ -322,7 +322,7 @@ final class SiteItems: ObservableObject {
     }
 
     /// The task a button began, by tab and thing.
-    private var begun: [String: String] = [:]
+    @ObservationIgnored private var begun: [String: String] = [:]
     private static func place(_ tab: Tab, _ key: String) -> String { tab.id.uuidString + "|" + key }
 
     // MARK: - the task on the button's face
@@ -331,15 +331,15 @@ final class SiteItems: ObservableObject {
     /// face works while it does, raises its hand when it needs you, and
     /// ticks when it is done, as the task's own face does in its folder.
     private struct Followed { let tab: UUID; let key: String; var said: String? }
-    private var followed: [String: Followed] = [:]
-    private var watching: AnyCancellable?
+    @ObservationIgnored private var followed: [String: Followed] = [:]
+    @ObservationIgnored private var watching: ObservationLoop?
 
     private func follow(_ id: String, tab: Tab, key: String) {
         followed[id] = Followed(tab: tab.id, key: key, said: nil)
-        if watching == nil {
-            watching = Agents.shared.objectWillChange.receive(on: DispatchQueue.main).sink { [weak self] _ in self?.update() }
-        }
-        update()
+        guard watching == nil else { return update() }
+        watching = ObservationLoop { [weak self] in self?.update() }
+        // Its first run may have ended the following before it was kept.
+        if followed.isEmpty { watching = nil }
     }
 
     /// What the face says of a task: "work", "hand", "done", or "" when it stopped.
@@ -506,8 +506,8 @@ final class SiteItems: ObservableObject {
 /// View › Hide Claude Buttons on Slack, on a site that has them: the
 /// site's name in it, so Help's search finds it by "button" or "Slack".
 struct SiteButtonsCommand: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var items = SiteItems.shared
+    var browser: Browser
+    private var items = SiteItems.shared
 
     var body: some View {
         // The site's skill as the menu bar last read it (MenuFront), not
@@ -527,8 +527,8 @@ struct SiteButtonsCommand: View {
 /// of them, and a row for each site, its mark, what its button offers
 /// while on or why it is off, opening its own page (SiteButtonsSitePage).
 struct SiteButtonsSettings: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var items = SiteItems.shared
+    var model: SettingsModel
+    private var items = SiteItems.shared
 
     var body: some View {
         if let opened = model.opened, let skill = Skills.named(opened) {
@@ -582,7 +582,7 @@ struct SiteButtonsSettings: View {
 /// asks the agent, in words to change in place.
 private struct SiteButtonsSitePage: View {
     let skill: Skills.Skill
-    @ObservedObject private var items = SiteItems.shared
+    private var items = SiteItems.shared
     /// Bumped by a prompt kept, so the fields read the skill again.
     @State private var edits = 0
 

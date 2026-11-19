@@ -262,7 +262,7 @@ struct WelcomePretend: Equatable {
 // MARK: - the stage
 
 @MainActor
-final class WelcomeStage: ObservableObject {
+@Observable final class WelcomeStage {
     static let shared = WelcomeStage()
 
     /// The beats, by the names the prototype's anchors and the bench use.
@@ -329,85 +329,86 @@ final class WelcomeStage: ObservableObject {
 
     // MARK: what the frame shows
 
-    @Published private(set) var beat: Beat = .welcome
-    @Published private(set) var words = WelcomeWords(frame: .welcome, primary: "Get Started")
-    @Published private(set) var dashes = WelcomeDashes()
+    private(set) var beat: Beat = .welcome
+    private(set) var words = WelcomeWords(frame: .welcome, primary: "Get Started")
+    private(set) var dashes = WelcomeDashes()
     /// The panel stepped aside for a sign-in's tab, to come back when it ends.
-    @Published private(set) var away = false
+    private(set) var away = false
     /// The corner's one toast: "Everything from Dia is in", when nothing on
     /// screen says so.
-    @Published var toast: String?
+    var toast: String?
     /// The primary may be pressed: after the intro has brought it in.
-    var buttonIn = false
+    @ObservationIgnored var buttonIn = false
     /// Back from a sign-in's tab: the next panel comes in as the overlay
     /// went, the other way round (WelcomeOverlayView).
-    var returning = false
+    @ObservationIgnored var returning = false
     /// The panel on screen now, for the moves of the whole overlay: the
     /// step aside for a sign-in, and the last fade at Finish.
-    weak var overlay: WelcomeOverlayView?
+    @ObservationIgnored weak var overlay: WelcomeOverlayView?
 
     // MARK: what was chosen on the way
 
     /// How it began.
-    var coming: Coming = .launch
+    @ObservationIgnored var coming: Coming = .launch
     /// The agent Connect is about: "claude" or "codex".
-    var agent = "claude"
+    @ObservationIgnored var agent = "claude"
     /// Bring: the browser picked, by its place in the list found.
-    var source = 0
+    @ObservationIgnored var source = 0
     /// Keep a real browser selected while asynchronous counts filter the list.
-    var sourceID: String?
+    @ObservationIgnored var sourceID: String?
     /// Started fresh rather than bringing anything.
-    var fresh = false
+    @ObservationIgnored var fresh = false
     /// Brought in from the chosen browser (the import may still be running).
-    var brought = false
+    @ObservationIgnored var brought = false
     /// Bring's failure, said beside the button: "The keychain is locked".
-    var bringFailure: String?
+    @ObservationIgnored var bringFailure: String?
     /// Keep its spaces, for a browser with more than one place.
-    var keepSpaces = false
+    @ObservationIgnored var keepSpaces = false
     /// Bring's line for an ad blocker among the browser's extensions: Yab's
     /// blocker kept over it.
-    var yabBlocks = true
+    @ObservationIgnored var yabBlocks = true
     /// Look and Color, held until Finish.
-    var held = WelcomeHeldLook()
+    @ObservationIgnored var held = WelcomeHeldLook()
     /// Get to Know turned on here.
-    var suggesting = false
+    @ObservationIgnored var suggesting = false
     /// Make Default: macOS asked, waiting on its answer.
-    var askedDefault = false
+    @ObservationIgnored var askedDefault = false
     /// macOS's answer was no.
-    var defaultRefused = false
+    @ObservationIgnored var defaultRefused = false
     /// Every branch pretended, for the bench.
-    var pretend = WelcomePretend()
+    @ObservationIgnored var pretend = WelcomePretend()
 
     var reduceMotion: Bool { pretend.reduceMotion ?? NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
 
     // MARK: where it is
 
-    private(set) var moment = WelcomeMoment(beat: .welcome)
-    private var history: [Beat] = []
+    @ObservationIgnored private(set) var moment = WelcomeMoment(beat: .welcome)
+    @ObservationIgnored private var history: [Beat] = []
     /// Bumped by every new beat: a play overtaken stops at its next wait.
-    private(set) var playing = 0
-    private(set) var started = false
+    @ObservationIgnored private(set) var playing = 0
+    @ObservationIgnored private(set) var started = false
     /// The window the welcome is over, for what a chapter's press does in it.
-    private(set) weak var browser: Browser?
-    private var watching: [AnyCancellable] = []
-    private var signIn: AnyCancellable?
-    private var mailSignIn: AnyCancellable?
+    @ObservationIgnored private(set) weak var browser: Browser?
+    @ObservationIgnored private var watching: [AnyCancellable] = []
+    @ObservationIgnored private var watchingModels: ObservationLoop?
+    @ObservationIgnored private var signIn: AnyCancellable?
+    @ObservationIgnored private var mailSignIn: AnyCancellable?
     /// Who the welcome stepped aside for: an agent's sign-in, or Google's.
-    private var awayFor: Aside?
+    @ObservationIgnored private var awayFor: Aside?
     enum Aside { case agent, google, passwords }
-    private var refreshQueued = false
+    @ObservationIgnored private var refreshQueued = false
 
     // MARK: playing on by itself
 
     /// How long each beat of chapter 1 runs before the next comes by itself.
     static let runLength: Double = 4
     /// The play that runs on by itself, if the beat on screen is one.
-    private(set) var runToken: Int?
-    private var runStart: CFTimeInterval = 0
-    private var heldSince: CFTimeInterval?
-    private var heldFor: CFTimeInterval = 0
+    @ObservationIgnored private(set) var runToken: Int?
+    @ObservationIgnored private var runStart: CFTimeInterval = 0
+    @ObservationIgnored private var heldSince: CFTimeInterval?
+    @ObservationIgnored private var heldFor: CFTimeInterval = 0
     /// The window not key holds the run.
-    private var unfocused = false
+    @ObservationIgnored private var unfocused = false
     var runHeld: Bool { unfocused }
 
     private init() {}
@@ -775,7 +776,7 @@ final class WelcomeStage: ObservableObject {
     /// the moment the sign-in ends, done or not.
     private func watchSignIn(_ browser: Browser) {
         guard signIn == nil else { return }
-        signIn = AgentSetupModel.shared.$flow.receive(on: RunLoop.main).sink { [weak self, weak browser] flow in
+        signIn = AgentSetupModel.shared.observed(\.flow).receive(on: RunLoop.main).sink { [weak self, weak browser] flow in
             guard let self, let browser else { return }
             if case .signingIn = flow {
                 guard self.beat == .connect else { return }
@@ -785,7 +786,7 @@ final class WelcomeStage: ObservableObject {
             }
         }
         // Chapter 5's Google: its consent page is a tab too.
-        mailSignIn = MailCenter.shared.$connecting.removeDuplicates().dropFirst().receive(on: RunLoop.main).sink { [weak self, weak browser] connecting in
+        mailSignIn = MailCenter.shared.observed(\.connecting).removeDuplicates().dropFirst().receive(on: RunLoop.main).sink { [weak self, weak browser] connecting in
             guard let self, let browser else { return }
             if connecting {
                 guard self.beat == .access || self.beat == .accessB else { return }
@@ -821,16 +822,30 @@ final class WelcomeStage: ObservableObject {
     /// beat is shown again when they do.
     private func watchModels() {
         guard watching.isEmpty else { return }
+        var first = true
+        watchingModels = ObservationLoop { [weak self] in
+            guard let self else { return }
+            self.readModels()
+            if first { first = false } else { self.needsRefresh() }
+        }
         watching = [
-            AgentSetupModel.shared.objectWillChange.sink { [weak self] _ in self?.needsRefresh() },
-            bringing.objectWillChange.sink { [weak self] _ in self?.needsRefresh() },
-            // Chapter 5's Google: the accounts found, connected, refused,
-            // and the next meeting once it is read.
-            MailFound.shared.objectWillChange.sink { [weak self] _ in self?.needsRefresh() },
-            MailCenter.shared.$accounts.removeDuplicates().sink { [weak self] _ in self?.needsRefresh() },
-            MailCenter.shared.$connectFailed.removeDuplicates().sink { [weak self] _ in self?.needsRefresh() },
-            Meetings.shared.$list.sink { [weak self] _ in self?.needsRefresh() },
+            // Chapter 5's Google: accounts and the next meeting.
+            MailCenter.shared.observed(\.accounts).removeDuplicates().sink { [weak self] _ in self?.needsRefresh() },
+            MailCenter.shared.observed(\.connectFailed).removeDuplicates().sink { [weak self] _ in self?.needsRefresh() },
+            Meetings.shared.observed(\.list).sink { [weak self] _ in self?.needsRefresh() },
         ]
+    }
+
+    /// What the chapters can show of the agents, the import and the accounts found.
+    private func readModels() {
+        let setup = AgentSetupModel.shared
+        _ = (setup.status, setup.found, setup.signedIn, setup.working, setup.flow, setup.picks, setup.lastUse,
+             setup.tried, setup.knowing, setup.installByHand, setup.page, setup.trouble, setup.renewing,
+             setup.slow, setup.keying, setup.keyFor, setup.lookedInTerminal, setup.showing)
+        _ = (bringing.sources, bringing.brought, bringing.counts, bringing.asSpaces, bringing.state,
+             bringing.asking, bringing.loaded, bringing.icons, bringing.used, bringing.defaultID)
+        let found = MailFound.shared
+        _ = (found.accounts, found.looked, found.chosen)
     }
 }
 

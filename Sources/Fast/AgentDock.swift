@@ -26,17 +26,17 @@ import SyncKit
 // only pointer on the screen.
 
 struct AgentDock: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// The page owns this finite proposal, including a live Peek holder.
     var availableWidth: CGFloat?
-    @ObservedObject private var selection: SelectionCommands
-    @ObservedObject private var agents = Agents.shared
+    private var selection: SelectionCommands
+    private var agents = Agents.shared
     /// Which chat the column shows: what it asks stands there, not here.
-    @ObservedObject private var columnChat = ColumnChat.shared
-    @ObservedObject private var feed = AgentFeed.shared
-    @ObservedObject private var hints = Hints.shared
+    private var columnChat = ColumnChat.shared
+    private var feed = AgentFeed.shared
+    private var hints = Hints.shared
     /// A payment's sheet, which stays after its question until the site said.
-    @ObservedObject private var payments = Payments.shared
+    private var payments = Payments.shared
     @Environment(\.accessibilityReduceMotion) private var still
     @State private var copiedAnswer = false
     @State private var answerHasField = false
@@ -591,9 +591,9 @@ struct AgentPoint: Equatable {
 }
 
 struct AgentPointer: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var feed = AgentFeed.shared
-    @ObservedObject private var agents = Agents.shared
+    var tab: Tab
+    private var feed = AgentFeed.shared
+    private var agents = Agents.shared
     @State private var pressed = false
     @State private var ring: CGFloat = 1
     @State private var ringing: Double = 0
@@ -677,9 +677,9 @@ struct AgentPointer: View {
 /// Take Over ⌘. and Hand Back ⌘↩ in the Tabs menu, each only there to press
 /// when it can be, so the rest of the time the keys are the page's.
 struct AgentCommands: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var feed = AgentFeed.shared
-    @ObservedObject private var agents = Agents.shared
+    var browser: Browser
+    private var feed = AgentFeed.shared
+    private var agents = Agents.shared
 
     var body: some View {
         let tab = browser.active

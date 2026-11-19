@@ -15,7 +15,7 @@ import YabCoreClient
 /// A menu is drawn the moment it is asked for, so the rows are read ahead:
 /// when the pointer comes onto the button, and again after each run.
 @MainActor
-final class ChromiumActionMenu: ObservableObject {
+@Observable final class ChromiumActionMenu {
     static let shared = ChromiumActionMenu()
 
     struct Row: Equatable, Identifiable {
@@ -43,8 +43,8 @@ final class ChromiumActionMenu: ObservableObject {
     }
 
     /// By page (its YabCore tab) and extension.
-    @Published private(set) var rows: [String: [Row]] = [:]
-    private var reading: Set<String> = []
+    private(set) var rows: [String: [Row]] = [:]
+    @ObservationIgnored private var reading: Set<String> = []
 
     private static func key(_ page: ChromiumPage, _ id: String) -> String? {
         page.remoteID.map { $0 + "|" + id }

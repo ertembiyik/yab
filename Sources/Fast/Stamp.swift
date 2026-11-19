@@ -16,7 +16,7 @@ import SwiftUI
 // Yabs that were here before stamps, the day of the first page in History,
 // so the earliest get the earliest numbers.
 @MainActor
-final class MemberStamp: ObservableObject {
+@Observable final class MemberStamp {
     static let shared = MemberStamp()
 
     struct Info: Codable, Equatable {
@@ -33,24 +33,24 @@ final class MemberStamp: ObservableObject {
     }
 
     /// This Yab's stamp, once the site gave it.
-    @Published private(set) var info: Info?
+    private(set) var info: Info?
     /// The restored first observed day from the site, or a local candidate
     /// until the site answers. Used on the back and for anniversary postmarks.
-    @Published private(set) var since: Date?
+    private(set) var since: Date?
     /// What goes on the back of friends' stamps (InviteFriendsPage).
-    @Published var outgoing: String {
+    var outgoing: String {
         didSet {
             Store.settings.set(outgoing, forKey: "stamp.outgoing")
             sendSoon()
         }
     }
 
-    private var serverSince: Date?
-    private var started = false
-    private var watching: AnyCancellable?
-    private var sending: Task<Void, Never>?
-    private var clock: Timer?
-    private var identityUnavailable = false
+    @ObservationIgnored private var serverSince: Date?
+    @ObservationIgnored private var started = false
+    @ObservationIgnored private var watching: AnyCancellable?
+    @ObservationIgnored private var sending: Task<Void, Never>?
+    @ObservationIgnored private var clock: Timer?
+    @ObservationIgnored private var identityUnavailable = false
 
     private init() {
         info = Self.decode(Store.settings.data(forKey: "stamp.info"))
@@ -75,7 +75,7 @@ final class MemberStamp: ObservableObject {
         }
         // A friend's link is claimed a moment after launch: ask again then,
         // so the stamp becomes theirs.
-        watching = Invites.shared.$received.dropFirst().sink { [weak self] received in
+        watching = Invites.shared.observed(\.received).dropFirst().sink { [weak self] received in
             guard received != nil else { return }
             Task { await self?.refresh() }
         }

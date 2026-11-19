@@ -1055,7 +1055,7 @@ enum Snss {
 /// too, and comes as the welcome brings it: its space signed in as it was
 /// there, with its cookies (`take`).
 struct TabBringer: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     @Binding var withOpen: Bool
 
     private enum Stage: Equatable {

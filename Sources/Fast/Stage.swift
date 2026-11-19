@@ -10,7 +10,7 @@ import WebKit
 /// arrives in WebKit without ever being put on screen. Watching it here is
 /// what turns that into a redraw.
 struct Page: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// Round when the page is a card on a backdrop, square when it is the
     /// window's whole ground.
     var corner: CGFloat = 0
@@ -2284,7 +2284,7 @@ private struct Trouble: View {
     let message: String
     let retry: () -> Void
 
-    @ObservedObject private var reload = Keymap.shared.slot(.reload)
+    private var reload = Keymap.shared.slot(.reload)
 
     var body: some View {
         VStack(spacing: 12) {
@@ -2547,7 +2547,7 @@ struct DragStrip: View {
 /// words, Go Back as the one dark button, and going on kept behind Details,
 /// a line of text rather than a button as heavy as the way back.
 private struct UntrustedPage: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let untrusted: Untrusted
     @State private var opened = false
 
@@ -2613,7 +2613,7 @@ private struct UntrustedPage: View {
 /// the site: what the list says in words, Go Back as the one dark button,
 /// and going on kept behind Details, for this session.
 private struct FlaggedPage: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let flagged: Flagged
     @State private var opened = false
 

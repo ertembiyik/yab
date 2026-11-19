@@ -42,35 +42,35 @@ enum GeminiModels {
 }
 
 @MainActor
-final class GeminiAccount: ObservableObject {
+@Observable final class GeminiAccount {
     static let shared = GeminiAccount()
 
     /// The CLI found on this Mac, nil when there is none.
-    @Published private(set) var binary: String?
+    private(set) var binary: String?
     /// Whether it answered in Yab's profile when last asked; nil before.
-    @Published private(set) var signedIn: Bool?
-    @Published private(set) var models: [AgentModel] = []
+    private(set) var signedIn: Bool?
+    private(set) var models: [AgentModel] = []
     /// Who the CLI said it is signed in as, kept between launches: reading
     /// it again means starting the CLI, which takes seconds.
-    @Published private(set) var identity: GeminiIdentity? = Store.testing ? nil
+    private(set) var identity: GeminiIdentity? = Store.testing ? nil
         : Store.settings.data(forKey: "gemini.identity").flatMap { try? JSONDecoder().decode(GeminiIdentity.self, from: $0) } {
         didSet {
             guard !Store.testing, identity != oldValue else { return }
             Store.settings.set(identity.flatMap { try? JSONEncoder().encode($0) }, forKey: "gemini.identity")
         }
     }
-    @Published private(set) var quota: PlanQuota?
-    @Published private(set) var notice: String?
-    var choice: GeminiChoice?
-    private var login: GeminiLogin?
-    private var checkedLogin = false
+    private(set) var quota: PlanQuota?
+    private(set) var notice: String?
+    @ObservationIgnored var choice: GeminiChoice?
+    @ObservationIgnored private var login: GeminiLogin?
+    @ObservationIgnored private var checkedLogin = false
 
-    @Published private(set) var awaitingCode = false
+    private(set) var awaitingCode = false
     /// The sign-in's tab is open: until then Connect says it is opening,
     /// not that a tab is asking.
-    @Published private(set) var pageOpen = false
-    @Published private(set) var submittingCode = false
-    @Published private(set) var codeError: String?
+    private(set) var pageOpen = false
+    private(set) var submittingCode = false
+    private(set) var codeError: String?
 
     func showSignIn() {
         guard waiting == .signingIn else { return }
@@ -99,16 +99,16 @@ final class GeminiAccount: ObservableObject {
         codeError = signer.codeError
     }
     /// Waiting for an install in Terminal, or Google's sign-in in a tab.
-    @Published private(set) var waiting: Waiting?
+    private(set) var waiting: Waiting?
     /// Why the last sign-in or install stopped, until the next.
-    @Published private(set) var trouble: String?
+    private(set) var trouble: String?
 
     enum Waiting: Equatable { case installing, signingIn }
 
-    private var lookedAt: Date?
-    private var attempt = 0
+    @ObservationIgnored private var lookedAt: Date?
+    @ObservationIgnored private var attempt = 0
 
-    @Published var enabled: Bool = Store.settings.object(forKey: "gemini.enabled") as? Bool ?? true {
+    var enabled: Bool = Store.settings.object(forKey: "gemini.enabled") as? Bool ?? true {
         didSet { Store.settings.set(enabled, forKey: "gemini.enabled") }
     }
 
@@ -469,9 +469,9 @@ final class GeminiAccount: ObservableObject {
 
     /// The last thing the CLI said when it could not verify sign-in: one
     /// line, no addresses, for `gaveUp`.
-    private(set) var lastSaid: String?
+    @ObservationIgnored private(set) var lastSaid: String?
     /// When the wait under way gives up (`poll`); a new Sign In moves it.
-    private(set) var waitingUntil: Date?
+    @ObservationIgnored private(set) var waitingUntil: Date?
 
     /// Every three seconds until `done`, for `waitLimit` by the clock; then
     /// the wait ends with why (`trouble`), never a ring turning on.

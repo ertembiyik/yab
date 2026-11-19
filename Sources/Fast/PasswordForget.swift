@@ -148,8 +148,8 @@ private final class PasswordListReturn {
         func cancel<T>(_ publisher: AnyPublisher<T, Never>) {
             publisher.sink { [weak self] _ in self?.valid = false }.store(in: &watches)
         }
-        cancel(browser.query.$typed.removeDuplicates().dropFirst().eraseToAnyPublisher())
-        cancel(browser.query.$place.removeDuplicates().dropFirst().eraseToAnyPublisher())
+        cancel(browser.query.observed(\.typed).removeDuplicates().dropFirst().eraseToAnyPublisher())
+        cancel(browser.query.observed(\.place).removeDuplicates().dropFirst().eraseToAnyPublisher())
         cancel(browser.changes(\.editing).removeDuplicates().dropFirst().eraseToAnyPublisher())
         cancel(browser.changes(\.tuning).removeDuplicates().dropFirst().eraseToAnyPublisher())
         cancel(browser.changes(\.activeID).removeDuplicates().dropFirst().eraseToAnyPublisher())

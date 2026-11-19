@@ -9,7 +9,7 @@ import SwiftUI
 /// both into the form. It follows the box when the page scrolls, and goes
 /// when the caret does.
 struct AccountList: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let asked: Browser.Suggesting
 
     /// Rows shown before the list scrolls, the last cut through so it
@@ -198,7 +198,7 @@ struct FieldListSeparator: View {
 /// icon at its corner when the list is that manager's alone. A click
 /// brings the list back.
 struct FieldPlateView: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let plate: FieldPlate
 
     var body: some View {
@@ -228,7 +228,7 @@ struct FieldPlateView: View {
 /// An agent filling a sign-in from a manager: its face, typing, and who
 /// from where. Never the password.
 struct AgentFillingList: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let tab: Tab
     let filling: AgentFilling
 
@@ -246,7 +246,7 @@ struct AgentFillingList: View {
 /// way the accounts hang from a sign-in (MailCodes.swift): the code, who it
 /// came from and how, and when. Return puts the lit one in.
 struct CodeList: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let list: Browser.CodeChoices
     static let messages = NSWorkspace.shared.icon(forFile: "/System/Applications/Messages.app")
 

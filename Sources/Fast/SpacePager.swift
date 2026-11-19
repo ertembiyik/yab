@@ -1298,8 +1298,8 @@ struct PagedSpaceRoot: View {
 /// edge too (SpaceWash.card); docked on a backdrop, nothing: the window's
 /// backdrop shows through.
 struct PagedGround: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
     /// The card's paint when the row came up: the stage lays its color and
     /// its frost itself (PagerStage.ground), this view nothing for it.
     var paint: SpaceWash.Paint?
@@ -1721,15 +1721,15 @@ extension SpacePaging {
 /// when the row landed and the pages went (feedback, 2026-10-13). A page
 /// takes no pointer of its own: nothing on it hears the mouse.
 @MainActor
-final class SlidePointer: ObservableObject {
+@Observable final class SlidePointer {
     static let shared = SlidePointer()
     /// The named space a page measures from: its top-left as it lands.
     static let space = "pagedSpace"
 
     /// The pointer is in the column (SideBar's `near`).
-    @Published private(set) var near = false
+    private(set) var near = false
     /// Where it is on a page, from the page's top-left, while in the column.
-    @Published private(set) var point: CGPoint?
+    private(set) var point: CGPoint?
 
     /// Read from where the pointer is now, `band` and `top` where the
     /// pages stand in the column's flipped space.
@@ -1779,7 +1779,7 @@ struct SlidePointed: ViewModifier {
     }
 
     private struct Watch: ViewModifier {
-        @ObservedObject var pointer: SlidePointer
+        var pointer: SlidePointer
         @Binding var hovering: Bool
         @State private var frame: CGRect = .null
 

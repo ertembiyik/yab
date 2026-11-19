@@ -69,15 +69,15 @@ struct ShelfFile: Identifiable, Equatable {
 }
 
 @MainActor
-final class FileShelf: ObservableObject {
+@Observable final class FileShelf {
     static let shared = FileShelf()
 
     /// Mail's files, newest first, as last read from the stores.
-    @Published private(set) var mail: [ShelfFile] = []
+    private(set) var mail: [ShelfFile] = []
     /// What you gave sites, newest first.
-    @Published private(set) var uploads: [Upload] = []
+    private(set) var uploads: [Upload] = []
     /// Counts every change, for what is made from it (Places' memo).
-    private(set) var version = 0
+    @ObservationIgnored private(set) var version = 0
 
     struct Upload: Codable, Equatable {
         var path: String
@@ -93,10 +93,10 @@ final class FileShelf: ObservableObject {
     static let uploadsKept = 200
 
     private let file: URL
-    private var read: Date?
+    @ObservationIgnored private var read: Date?
     /// Mail's files a test world hands over (bench `seed-shelf`); nil reads
     /// the stores.
-    var testingMail: [ShelfFile]?
+    @ObservationIgnored var testingMail: [ShelfFile]?
 
     init(file: URL = Store.file("files-sent.json"), words: URL = Store.file("file-words.json")) {
         self.file = file

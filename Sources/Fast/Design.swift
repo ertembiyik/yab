@@ -1,3 +1,4 @@
+import YabDesign
 import SwiftUI
 import AppKit
 // The design system is a module of its own (Sources/YabDesign), seen by
@@ -12,7 +13,7 @@ extension Tone {
         var made = self
         made.glass = false
         made.seeThrough = (paint?.transparency ?? 0) > 0
-            && !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+            && !DisplayOptions.shared.reduceTransparency
         return made
     }
 }
@@ -247,7 +248,7 @@ struct BackdropFill: View {
                     .allowsHitTesting(false)
             }
         }
-        .opacity(BackdropTransparency.opacity(transparency, reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+        .opacity(BackdropTransparency.opacity(transparency, reduced: DisplayOptions.shared.reduceTransparency))
         .background {
             if transparency > 0 {
                 BackdropVeil.Frost(color: NSColor(color), card: card, colors: colors.map { NSColor($0) }, transparency: transparency)
@@ -302,7 +303,7 @@ enum BackdropVeil {
         let words = Shades.deep(on: color, dark: isDark)
         let worst: NSColor = isDark ? .white : .black
         let veil: NSColor = isDark ? .black : .white
-        let alpha = CGFloat(BackdropTransparency.opacity(transparency, reduced: NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency))
+        let alpha = CGFloat(BackdropTransparency.opacity(transparency, reduced: DisplayOptions.shared.reduceTransparency))
         var made = cardOpacity
         while made < 1 {
             let under = veil.mixed(over: worst, made)

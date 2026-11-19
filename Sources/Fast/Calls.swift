@@ -40,23 +40,29 @@ extension Tab {
 
 /// What yab keeps about calls between one change and the next.
 @MainActor
-final class Calls: ObservableObject {
+@Observable final class Calls {
     /// Tabs on a call right now.
-    @Published private(set) var live: Set<Tab.ID> = []
+    private(set) var live: Set<Tab.ID> = []
 
     /// A call's tab asked to close once: which tabs, and when. A second ask
     /// soon after, for the same tabs, closes them.
-    var armed: (tabs: Set<Tab.ID>, at: CFTimeInterval)?
+    @ObservationIgnored var armed: (tabs: Set<Tab.ID>, at: CFTimeInterval)?
 
     /// Calls that ended, by tab, and when their tab was last on screen:
     /// it closes a minute after you stop looking at it.
-    var over: [Tab.ID: Date] = [:]
-    var sweeping: Timer?
+    @ObservationIgnored var over: [Tab.ID: Date] = [:]
+    @ObservationIgnored var sweeping: Timer?
 
     var any: Bool { !live.isEmpty }
 
     func set(_ id: Tab.ID, live on: Bool) {
         if on { live.insert(id) } else { live.remove(id) }
+    }
+
+    /// For the bench: told as if a call changed, nothing changing.
+    func benchTouch() {
+        let kept = live
+        live = kept
     }
 
     /// How long a second ⌘W has to count.
@@ -82,8 +88,6 @@ extension Browser {
 
     /// The page took, muted or let go of the camera or the microphone.
     func captureChanged(_ tab: Tab) {
-        // The menu's Mute Call reads the microphone, muted or not.
-        calls.objectWillChange.send()
         // A huddle's own window (Slack's, opened beside its tab) holds the
         // switches while the call is its opener's: they are said there.
         if !tab.onCall, tab.pageMic != nil || tab.pageCamera != nil,
@@ -680,7 +684,7 @@ extension Tab {
 /// the microphone's, the speaker's and the camera's lists, and the Mac's
 /// own Mic Mode and Video Effects.
 struct CallDeviceMenus: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         let devices = tab.callDevices ?? CallDevices()
@@ -708,7 +712,7 @@ struct CallDeviceMenus: View {
 /// What waits while a call is on: shown only with no call anywhere. The
 /// update's note, which would otherwise be written in over a meeting.
 struct UnlessOnCall<Content: View>: View {
-    @ObservedObject var calls: Calls
+    var calls: Calls
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -735,7 +739,7 @@ struct MuteCommand: View {
 
 private struct MuteToggle: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         let group = browser.several ? browser.chosen : [tab]
@@ -753,7 +757,7 @@ private struct MuteToggle: View {
 /// and App Shortcuts can give it a key by name.
 struct CallCommands: View {
     let browser: Browser
-    @ObservedObject var calls: Calls
+    var calls: Calls
 
     var body: some View {
         let tab = calls.any ? browser.call : nil

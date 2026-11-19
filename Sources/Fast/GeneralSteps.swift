@@ -13,12 +13,12 @@ struct GeneralSteps: View {
     /// The welcome's own: the browsers on this Mac, what each holds, and
     /// bringing one over with a press. Settings keeps it, so the row at
     /// the foot of General knows whether the step is up here.
-    @ObservedObject var bringing: Bringing
-    @ObservedObject var model: SettingsModel
+    var bringing: Bringing
+    var model: SettingsModel
     let isDefault: Bool
     let makeDefault: () -> Void
     /// The app links go to now, found when Settings opens, never here.
-    @ObservedObject private var links = DefaultBrowser.shared
+    private var links = DefaultBrowser.shared
     /// What macOS said when it was asked for the other browser's key.
     @State private var refused: String?
 

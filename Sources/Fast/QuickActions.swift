@@ -161,7 +161,7 @@ struct QuickActionSuggestion: Identifiable, Equatable {
 }
 
 @MainActor
-final class QuickActions: ObservableObject {
+@Observable final class QuickActions {
     static let shared = QuickActions()
 
     /// The icon a Quick Action's row wears, by the name it is kept under:
@@ -184,21 +184,21 @@ final class QuickActions: ObservableObject {
         }
     }
 
-    @Published private(set) var actions: [QuickAction]
-    @Published private(set) var suggestions: [QuickActionSuggestion] = []
-    private var personalized: Set<String>
-    private var dismissed: Set<String>
+    private(set) var actions: [QuickAction]
+    private(set) var suggestions: [QuickActionSuggestion] = []
+    @ObservationIgnored private var personalized: Set<String>
+    @ObservationIgnored private var dismissed: Set<String>
     /// Things made lately, by which maker: what picks the provider of the
     /// two built in, and what an action is offered for.
-    private var made: [Made]
+    @ObservationIgnored private var made: [Made]
     /// How many times each action's alias has been shown under the empty
     /// field after the same thing was made by hand. Twice, then never.
-    private var hinted: [String: Int]
-    private var hint: (id: String, since: Date, shown: Date?)?
-    private var ran: (maker: String, at: Date)?
-    private var fresh: Set<String> = []
-    private var refreshed = Date.distantPast
-    private var daily: Timer?
+    @ObservationIgnored private var hinted: [String: Int]
+    @ObservationIgnored private var hint: (id: String, since: Date, shown: Date?)?
+    @ObservationIgnored private var ran: (maker: String, at: Date)?
+    @ObservationIgnored private var fresh: Set<String> = []
+    @ObservationIgnored private var refreshed = Date.distantPast
+    @ObservationIgnored private var daily: Timer?
     private let history: History
     private let ephemeral: Bool
 
@@ -536,7 +536,7 @@ final class QuickActions: ObservableObject {
     /// sites' scores come back.
     private static let weighed = [Maker.notion, Maker.docs] + Maker.offered.filter { $0.id != Maker.notion.id && $0.id != Maker.docs.id }
     /// The latest refresh: an older one's scores, arriving later, are dropped.
-    private var refreshTurn = 0
+    @ObservationIgnored private var refreshTurn = 0
 
     /// What the sites' scores suggest, `scores` in `weighed`'s sites' order.
     private func suggest(_ scores: [Double], now: Date) {

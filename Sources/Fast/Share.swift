@@ -55,7 +55,7 @@ extension SharePicker: Equatable {
 /// its name, its size and its wallpaper, and goes on to macOS's own picker
 /// on the screens. Found by typing, picked with the arrows.
 @MainActor
-final class SharePicker: ObservableObject {
+@Observable final class SharePicker {
     enum Kind: String, CaseIterable { case tabs, windows, screens }
 
     struct Item: Identifiable {
@@ -88,16 +88,16 @@ final class SharePicker: ObservableObject {
     /// are two to a row, as large as the box lets them be.
     static func columns(_ kind: Kind) -> Int { kind == .screens ? 2 : 4 }
 
-    @Published private(set) var tabs: [Item] = []
+    private(set) var tabs: [Item] = []
     /// The window's other tabs: found by typing, not shown until then.
-    private var otherTabs: [Item] = []
-    @Published private(set) var windows: [Item] = []
-    @Published private(set) var screens: [Item] = []
-    @Published var typed = "" { didSet { if !items(door).contains(where: { $0.id == chosenID }) { chosenID = nil } } }
+    @ObservationIgnored private var otherTabs: [Item] = []
+    private(set) var windows: [Item] = []
+    private(set) var screens: [Item] = []
+    var typed = "" { didSet { if !items(door).contains(where: { $0.id == chosenID }) { chosenID = nil } } }
     /// The door open: the kind shown and picked from.
-    @Published var door: Kind = .tabs
+    var door: Kind = .tabs
     /// What is picked behind each door, kept while another is open.
-    @Published private var picks: [Kind: String] = [:]
+    private var picks: [Kind: String] = [:]
     var chosenID: String? {
         get { picks[door] }
         set { picks[door] = newValue }
@@ -109,7 +109,7 @@ final class SharePicker: ObservableObject {
     /// System Settings while Yab runs, macOS can say yes to the first and
     /// still refuse the second (request 904); then they go on to macOS's
     /// picker, as without the permission, rather than an empty door.
-    @Published private(set) var sees: Bool
+    private(set) var sees: Bool
     let token: String
     /// The frame that asked; nil for an extension's chooseDesktopMedia,
     /// which a worker can ask with no frame at all (ExtensionCapture).
@@ -117,18 +117,18 @@ final class SharePicker: ObservableObject {
     let host: String
     let audio: Bool
     /// The largest picture the page asked for, if it named one.
-    var most: CGSize?
+    @ObservationIgnored var most: CGSize?
     /// What may be offered: an extension names its kinds (tab, window,
     /// screen); a page gets them all.
-    var kinds: Set<Kind> = [.tabs, .windows, .screens]
+    @ObservationIgnored var kinds: Set<Kind> = [.tabs, .windows, .screens]
     /// Only a page's own getDisplayMedia can go on to macOS's picker.
-    var offersSystem = true
+    @ObservationIgnored var offersSystem = true
     /// The door the page named (displaySurface), over the one remembered.
-    var preferred: Kind?
+    @ObservationIgnored var preferred: Kind?
     /// The page's own tab is offered (selfBrowserSurface), and first
     /// (preferCurrentTab).
-    var offersCaller = false
-    var callerFirst = false
+    @ObservationIgnored var offersCaller = false
+    @ObservationIgnored var callerFirst = false
 
     /// The way to macOS's own picker on the windows, where Yab can't see
     /// other apps' windows.
@@ -198,7 +198,7 @@ final class SharePicker: ObservableObject {
 
     /// The keys are on the doors' row (Tab, Window, Entire Screen) rather
     /// than the tiles under it.
-    @Published var onDoors = false
+    var onDoors = false
 
     /// An arrow: on the doors, left and right open the one beside and down
     /// goes to the tiles; on the tiles, left and right along the order, up
@@ -360,7 +360,7 @@ final class SharePicker: ObservableObject {
     }
 
     /// What each window and screen is taken with, by its tile's id.
-    private var takes: [String: (filter: SCContentFilter, size: CGSize)] = [:]
+    @ObservationIgnored private var takes: [String: (filter: SCContentFilter, size: CGSize)] = [:]
 
     private func picturesOfTheDoor(_ kind: Kind) async {
         for item in (kind == .windows ? windows : screens) {
@@ -452,7 +452,7 @@ final class ShareKeys {
 struct ShareBox: View {
     let browser: Browser
     let tab: Tab
-    @ObservedObject var picker: SharePicker
+    @Bindable var picker: SharePicker
     @FocusState private var typing: Bool
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var solid
@@ -936,11 +936,11 @@ private struct ShareThumb: View {
 /// What yab is showing pages now, and how: its own feeds, and the system
 /// picker's shares, known only to say so on the tab and stop them.
 @MainActor
-final class Share: ObservableObject {
+@Observable final class Share {
     static let shared = Share()
 
     /// Bumped as shares come and go or stand still, for the rows and the chip.
-    @Published private(set) var revision = 0
+    private(set) var revision = 0
 
     /// The purple macOS gives a screen being recorded, in the menu bar: the
     /// frame round a shown page, the chip and the tag.
@@ -1012,16 +1012,16 @@ final class Share: ObservableObject {
         }
     }
 
-    private(set) var sessions: [String: Session] = [:]
+    @ObservationIgnored private(set) var sessions: [String: Session] = [:]
     /// The words of a share from the system's picker, with no session of its own.
     let systemFold = ShareFold()
     /// The system picker asked for from the card: 1 for a screen, 2 for a
     /// window, by web view, for WebKit's question that follows.
-    var prompts: [ObjectIdentifier: Int] = [:]
+    @ObservationIgnored var prompts: [ObjectIdentifier: Int] = [:]
     /// WebKit's questions before its own picker, counted for tests.
-    var systemAsked = 0
+    @ObservationIgnored var systemAsked = 0
     /// The way to macOS's picker, step by step, for tests (bench share state).
-    var trail: [String] = []
+    @ObservationIgnored var trail: [String] = []
     func note(_ step: String) {
         trail.append(step)
         if trail.count > 40 { trail.removeFirst(trail.count - 40) }
@@ -1097,7 +1097,7 @@ final class Share: ObservableObject {
 
     /// The tabs last told they share or are shown, to be told when they
     /// no longer are.
-    private var flagged: [Weak] = []
+    @ObservationIgnored private var flagged: [Weak] = []
     private struct Weak { weak var tab: Tab? }
 
     /// The words on the tabs: Sharing on the page shown to, Others see on
@@ -1900,9 +1900,9 @@ struct ShareRing: View {
 /// the name. With no band and no row's end to say it, the column's row has
 /// Stop too. Paused says its picture stands still.
 struct ShareWord: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let hovering: Bool
-    @ObservedObject private var share = Share.shared
+    private var share = Share.shared
     /// The row's backdrop: a site's color, a space's.
     @Environment(\.tone) private var tone
 

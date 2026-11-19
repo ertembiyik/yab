@@ -3,7 +3,7 @@ import AppKit
 
 struct DevPerformancePane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     @State private var selected: Int?
     @State private var mode = "Summary"
     @State private var zoom = 1.0

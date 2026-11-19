@@ -9,16 +9,16 @@ import SwiftUI
 /// controls, files and the steps still to do.
 /// Once Yab opens the links, the default-browser step leaves the page.
 struct GeneralPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
     /// The welcome's browsers, kept by Settings while its window is open.
     /// Not watched here: only the default-browser steps and the row at the foot
     /// draw from it, each watching it alone, so a count coming in draws
     /// those and not the whole page.
     let bringing: Bringing
     @Binding var isDefault: Bool
-    @ObservedObject private var updater = Updater.shared
+    private var updater = Updater.shared
     @AppStorage(Updater.nightlyKey, store: Store.settings) private var nightly = false
     @AppStorage(Updater.Away.automaticKey, store: Store.settings) private var automatic = true
 
@@ -177,8 +177,8 @@ struct GeneralPage: View {
 /// Everything that comes over from another browser, in one place,
 /// since moving is done once and all at once.
 struct BringInPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var model: SettingsModel
     /// Kept by Settings while its window is open.
     @Binding var bringsOpenTabs: Bool
 
@@ -222,8 +222,8 @@ struct BringInPage: View {
 /// their size, fonts, dark pages and reading mode, apart from Appearance,
 /// which is Yab's own window (Safari and Chrome keep the two apart too).
 struct WebsitesPage: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
 
     var body: some View {
         PageAppearanceSettings(prefs: prefs, model: model)
@@ -235,9 +235,9 @@ struct WebsitesPage: View {
 /// window's ways of sitting shown as pictures in their menu, and the
 /// fonts, set once, behind Customize….
 struct AppearancePage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
     /// Window's "A color" just picked: Look opens on it, as Arc's (#459).
     @State private var lookAsked = false
 
@@ -396,7 +396,7 @@ struct AppearancePage: View {
 /// General's Keep Mac Awake (AssistantReach), under Open at Login, which turning it on
 /// turns on too.
 struct ReachableRow: View {
-    @ObservedObject private var reach = AssistantReach.shared
+    @Bindable private var reach = AssistantReach.shared
 
     var body: some View {
         SettingsRow("Keep Mac Awake", detail: "While plugged in, so tasks keep running.") {
@@ -416,12 +416,12 @@ struct ReachableRow: View {
 /// suggestions are Search's.
 struct TabsPage: View {
     @AppStorage(EnergySaver.key, store: Store.settings) private var energySaver = EnergySaver.off.rawValue
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var meetings = Meetings.shared
-    @ObservedObject private var reopenKey = Keymap.shared.slot(.reopen)
-    @ObservedObject private var floatKey = Keymap.shared.slot(.float)
-    @ObservedObject private var meetingKey = Keymap.shared.slot(.joinMeeting)
-    @ObservedObject private var recentKey = Keymap.shared.slot(.recentTab)
+    @Bindable var prefs: Preferences
+    private var meetings = Meetings.shared
+    private var reopenKey = Keymap.shared.slot(.reopen)
+    private var floatKey = Keymap.shared.slot(.float)
+    private var meetingKey = Keymap.shared.slot(.joinMeeting)
+    private var recentKey = Keymap.shared.slot(.recentTab)
     /// ⌃Tab's reach as picked, empty until it is (SwitchReach.current).
     @AppStorage(SwitchReach.key, store: Store.settings) private var reach = ""
     @AppStorage(PeekClick.key, store: Store.settings) private var peekClick = PeekClick.shift.rawValue
@@ -653,13 +653,13 @@ struct FieldPageSettings: View {
 
 /// Settings › Passwords.
 struct PasswordsPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
     /// A connected manager's extension turning on or off changes who saves.
-    @ObservedObject private var extensions = Extensions.shared
-    @ObservedObject private var managers = ManagerExtensions.shared
-    @ObservedObject private var connections = PasswordManagers.Connections.shared
+    private var extensions = Extensions.shared
+    private var managers = ManagerExtensions.shared
+    private var connections = PasswordManagers.Connections.shared
 
     var body: some View {
         if let id = PasswordManagersPlace.manager(model.opened) {
@@ -750,9 +750,9 @@ struct PasswordsPage: View {
 /// You, your cards and addresses, and whole forms filled from them:
 /// Autofill's place in the box, as a page.
 struct AutofillPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var fillKey = Keymap.shared.slot(.fillForm)
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    private var fillKey = Keymap.shared.slot(.fillForm)
 
     var body: some View {
         PageHero(page: .autofill)
@@ -785,11 +785,11 @@ struct AutofillPage: View {
 
 /// Settings › Privacy.
 struct PrivacyPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var shield = Shield.shared
-    @ObservedObject private var extensions = Extensions.shared
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
+    private var shield = Shield.shared
+    private var extensions = Extensions.shared
     @State private var showsPaused = false
     @State private var refresh = 0
     static let manage = "__manage"
@@ -936,8 +936,8 @@ struct PrivacyPage: View {
 
 /// Settings › Privacy › History.
 struct HistoryPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    @Bindable var prefs: Preferences
 
     var body: some View {
         PageHero(page: .history)
@@ -980,8 +980,8 @@ struct HistoryPage: View {
 
 /// Settings › About.
 struct AboutPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var model: SettingsModel
     var body: some View {
         Section {
             VStack(spacing: 4) {
@@ -1095,7 +1095,7 @@ struct SentToYabSettings: View {
 /// Where yab came from, said warmly: the code it grew from, the apps
 /// whose care it learned from, and what their licenses ask to show.
 struct CreditsPage: View {
-    @ObservedObject var model: SettingsModel
+    var model: SettingsModel
 
     var body: some View {
         PageHero(page: .credits)
@@ -1147,8 +1147,8 @@ struct CreditsPage: View {
 /// At the foot of General once the step at the top is gone, never both,
 /// and not while the browsers are still being found for it.
 private struct BringInFoot: View {
-    @ObservedObject var bringing: Bringing
-    @ObservedObject var model: SettingsModel
+    var bringing: Bringing
+    var model: SettingsModel
 
     var body: some View {
         if !GeneralSteps.offersBring(bringing), bringing.loaded || Bringing.everBrought {

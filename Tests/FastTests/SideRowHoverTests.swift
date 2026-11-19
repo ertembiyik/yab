@@ -102,7 +102,7 @@ struct SideRowHoverTests {
         #expect(glance.shown == hovered.id)
 
         var published = 0
-        let watch = glance.objectWillChange.sink { _ in published += 1 }
+        let watch = ObservedWrites({ _ = (glance.shown, glance.pointed, glance.shownFolder, glance.agent) }, told: { published += 1 })
         defer { watch.cancel() }
         for tab in tabs where tab.id != hovered.id {
             #expect(!glance.concerns(tab.id))

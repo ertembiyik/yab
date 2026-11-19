@@ -5,7 +5,7 @@ import Foundation
 /// matches the field looks for. The search stays: without it the engine's
 /// suggestions go and Return has nowhere to go.
 @MainActor
-final class FieldUnder: ObservableObject {
+@Observable final class FieldUnder {
     static let shared = FieldUnder()
 
     /// A row under the words: the search, Ask, the task, one of Yab's own
@@ -45,18 +45,18 @@ final class FieldUnder: ObservableObject {
         static let tabs = "field.match.tabs", pages = "field.match.pages", commands = "field.match.commands"
     }
 
-    @Published var rows: [String] { didSet { Store.settings.set(rows, forKey: Key.rows) } }
+    var rows: [String] { didSet { Store.settings.set(rows, forKey: Key.rows) } }
     /// Ask or Task turned off, keeping their place in the order.
-    @Published private(set) var off: Set<String> { didSet { Store.settings.set(off.sorted(), forKey: Key.off) } }
+    private(set) var off: Set<String> { didSet { Store.settings.set(off.sorted(), forKey: Key.off) } }
     /// Return takes the top row under the words, rather than the one the
     /// words read as (a verb the task, a question Ask).
-    @Published var firstRow: Bool { didSet { Store.settings.set(firstRow, forKey: Key.firstRow) } }
+    var firstRow: Bool { didSet { Store.settings.set(firstRow, forKey: Key.firstRow) } }
     /// ⇥ sends plain words to Ask, whatever leads (Browser.tabAsks).
-    @Published var tabAsks: Bool { didSet { Store.settings.set(tabAsks, forKey: Key.tabAsks) } }
+    var tabAsks: Bool { didSet { Store.settings.set(tabAsks, forKey: Key.tabAsks) } }
     /// The matches the field looks for as you type.
-    @Published var tabs: Bool { didSet { Store.settings.set(tabs, forKey: Key.tabs) } }
-    @Published var pages: Bool { didSet { Store.settings.set(pages, forKey: Key.pages) } }
-    @Published var commands: Bool { didSet { Store.settings.set(commands, forKey: Key.commands) } }
+    var tabs: Bool { didSet { Store.settings.set(tabs, forKey: Key.tabs) } }
+    var pages: Bool { didSet { Store.settings.set(pages, forKey: Key.pages) } }
+    var commands: Bool { didSet { Store.settings.set(commands, forKey: Key.commands) } }
 
     private init() {
         let store = Store.settings

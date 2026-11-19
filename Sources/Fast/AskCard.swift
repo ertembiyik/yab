@@ -304,7 +304,7 @@ struct AgentAskCard: View {
     /// click would (agent-ask-stand act: open, back, all).
     static let pressed = PassthroughSubject<String, Never>()
 
-    @ObservedObject private var confirmation = Keymap.shared.slot(.confirmDanger)
+    private var confirmation = Keymap.shared.slot(.confirmDanger)
     @State private var option = false
     @State private var watching: Any?
     /// The mail of several opened in place, and every row shown.
@@ -914,7 +914,7 @@ private struct AskSendFoot: View {
     @Binding var widths: [String: CGFloat]
     let no: () -> Void
     let yes: () -> Void
-    @ObservedObject private var confirmation = Keymap.shared.slot(.confirmDanger)
+    private var confirmation = Keymap.shared.slot(.confirmDanger)
     @Environment(\.accessibilityReduceMotion) private var still
 
     /// Between the two controls, as in every card's foot.

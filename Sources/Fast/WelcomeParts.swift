@@ -1751,7 +1751,7 @@ private struct PageLink: View {
 struct WelcomeTypedLine: View {
     let field: String
     let text: String
-    @ObservedObject private var typing = WelcomeTyping.shared
+    private var typing = WelcomeTyping.shared
 
     var body: some View {
         Text(typing.typed[field] ?? text)
@@ -2095,7 +2095,7 @@ private struct PeekButtonDrawing: View {
 private struct DockDrawing: View {
     let words: String
     @Environment(\.accessibilityReduceMotion) private var still
-    @ObservedObject private var takeOverKey = Keymap.shared.slot(.agentTakeWheel)
+    private var takeOverKey = Keymap.shared.slot(.agentTakeWheel)
 
     private static let ink = NSColor(white: 0.93, alpha: 1)
 

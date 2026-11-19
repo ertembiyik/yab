@@ -558,7 +558,7 @@ extension Browser {
 /// The cards or addresses kept, hanging from the box the caret is in, drawn
 /// as the sign-in accounts are.
 struct WalletList: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let list: Browser.WalletChoices
 
     var body: some View {
@@ -640,8 +640,8 @@ struct WalletList: View {
 /// well, the question and a line under it, or with both a card and an
 /// address, a box for each; Not now and Save on the right.
 struct PayCard: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
     let offer: PayOffer
 
     static let width: CGFloat = 400

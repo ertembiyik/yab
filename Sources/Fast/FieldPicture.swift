@@ -7,7 +7,7 @@ import AppKit
 /// the field over the space's own look, the chosen one small beside its
 /// name in the row.
 struct FieldMenu: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
     @Environment(\.colorScheme) private var scheme
     @State private var pictures = Pictures()
 
@@ -45,7 +45,7 @@ struct FieldMenu: View {
 /// five rows. Both stand where Omnibox puts the field, its top 122 down,
 /// so the field's line is at one height in the two.
 struct FieldPicture: View {
-    @ObservedObject var prefs: Preferences
+    @Bindable var prefs: Preferences
     let compact: Bool
     @Environment(\.colorScheme) private var scheme
 

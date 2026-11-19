@@ -15,11 +15,11 @@ import SwiftUI
 // site's checkout takes the card, as it would from you.
 
 @MainActor
-final class Payments: ObservableObject {
+@Observable final class Payments {
     static let shared = Payments()
 
     /// The sheet of each tab that has one.
-    @Published private(set) var flows: [UUID: PayFlow] = [:]
+    private(set) var flows: [UUID: PayFlow] = [:]
 
     func flow(_ tab: Tab) -> PayFlow? { flows[tab.id] }
 
@@ -71,27 +71,27 @@ extension AgentPermit {
 }
 
 @MainActor
-final class PayFlow: ObservableObject, Identifiable {
-    @Published var model: PaySheetModel
+@Observable final class PayFlow: Identifiable {
+    var model: PaySheetModel
     /// The form's boxes, kept here so a list and back doesn't lose them.
-    @Published var form = Form()
+    var form = Form()
     /// The page has been read once (delivery, card and address boxes).
-    @Published private(set) var looked = false
+    private(set) var looked = false
 
-    weak var tab: Tab?
+    @ObservationIgnored weak var tab: Tab?
     let session: String
     /// The press asked for, to make it again after a decline.
-    private(set) var ref: String
-    private(set) var label: String
+    @ObservationIgnored private(set) var ref: String
+    @ObservationIgnored private(set) var label: String
     /// True while the sheet itself answers the question, so that answer
     /// isn't taken for one given elsewhere.
-    private(set) var answering = false
+    @ObservationIgnored private(set) var answering = false
 
     let touch = PayTouch()
     /// A test run keeps the sheet on Paid for its picture (bench `agent-pay`).
     static var holdPaid = false
-    private var watching: Task<Void, Never>?
-    private var listening: AnyCancellable?
+    @ObservationIgnored private var watching: Task<Void, Never>?
+    @ObservationIgnored private var listening: AnyCancellable?
 
     struct Form: Equatable {
         var name = "", street = "", apt = "", city = "", zip = ""
@@ -616,10 +616,10 @@ final class PayFlow: ObservableObject, Identifiable {
 /// no system dialog over it. One context a listen, stopped while a list or a
 /// form is open, its answers sorted into the sheet's.
 @MainActor
-final class PayTouch: ObservableObject {
+@Observable final class PayTouch {
     /// The glyph the sheet holds, the current context's.
-    @Published private(set) var glyph: LAAuthenticationView?
-    private var context: LAContext?
+    private(set) var glyph: LAAuthenticationView?
+    @ObservationIgnored private var context: LAContext?
 
     /// A test world answers in Touch ID's place (bench `pay`): nobody's
     /// finger, and no sensor on the farm's Macs.

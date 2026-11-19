@@ -8,8 +8,8 @@ import UniformTypeIdentifiers
 /// ⌘↩; once tried, Undo replaces Try and it runs in this tab only.
 struct UserscriptCard: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var scripts = Userscripts.shared
+    var tab: Tab
+    private var scripts = Userscripts.shared
     @State private var keeping = false
 
     var body: some View {
@@ -150,8 +150,8 @@ struct UserscriptCard: View {
 /// each new right in a line; the page's menu commands under it.
 struct UserscriptSiteRows: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var scripts = Userscripts.shared
+    var tab: Tab
+    private var scripts = Userscripts.shared
     @State private var deleting: Userscripts.Record?
 
     private typealias Setting = SiteControlsView.Setting
@@ -260,11 +260,11 @@ struct UserscriptSiteRows: View {
 /// Tampermonkey's scripts as the last row. Only while something is kept or
 /// Tampermonkey is in.
 struct UserscriptsSection: View {
-    @ObservedObject private var profile = ExtensionsHere.shared
+    private var profile = ExtensionsHere.shared
     /// The window whose page in front gets the card; else the one in front.
     var browser: Browser?
-    @ObservedObject private var scripts = Userscripts.shared
-    @ObservedObject private var boosts = Boosts.shared
+    private var scripts = Userscripts.shared
+    private var boosts = Boosts.shared
     @State private var hovering = false
     @State private var adding = false
 

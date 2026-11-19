@@ -71,7 +71,7 @@ extension Browser {
 
 /// What yab keeps of Network's settings across pages and launches: Keep
 /// log, Disable cache, the throttling, the rules, the user agent.
-final class NetPrefs: ObservableObject {
+@Observable final class NetPrefs {
     static let shared = NetPrefs()
 
     struct Rule: Codable, Equatable, Identifiable {
@@ -82,21 +82,21 @@ final class NetPrefs: ObservableObject {
         var condition: String
     }
 
-    @Published var keepLog: Bool { didSet { save("net.keepLog", keepLog) } }
-    @Published var noCache: Bool { didSet { save("net.noCache", noCache) } }
-    @Published var throttle: String { didSet { save("net.throttle", throttle) } }
-    @Published var rulesOn: Bool { didSet { save("net.rulesOn", rulesOn) } }
-    @Published var rules: [Rule] { didSet { if let data = try? JSONEncoder().encode(rules) { save("net.rules", data) } } }
-    @Published var profiles: [NetThrottle] { didSet { if let data = try? JSONEncoder().encode(profiles) { save("net.profiles", data) } } }
+    var keepLog: Bool { didSet { save("net.keepLog", keepLog) } }
+    var noCache: Bool { didSet { save("net.noCache", noCache) } }
+    var throttle: String { didSet { save("net.throttle", throttle) } }
+    var rulesOn: Bool { didSet { save("net.rulesOn", rulesOn) } }
+    var rules: [Rule] { didSet { if let data = try? JSONEncoder().encode(rules) { save("net.rules", data) } } }
+    var profiles: [NetThrottle] { didSet { if let data = try? JSONEncoder().encode(profiles) { save("net.profiles", data) } } }
     /// nil for the browser's own.
-    @Published var userAgent: String? { didSet { settings.set(userAgent, forKey: "net.userAgent") } }
+    var userAgent: String? { didSet { settings.set(userAgent, forKey: "net.userAgent") } }
     /// "on" or "off" sent as Save-Data, nil for the browser's default.
-    @Published var saveData: String? { didSet { settings.set(saveData, forKey: "net.saveData") } }
-    @Published var bigRows: Bool { didSet { save("net.bigRows", bigRows) } }
-    @Published var groupByFrame: Bool { didSet { save("net.groupByFrame", groupByFrame) } }
-    @Published var overview: Bool { didSet { save("net.overview", overview) } }
-    @Published var screenshots: Bool { didSet { save("net.screenshots", screenshots) } }
-    @Published var columns: [String] { didSet { save("net.columns", columns) } }
+    var saveData: String? { didSet { settings.set(saveData, forKey: "net.saveData") } }
+    var bigRows: Bool { didSet { save("net.bigRows", bigRows) } }
+    var groupByFrame: Bool { didSet { save("net.groupByFrame", groupByFrame) } }
+    var overview: Bool { didSet { save("net.overview", overview) } }
+    var screenshots: Bool { didSet { save("net.screenshots", screenshots) } }
+    var columns: [String] { didSet { save("net.columns", columns) } }
 
     private let settings: UserDefaults
 

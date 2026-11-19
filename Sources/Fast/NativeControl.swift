@@ -184,10 +184,10 @@ final class NativeControl {
         }
         for nest in (browser.tabs + browser.parkedTabs).compactMap(\.nest) + LiveFolders.nests(in: browser) where nestWatches[nest.id] == nil {
             let resource = "nest:" + nest.id.uuidString, live = "live:" + nest.id.uuidString
-            nestWatches[nest.id] = [nest.$name.dropFirst().sink { [weak self] _ in self?.changes.changed(resource); self?.changes.changed(live) },
-                                   nest.$customMark.dropFirst().sink { [weak self] _ in self?.changes.changed(resource) },
-                                   nest.$color.dropFirst().sink { [weak self] _ in self?.changes.changed(resource) },
-                                   nest.$live.dropFirst().sink { [weak self] _ in self?.changes.changed(live) }]
+            nestWatches[nest.id] = [nest.observed(\.name).dropFirst().sink { [weak self] _ in self?.changes.changed(resource); self?.changes.changed(live) },
+                                   nest.observed(\.customMark).dropFirst().sink { [weak self] _ in self?.changes.changed(resource) },
+                                   nest.observed(\.color).dropFirst().sink { [weak self] _ in self?.changes.changed(resource) },
+                                   nest.observed(\.live).dropFirst().sink { [weak self] _ in self?.changes.changed(live) }]
         }
         let windows = BrowserWindows.shared.browsers + [browser]
         var liveNests = Set<UUID>()

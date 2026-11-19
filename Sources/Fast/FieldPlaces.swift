@@ -1090,7 +1090,7 @@ extension Browser {
     /// Hints come and go while the field is up: its empty list follows.
     func followHints() {
         guard Browser.hintsWatch == nil else { return }
-        Browser.hintsWatch = Hints.shared.$rows.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+        Browser.hintsWatch = Hints.shared.observed(\.rows).dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             // Not under a hand walking the list: the rows would move under it.
             guard let self, self.fieldShowing, self.askingNew, self.typed.isEmpty, self.query.place == nil,
                   self.picked == nil, self.query.pointed == nil else { return }

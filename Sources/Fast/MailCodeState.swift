@@ -23,17 +23,17 @@ struct MailCodeItem: Identifiable, Equatable {
 }
 
 @MainActor
-final class MailCodeState: ObservableObject {
+@Observable final class MailCodeState {
     static let shared = MailCodeState()
-    @Published private(set) var revision = 0
-    private(set) var timer: Timer?
-    private var uses = Set<String>()
-    private var copiedID: String?
-    private var copiedCount: Int?
-    private var cachedRevision = -1
-    private var items: [String: MailCodeItem] = [:]
-    private var absent = Set<String>()
-    private(set) var copyTimes: [String: Date] = [:]
+    private(set) var revision = 0
+    @ObservationIgnored private(set) var timer: Timer?
+    @ObservationIgnored private var uses = Set<String>()
+    @ObservationIgnored private var copiedID: String?
+    @ObservationIgnored private var copiedCount: Int?
+    @ObservationIgnored private var cachedRevision = -1
+    @ObservationIgnored private var items: [String: MailCodeItem] = [:]
+    @ObservationIgnored private var absent = Set<String>()
+    @ObservationIgnored private(set) var copyTimes: [String: Date] = [:]
 
     init() {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in

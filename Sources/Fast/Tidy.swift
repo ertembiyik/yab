@@ -285,13 +285,13 @@ struct DrawnRow: ViewModifier {
 /// Whether "Cleared" is up, and over how many. An object of its own for
 /// the reason Toaster is one.
 @MainActor
-final class Tidier: ObservableObject {
-    @Published private(set) var shown = false
-    @Published private(set) var count = 0
+@Observable final class Tidier {
+    private(set) var shown = false
+    private(set) var count = 0
     /// Every batch the notice is about, so Undo takes all it counted.
-    private(set) var batches: [UUID] = []
+    @ObservationIgnored private(set) var batches: [UUID] = []
 
-    private var hush: DispatchWorkItem?
+    @ObservationIgnored private var hush: DispatchWorkItem?
 
     func show(_ count: Int, batch: UUID) {
         NoticeFeedback.success.play()

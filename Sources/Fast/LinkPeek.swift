@@ -395,7 +395,7 @@ final class PeekFindHost: NSView {
         wantsLayer = true
         host.frame = bounds
         addSubview(host)
-        watch = finder.$shown.dropFirst().filter { !$0 }.sink { [weak self] _ in
+        watch = finder.observed(\.shown).dropFirst().filter { !$0 }.sink { [weak self] _ in
             MainActor.assumeIsolated { self?.removeFromSuperview() }
         }
     }
@@ -408,8 +408,8 @@ final class PeekFindHost: NSView {
 /// about, from under the panel's top edge. The room from the page's top
 /// right to the panel's, or nil with no peek. Apart from Browser, which
 /// doesn't publish the peek: only the corner is drawn again for it.
-final class PeekCorner: ObservableObject {
-    @Published private(set) var inset: CGSize?
+@Observable final class PeekCorner {
+    private(set) var inset: CGSize?
 
     func set(_ inset: CGSize?) {
         if self.inset != inset { self.inset = inset }
@@ -418,8 +418,8 @@ final class PeekCorner: ObservableObject {
 
 /// The navigation doors observe the peek without redrawing the browser.
 @MainActor
-final class PeekFront: ObservableObject {
-    @Published private(set) var page: Tab?
+@Observable final class PeekFront {
+    private(set) var page: Tab?
 
     func set(_ page: Tab?) {
         if self.page !== page { self.page = page }
@@ -428,7 +428,7 @@ final class PeekFront: ObservableObject {
 
 /// The corner's notices moved into a peek's (PeekCorner).
 struct PeekCornerShift<Content: View>: View {
-    @ObservedObject var corner: PeekCorner
+    var corner: PeekCorner
     /// The page's address bar the corner hangs under, which the panel
     /// covers: under a peek the notice comes out of the panel's top edge,
     /// not from a line where the bar's foot would be, half way down it.

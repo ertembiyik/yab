@@ -57,15 +57,15 @@ struct ChatStreamStabilityTests {
         }
     }
 
-    final class Conversation: ObservableObject {
-        @Published var chat: Chat
-        @Published var live = true
-        var writing: [Bool] = []
+    @Observable final class Conversation {
+        var chat: Chat
+        var live = true
+        @ObservationIgnored var writing: [Bool] = []
         init(_ chat: Chat) { self.chat = chat }
     }
     struct Transcript: View {
         let browser: Browser
-        @ObservedObject var conversation: Conversation
+        var conversation: Conversation
         var body: some View {
             ChatTranscript(browser: browser, chat: conversation.chat, live: conversation.live, away: .constant(false), foot: 56)
                 .frame(width: 380, height: 720)

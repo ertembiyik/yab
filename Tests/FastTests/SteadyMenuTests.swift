@@ -10,11 +10,11 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SteadyMenuTests {
-    final class Ticker: ObservableObject { @Published var n = 0 }
+    @Observable final class Ticker { var n = 0 }
 
     /// A row that redraws with each tick, as a busy page's row does.
     struct Row: View {
-        @ObservedObject var ticker: Ticker
+        var ticker: Ticker
         let browser: Browser
         let tab: Fast.Tab
         var body: some View {

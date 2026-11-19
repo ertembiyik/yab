@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import SwiftUI
 
 // Settings' cards and questions stand in a window of their own over the
@@ -16,15 +15,15 @@ final class SettingsCards {
 
     /// Where the card stands in the panel: Settings' middle, from the
     /// panel's, and how tall the panel is.
-    final class Spot: ObservableObject {
-        @Published var offset: CGFloat = 0
-        @Published var height: CGFloat = 0
+    @Observable final class Spot {
+        var offset: CGFloat = 0
+        var height: CGFloat = 0
     }
 
     let spot = Spot()
     private var panel: SettingsCardPanel?
     private weak var parent: NSWindow?
-    private var watch: AnyCancellable?
+    private var watch: ObservationLoop?
     private var shown = false
 
     /// A card or a question of Settings' own is up.
@@ -49,26 +48,6 @@ final class SettingsCards {
         return nil
     }
 
-    /// Every card's state, for the panel to come and go with them.
-    private var changes: AnyPublisher<Void, Never> {
-        var all: [AnyPublisher<Void, Never>] = [
-            Questions.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            SiteEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            QuickActionEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            ShieldSourceEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            LinkRouteEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            EngineSiteEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            RoutineEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            AwakeSiteEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            PasswordManagers.Connections.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-            SnippetEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
-        ]
-        if #available(macOS 15.4, *) {
-            all.append(BlockEditing.shared.objectWillChange.map { _ in () }.eraseToAnyPublisher())
-        }
-        return Publishers.MergeMany(all).eraseToAnyPublisher()
-    }
-
     /// Made with the Settings window, as its child.
     func attach(to window: NSWindow, browser: Browser) {
         parent = window
@@ -89,8 +68,7 @@ final class SettingsCards {
         host.sizingOptions = []
         panel.contentView = host
         self.panel = panel
-        // After the change is published, once the stores hold the new state.
-        watch = changes.receive(on: DispatchQueue.main).sink { [weak self] in self?.update() }
+        watch = ObservationLoop { [weak self] in self?.update() }
     }
 
     /// The column over Settings: Settings' width, the screen's height.
@@ -158,7 +136,7 @@ final class SettingsCardPanel: NSPanel {
 /// click beside the card takes it down, as the dimming's did.
 private struct SettingsCardStack: View {
     let browser: Browser
-    @ObservedObject var spot: SettingsCards.Spot
+    var spot: SettingsCards.Spot
     @State private var tall: CGFloat = 0
 
     var body: some View {
@@ -194,17 +172,16 @@ private struct SettingsCardStack: View {
 /// Over Settings while a card is up: dimmed for a card, clear for a
 /// question, and taking every click either way.
 struct SettingsVeil: View {
-    @ObservedObject private var questions = Questions.shared
-    @ObservedObject private var site = SiteEditing.shared
-    @ObservedObject private var quick = QuickActionEditing.shared
-    @ObservedObject private var shield = ShieldSourceEditing.shared
-    @ObservedObject private var link = LinkRouteEditing.shared
-    @ObservedObject private var engine = EngineSiteEditing.shared
-    @ObservedObject private var routine = RoutineEditing.shared
-    @ObservedObject private var awake = AwakeSiteEditing.shared
-    @ObservedObject private var passwords = PasswordManagers.Connections.shared
-    @ObservedObject private var snippets = SnippetEditing.shared
-    @State private var tick = 0
+    private var questions = Questions.shared
+    private var site = SiteEditing.shared
+    private var quick = QuickActionEditing.shared
+    private var shield = ShieldSourceEditing.shared
+    private var link = LinkRouteEditing.shared
+    private var engine = EngineSiteEditing.shared
+    private var routine = RoutineEditing.shared
+    private var awake = AwakeSiteEditing.shared
+    private var passwords = PasswordManagers.Connections.shared
+    private var snippets = SnippetEditing.shared
 
     var body: some View {
         let cards = SettingsCards.shared
@@ -219,19 +196,5 @@ struct SettingsVeil: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .modifier(BlockWatch(tick: $tick))
-    }
-}
-
-/// The extension's Add Site… card is only on macOS 15.4 and later.
-private struct BlockWatch: ViewModifier {
-    @Binding var tick: Int
-
-    func body(content: Content) -> some View {
-        if #available(macOS 15.4, *) {
-            content.onReceive(BlockEditing.shared.objectWillChange) { _ in DispatchQueue.main.async { tick += 1 } }
-        } else {
-            content
-        }
     }
 }

@@ -29,11 +29,11 @@ enum StripRenderMeter {
 /// on the tab you picked the moment you pick it, a state, not a journey.
 struct TabBar: View {
     @Environment(\.tabTitleSize) private var titleSize
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// An agent's task on many tabs: one pill, a folder (AgentFolders).
     /// Watched: every window's folders tell the first window's
     /// (Folders.init(sharing:)); this window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser.folderBook }
 
     /// The views laid under the pins ahead and the run, which the tabs in
@@ -1705,7 +1705,7 @@ struct TabBar: View {
 /// page's top right corner (ReadingPlate), so Aa beside it is always there.
 struct ReadingDoor: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// A half's own, in split view: it reads that half, whichever is in
     /// front. Otherwise the tab in front.
     var own = false
@@ -1744,10 +1744,10 @@ struct ReadingDoor: View {
 /// white plate and a light one a black plate (row 1054, #646).
 struct ReadingPlate: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// Told where the plate stands in its host, for the host's presses.
     var placed: (CGRect) -> Void = { _ in }
-    @ObservedObject private var style = ReaderStyle.shared
+    private var style = ReaderStyle.shared
     /// The window's, which Match the Mac follows.
     @Environment(\.colorScheme) private var window
 
@@ -1829,7 +1829,7 @@ struct ReadingPlateHost: NSViewRepresentable {
 /// every page. Used here, at the right edge of the sidebar's header, and
 /// beside the small window's lights (LinkWindow), with a `steer` of its own.
 struct Helm: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// A half's own, in split view: they act on that half, whichever is in
     /// front. Otherwise the tab in front's.
     var tab: Tab? = nil
@@ -1880,7 +1880,7 @@ struct Helm: View {
     }
 
     private struct Following<Content: View>: View {
-        @ObservedObject var peek: PeekFront
+        var peek: PeekFront
         @ViewBuilder let content: (Tab?) -> Content
         var body: some View { content(peek.page) }
     }
@@ -1917,7 +1917,7 @@ struct Helm: View {
     private struct Steered: View {
         let browser: Browser
         let tab: Tab
-        @ObservedObject var steer: HelmSteer
+        var steer: HelmSteer
         let reads: Bool
         let resting: Bool
         let reloadFirst: Bool
@@ -1931,8 +1931,8 @@ struct Helm: View {
     private struct Wheel: View {
         // Watched, not just held: the counts of backs, forwards and reloads
         // are what set the doors' icons going when a shortcut does it.
-        @ObservedObject var browser: Browser
-        @ObservedObject var tab: Tab
+        var browser: Browser
+        var tab: Tab
         let own: Bool
         let reads: Bool
         let quiet: Bool
@@ -2020,10 +2020,10 @@ struct Helm: View {
 /// (Browser.backs), so a key in that window kicks that window's doors and
 /// the browser's stay still.
 @MainActor
-final class HelmSteer: ObservableObject {
-    @Published private(set) var backs = 0
-    @Published private(set) var forwards = 0
-    @Published private(set) var reloads = 0
+@Observable final class HelmSteer {
+    private(set) var backs = 0
+    private(set) var forwards = 0
+    private(set) var reloads = 0
 
     /// A door, or with `byKey` ⌘[ and ⌘], whose page just appears.
     func back(_ tab: Tab, byKey: Bool = false) {
@@ -2060,15 +2060,15 @@ private struct StripComing: View {
         let run: CGFloat
     }
 
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// This space's run.
     let run: CGFloat
     let room: CGFloat
     let lay: (Parked) -> Lay
-    @ObservedObject private var pull = SpacePull.shared
+    private var pull = SpacePull.shared
     /// Watched: every window's folders tell the first window's
     /// (Folders.init(sharing:)); this window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser.folderBook }
     @Environment(\.tone) private var tone
 
@@ -2112,7 +2112,7 @@ private struct StripComing: View {
         return spans.filter { $0.value.1 > $0.value.0 }
     }
 
-    @ObservedObject private var turns = StripTurns.shared
+    private var turns = StripTurns.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -2231,7 +2231,7 @@ private struct LeadSlide: GeometryEffect {
 private struct StripArrival: ViewModifier {
     let space: UUID
     let step: Int
-    @ObservedObject private var turns = StripTurns.shared
+    private var turns = StripTurns.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private struct Arrival {
@@ -2266,7 +2266,7 @@ private struct StripPlus: ViewModifier {
     let browser: Browser
     let run: CGFloat
     let lay: (Parked) -> StripComing.Lay
-    @ObservedObject private var pull = SpacePull.shared
+    private var pull = SpacePull.shared
 
     func body(content: Content) -> some View {
         let shift = pull.coming(in: browser).map { (lay($0).run - run) * pull.progress } ?? 0
@@ -2380,7 +2380,7 @@ private struct TabPill: View, Equatable {
     let glyph: Glyph
     /// How tall it stands (Density.tab).
     let density: Density
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let live: Bool
     /// The browser's, for this tab.
     let editing: Bool
@@ -2787,7 +2787,7 @@ private struct TabPill: View, Equatable {
 /// selected text as a solid block of accent color, which over a pale gray pill
 /// this size is the loudest thing in the window. Here it is a tenth of the ink.
 struct TabAddressField: NSViewRepresentable {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// The tab whose row this field is in: a row drawn again for another
     /// tab (a column cell reused) never takes the keys for this one's edit.
     let tab: Tab.ID
@@ -2959,7 +2959,7 @@ struct TabAddressField: NSViewRepresentable {
 /// and the agent goes on in it (Browser.moveTabs). Not a script's bench
 /// tab, which shows nowhere.
 struct SpaceSend: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let tabs: [Tab]
     var title: String? = nil
     /// The only group of its Move to: it stands in the menu as Move to Space.
@@ -3036,8 +3036,8 @@ struct SpaceSend: View {
 /// What a right-click on any tab offers, wherever the tab is drawn.
 /// Show Count or Hide Count, for the site: every pin and kept tab of it.
 private struct CountToggle: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var choices = CountSites.shared
+    var tab: Tab
+    private var choices = CountSites.shared
 
     var body: some View {
         Button(Counts.shows(tab.address) ? "Hide Count" : "Show Count", mark: "yab.hash") { Counts.toggle(tab.address) }
@@ -3045,9 +3045,9 @@ private struct CountToggle: View {
 }
 
 struct TabMenu: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var windows = BrowserWindows.shared
+    var browser: Browser
+    var tab: Tab
+    private var windows = BrowserWindows.shared
     let close: () -> Void
 
     var body: some View {
@@ -3544,8 +3544,8 @@ struct TabMenu: View {
 /// Move to Folder: one of your folders among the kept, a new one made
 /// around the tab, or out of the one it is in.
 struct NestSend: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
 
     var body: some View {
         Menu("Move to Folder", mark: "yab.folder.right") { contents }
@@ -3636,7 +3636,7 @@ struct Held: ButtonStyle {
 /// hanging from the tab's mark (TabPill).
 struct TabEnd: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let live: Bool
     let hovering: Bool
     let editing: Bool
@@ -4014,8 +4014,8 @@ final class RingView: NSView {
 /// in a tab: the system paints selected text as a solid block of accent color,
 /// and over a thirty-point gray square that is the loudest thing on screen.
 struct PinField: NSViewRepresentable {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
 
     func makeCoordinator() -> Coordinator { Coordinator(browser: browser, tab: tab) }
 

@@ -8,7 +8,7 @@ import SQLite3
 /// Discovery lists browsers only. Files, counts and keychain items are read
 /// only after Bring In is pressed, for that operation and that browser.
 @MainActor
-final class Bringing: ObservableObject {
+@Observable final class Bringing {
     /// What one browser holds, counted, not yet taken.
     struct Counts: Equatable {
         var passwords: Int?
@@ -65,8 +65,8 @@ final class Bringing: ObservableObject {
         case failed(String)
     }
 
-    @Published private(set) var sources: [Chromium.Source] = []
-    @Published var chosen: Chromium.Source? {
+    private(set) var sources: [Chromium.Source] = []
+    var chosen: Chromium.Source? {
         didSet {
             guard chosen != oldValue else { return }
             taken = []
@@ -75,17 +75,17 @@ final class Bringing: ObservableObject {
         }
     }
     /// The browsers brought in from already, by id.
-    @Published private(set) var brought: Set<String> = []
-    @Published private(set) var counts: [String: Counts] = [:]
+    private(set) var brought: Set<String> = []
+    private(set) var counts: [String: Counts] = [:]
     /// Several places, spaces off: each comes as a space of its own (Keep
     /// its spaces), or all of them together into the one row.
-    @Published var asSpaces = false
-    @Published private(set) var state: State = .idle
+    var asSpaces = false
+    private(set) var state: State = .idle
     /// macOS is asking for the key, after Bring was pressed.
-    @Published private(set) var asking = false
+    private(set) var asking = false
     /// What's already been brought from the chosen browser, so a second
     /// press brings only what's left.
-    private var taken: Set<String> = []
+    @ObservationIgnored private var taken: Set<String> = []
 
     var current: Counts { chosen.flatMap { counts[$0.id] } ?? Counts() }
     var busy: Bool { state == .bringing }
@@ -96,14 +96,14 @@ final class Bringing: ObservableObject {
     /// Finding them checks container metadata and asks macOS for icons, so it is
     /// done once, off the main thread; the chapter then reads what was found
     /// rather than asking again every time it is drawn.
-    @Published private(set) var loaded = false
-    @Published private(set) var icons: [String: NSImage] = [:]
+    private(set) var loaded = false
+    private(set) var icons: [String: NSImage] = [:]
     /// When each was last browsed in, read with the rest.
-    @Published private(set) var used: [String: Date] = [:]
-    @Published private(set) var defaultID: String?
-    private var loading = false
+    private(set) var used: [String: Date] = [:]
+    private(set) var defaultID: String?
+    @ObservationIgnored private var loading = false
     /// A failure said once the welcome has handed the window over.
-    private var later: AnyCancellable?
+    @ObservationIgnored private var later: AnyCancellable?
 
     /// How long the tabs, sign-ins and the rest wait after the key is
     /// given: until your pins have poured into the window-to-be, so the
@@ -149,7 +149,7 @@ final class Bringing: ObservableObject {
     }
 
     /// Browsers whose tabs shown are the kept ones: Bring reads them again.
-    private var keptTabs: Set<String> = []
+    @ObservationIgnored private var keptTabs: Set<String> = []
 
     private func count(_ source: Chromium.Source?) {
         guard let source, counts[source.id] == nil else { return }

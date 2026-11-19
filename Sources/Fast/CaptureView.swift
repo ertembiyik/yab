@@ -1111,7 +1111,7 @@ final class CaptureView: NSView, NSDraggingSource {
 /// The room, kept out of accessibility until a capture is up in it.
 struct CaptureSkyLayer: View {
     let capture: Capture
-    @ObservedObject private var model: CaptureModel
+    private var model: CaptureModel
 
     init(capture: Capture) {
         self.capture = capture
@@ -1178,7 +1178,7 @@ final class CaptureRoom: NSView {
 /// field's box is: what to do, and the buttons for what a click can't say,
 /// each with its key.
 struct CaptureFoot: View {
-    @ObservedObject var model: CaptureModel
+    var model: CaptureModel
 
     var body: some View {
         ModeFoot(say: "Click a part or drag an area", busy: model.busy) {
@@ -1272,7 +1272,7 @@ struct CaptureGlass: View {
 /// big, and the two things to do next. The picture itself is the way to
 /// the editor, and a drag takes it anywhere.
 struct CapturePlateBar: View {
-    @ObservedObject var model: CaptureModel
+    var model: CaptureModel
 
     var body: some View {
         HStack(spacing: 6) {
@@ -1297,7 +1297,7 @@ struct CapturePlateBar: View {
 /// Save, the one button the corner's card and the editor share: the view
 /// over the page moves it from one place to the other (CaptureView).
 struct CaptureSaveButton: View {
-    @ObservedObject var model: CaptureModel
+    var model: CaptureModel
 
     var body: some View {
         Button { model.act(.save) } label: {
@@ -1314,7 +1314,7 @@ struct CaptureSaveButton: View {
 
 /// Done, the editor's last word, beside Save.
 struct CaptureDoneButton: View {
-    @ObservedObject var model: CaptureModel
+    var model: CaptureModel
 
     var body: some View {
         Button { model.act(.done) } label: {
@@ -1330,7 +1330,7 @@ struct CaptureDoneButton: View {
 }
 
 struct CaptureEditorTop: View {
-    @ObservedObject var model: CaptureModel
+    var model: CaptureModel
 
     var body: some View {
         HStack(spacing: 6) {
@@ -1354,7 +1354,7 @@ struct CaptureEditorTop: View {
 /// The editor's controls: four, and nothing to manage. The backdrop, the
 /// shape, whether private things show, and done.
 struct CaptureEditorBar: View {
-    @ObservedObject var model: CaptureModel
+    var model: CaptureModel
 
     private var style: CaptureStyle { model.style }
 

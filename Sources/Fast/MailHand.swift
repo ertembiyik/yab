@@ -9,19 +9,19 @@ import SwiftUI
 
 /// Where the hand is and what it is about to do.
 @MainActor
-final class MailHand: ObservableObject {
+@Observable final class MailHand {
     static let shared = MailHand()
 
     /// Its middle in the list's content (MailMorph.list); nil before it came.
-    @Published private(set) var at: CGPoint?
-    @Published private(set) var pressed = false
-    @Published private(set) var shown = false
+    private(set) var at: CGPoint?
+    private(set) var pressed = false
+    private(set) var shown = false
     /// Threads an agent acted on, by row id, and when: rows going within a
     /// few seconds of it are the agent's.
-    private var touched: [String: Date] = [:]
+    @ObservationIgnored private var touched: [String: Date] = [:]
     /// The rows' going, held for the press.
-    private var pending: (() -> Void)?
-    private var turn = 0
+    @ObservationIgnored private var pending: (() -> Void)?
+    @ObservationIgnored private var turn = 0
 
     /// How long after mail_act a row going is taken for the agent's.
     static let window: TimeInterval = 4
@@ -101,7 +101,7 @@ final class MailHand: ObservableObject {
 
 /// The hand over the list's rows, in their own coordinates.
 struct MailHandView: View {
-    @ObservedObject private var hand = MailHand.shared
+    private var hand = MailHand.shared
 
     var body: some View {
         if let at = hand.at {

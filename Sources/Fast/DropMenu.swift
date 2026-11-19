@@ -185,7 +185,7 @@ struct DropAnchor: NSViewRepresentable {
 
 /// What the list shows and where the keys are in it.
 @MainActor
-final class DropList: ObservableObject {
+@Observable final class DropList {
     struct Line {
         var title: String
         var picture: NSImage?
@@ -203,7 +203,7 @@ final class DropList: ObservableObject {
         var opens = false
     }
 
-    @Published private(set) var lines: [Line]
+    private(set) var lines: [Line]
     let chosen: Int
     let showsCheck: Bool
     let divideBefore: Int?
@@ -213,7 +213,7 @@ final class DropList: ObservableObject {
     /// A search on top however few the answers: the small window's spaces,
     /// found by name as Arc's are.
     let alwaysSearch: Bool
-    @Published var query = "" {
+    var query = "" {
         didSet {
             spot = shown.first ?? 0
             changed()
@@ -221,15 +221,15 @@ final class DropList: ObservableObject {
     }
     /// Told when the search changes how many answers there are, so the
     /// window fits them.
-    var changed: () -> Void = {}
-    @Published var spot: Int
+    @ObservationIgnored var changed: () -> Void = {}
+    var spot: Int
     /// Set by the keys, so the list scrolls to them; never by the pointer.
-    @Published var scrollTo: Int?
-    var pick: (Int?) -> Void = { _ in }
+    var scrollTo: Int?
+    @ObservationIgnored var pick: (Int?) -> Void = { _ in }
 
     /// Told when a box is ticked or cleared, with every line that is on:
     /// a list of boxes stays open while they change.
-    var ticked: ((Set<Int>) -> Void)?
+    @ObservationIgnored var ticked: ((Set<Int>) -> Void)?
     /// How tall it grows before it scrolls.
     let tallest: CGFloat
     /// The keys it answers to, along its foot.
@@ -333,7 +333,7 @@ final class DropList: ObservableObject {
 }
 
 struct DropListView: View {
-    @ObservedObject var list: DropList
+    @Bindable var list: DropList
     let width: CGFloat
 
     static let row: CGFloat = 28

@@ -11,8 +11,8 @@ struct YabApp: App {
     /// First, before any window: a first run from outside
     /// Applications moves in and opens from there (see Arrival).
     private let settled: Void = Arrival.settle
-    @StateObject private var browser = Browser()
-    @StateObject private var windows = BrowserWindows.shared
+    @State private var browser = Browser()
+    @State private var windows = BrowserWindows.shared
     private var selected: Browser { windows.activeBrowser ?? browser }
     /// Links from other apps, and the Dock icon.
     @NSApplicationDelegateAdaptor(Links.self) private var links
@@ -84,8 +84,8 @@ struct YabApp: App {
 /// tab picked made SwiftUI rebuild the scene and push a new
 /// environment into every row of the column (row 1123).
 private struct FileItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Button("New Window") { selected.newWindow() }
@@ -137,8 +137,8 @@ private struct FileItems: View {
 
 /// Print and Capture (YabApp).
 private struct PrintItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Button("Print…") { selected.printPage() }
@@ -152,8 +152,8 @@ private struct PrintItems: View {
 
 /// Find on Page and its steps, in Edit (YabApp).
 private struct FindItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Divider()
@@ -171,8 +171,8 @@ private struct FindItems: View {
 
 /// The View menu (YabApp).
 private struct ViewItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         AppearanceMenu(browser: selected)
@@ -256,8 +256,8 @@ private struct ViewItems: View {
 
 /// The Tabs menu (YabApp).
 private struct TabsItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         AgentCommands(browser: selected)
@@ -382,8 +382,8 @@ private struct TabsItems: View {
 
 /// The Bookmarks menu's own two (YabApp).
 private struct BookmarksItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Button(selected.several ? "Add \(selected.chosenCount) Tabs to a Folder" : "Add This Page") {
@@ -400,8 +400,8 @@ private struct BookmarksItems: View {
 
 /// The History menu (YabApp).
 private struct HistoryItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         // The way back and forth, where Safari and Chrome keep it,
@@ -450,8 +450,8 @@ private struct HistoryItems: View {
 
 /// Reopen Closed Window and Mail, in Window (YabApp).
 private struct WindowItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Divider()
@@ -469,8 +469,8 @@ private struct WindowItems: View {
 
 /// Settings and the rest under it, in the Yab menu (YabApp).
 private struct SettingsItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Button("Settings…") { selected.tuning = true }
@@ -491,8 +491,8 @@ private struct SettingsItems: View {
 
 /// The Help menu (YabApp).
 private struct HelpItems: View {
-    @ObservedObject var selected: Browser
-    @ObservedObject var windows: BrowserWindows
+    var selected: Browser
+    var windows: BrowserWindows
 
     var body: some View {
         Button("Yab Manual") { Command.manual.run(in: selected) }
@@ -538,7 +538,7 @@ private struct MenuLine: View {
 /// its mind, a site that turns dark after it loads, a theme-color that
 /// arrives late, and eased from one tab's color to the next.
 struct Toned<Content: View>: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// Worn as a backdrop, with the live tab a chip lifted off it.
     var lifted = false
     @ViewBuilder let content: (Tone?) -> Content
@@ -611,7 +611,7 @@ private struct StripPlace: ViewModifier, Animatable {
 /// column is laid out there once they have landed (Browser.moveHead,
 /// Reshape.slide).
 private struct HeadSunk: ViewModifier {
-    @ObservedObject var peek: HeadPeek
+    var peek: HeadPeek
     /// There is a band: the column on the right, in a window.
     let band: Bool
     let laid: Bool
@@ -630,7 +630,7 @@ private struct HeadSunk: ViewModifier {
 /// The band's lights and title shown once its room is made, and clickable
 /// while it is out (HeadPeek).
 private struct HeadShown: ViewModifier {
-    @ObservedObject var peek: HeadPeek
+    var peek: HeadPeek
 
     func body(content: Content) -> some View {
         content
@@ -645,7 +645,7 @@ private struct HeadShown: ViewModifier {
 /// edge bringing it out or letting it go draws the strip again, not the
 /// whole window.
 private struct StripPlaced<Content: View>: View {
-    @ObservedObject var peek: StripPeek
+    var peek: StripPeek
     /// Put away by ⌘S (`prefs.stripShut`).
     let shut: Bool
     /// ⌘S moves it, drawn as far down as `down` (Browser.stripDown).
@@ -685,7 +685,7 @@ private struct StripPlaced<Content: View>: View {
 /// what stands at the top: the strip, in its place or out over the page
 /// (StripPeek), and the bookmarks.
 private struct BackdropDrag: View {
-    @ObservedObject var strip: StripPeek
+    var strip: StripPeek
     let reserved: CGFloat
     let trailing: CGFloat
     /// The tabs are across the top.
@@ -702,7 +702,7 @@ private struct BackdropDrag: View {
 /// Whatever is drawn in the page's own light or dark, kept up with it as
 /// the page is seen again.
 struct Shaded<Content: View>: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     @ViewBuilder let content: (ColorScheme?) -> Content
 
     var body: some View {
@@ -713,7 +713,7 @@ struct Shaded<Content: View>: View {
 /// What stands over a page and wears its light (Tab.under): Peek's
 /// buttons, the meeting card.
 struct Under<Content: View>: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     @ViewBuilder let content: (ColorScheme?) -> Content
 
     var body: some View {
@@ -829,7 +829,7 @@ struct GroundFill<S: Shape>: View {
 /// page had the screen and stayed black after it came back, the tab no
 /// longer immersed, until another tab was chosen (register 2669, 0.47.0).
 private struct PageGround: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let away: Bool
 
     var body: some View {
@@ -853,8 +853,8 @@ struct WornSite: Equatable {
 /// the window's view doesn't.
 private struct HoardPlace: View {
     let hoard: Hoard
-    @ObservedObject var peek: SidePeek
-    @ObservedObject var strip: StripPeek
+    var peek: SidePeek
+    var strip: StripPeek
     let immersed: Bool
     let sidebar: Bool
     /// The column is in its place, showing.
@@ -920,9 +920,9 @@ final class ChatRoomWidest {
 }
 
 struct ContentView: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// The card's edge, dragged (DevSize): the room is laid out again.
-    @ObservedObject private var devSize = DevSize.shared
+    private var devSize = DevSize.shared
 
     @State private var keys: Any?
     @State private var middle: Any?
@@ -3168,13 +3168,13 @@ struct RecentlyVisited: View {
 
     /// The places a moment after the history changes (RecentMenu).
     private struct Listed: View {
-        @ObservedObject var recent: RecentMenu
+        var recent: RecentMenu
         let browser: Browser
         var body: some View { RecentlyVisited.section(recent.visited, browser) }
     }
 
     private struct Live: View {
-        @ObservedObject var history: History
+        var history: History
         let browser: Browser
         var body: some View { RecentlyVisited.section(history.recent(), browser) }
     }

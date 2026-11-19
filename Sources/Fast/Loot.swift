@@ -35,12 +35,12 @@ struct Keep: Codable, Identifiable, Equatable {
 }
 
 @MainActor
-final class Loot: ObservableObject {
-    @Published private(set) var kept: [Keep] = [] {
+@Observable final class Loot {
+    private(set) var kept: [Keep] = [] {
         didSet { version += 1 }
     }
     /// Counts every change to the list, for what is made from it.
-    private(set) var version = 0
+    @ObservationIgnored private(set) var version = 0
 
     private let persists: Bool
     private let saving = DispatchQueue(label: "yab.downloads.save", qos: .utility)

@@ -268,7 +268,7 @@ struct StripShutTests {
                 browser.prefs.sideShut = true
                 browser.sideCard = true
                 var paints = 0
-                let watching = browser.peek.objectWillChange.sink { _ in paints += 1 }
+                let watching = ObservedWrites({ _ = (browser.peek.out, browser.peek.card) }, told: { paints += 1 })
                 Brim.bring(browser, out: true)
                 #expect(browser.sidePeek && browser.sideCard)
                 #expect(paints == 1)
@@ -293,10 +293,8 @@ struct StripShutTests {
                 browser.prefs.sidebar = false
                 browser.putStrip(away: true)
                 var window = 0, strip = 0
-                let watching = [
-                    browser.relay.any.sink { _ in window += 1 },
-                    browser.topPeek.objectWillChange.sink { _ in strip += 1 },
-                ]
+                let watching = (browser.relay.any.sink { _ in window += 1 },
+                                ObservedWrites({ _ = (browser.topPeek.out, browser.topPeek.card) }, told: { strip += 1 }))
                 Brim.bringStrip(browser, out: true)
                 #expect(browser.stripPeek && browser.stripCard)
                 #expect(window == 0)

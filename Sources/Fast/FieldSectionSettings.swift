@@ -4,10 +4,10 @@ import SwiftUI
 /// order, each with its switch, then what Yab notices. A part is dragged to
 /// its place, its grip where its mark was under the pointer.
 struct FieldSectionSettings: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var sections = FieldSections.shared
+    var prefs: Preferences
+    private var sections = FieldSections.shared
     /// Mail that needs you shows once an account is connected.
-    @ObservedObject private var mail = MailCenter.shared
+    private var mail = MailCenter.shared
     @AppStorage(FrequentReach.key, store: Store.settings) private var reach = ""
     @AppStorage("hints.noticing", store: Store.settings) private var suggesting = true
     /// Kinds and people Don't Show Things Like This turned off, read so a

@@ -9,9 +9,9 @@ import WebKit
 
 struct NetDetails: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
+    var tab: Tab
+    var log: NetLog
+    var panel: NetPanel
     let row: NetRow
     /// Under the page there is room for Copy for Agent's words.
     var wide = true
@@ -211,7 +211,7 @@ struct NetNote: View {
 
 struct NetHeadersTab: View {
     let browser: Browser
-    @ObservedObject var panel: NetPanel
+    var panel: NetPanel
     let row: NetRow
     @State private var rawRequest = false
     @State private var rawResponse = false
@@ -1235,8 +1235,8 @@ enum NetHighlight {
 
 struct NetInitiatorTab: View {
     let browser: Browser
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
+    var log: NetLog
+    var panel: NetPanel
     let row: NetRow
 
     var body: some View {
@@ -1315,7 +1315,7 @@ struct NetInitiatorTab: View {
 // MARK: - Timing
 
 struct NetTimingTab: View {
-    @ObservedObject var log: NetLog
+    var log: NetLog
     let row: NetRow
 
     var body: some View {

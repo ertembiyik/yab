@@ -74,12 +74,12 @@ struct AssistantRequest: Codable, Equatable {
 }
 
 @MainActor
-final class Assistants: ObservableObject {
+@Observable final class Assistants {
     static let shared = Assistants()
 
-    @Published private(set) var grants: [AssistantGrant] = []
+    private(set) var grants: [AssistantGrant] = []
     /// What assistants asked for, newest last; not kept past a restart.
-    @Published private(set) var requests: [AssistantRequest] = []
+    private(set) var requests: [AssistantRequest] = []
 
     private var store: UserDefaults { Store.settings }
 

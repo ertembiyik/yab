@@ -163,7 +163,7 @@ struct SpaceVisits: Codable {
 }
 
 @MainActor
-final class History: ObservableObject {
+@Observable final class History {
     static let shared = History()
     private static var profiles: [String: History] = [:]
 
@@ -195,7 +195,6 @@ final class History: ObservableObject {
                 spaceKeys = nil
             }
             counted = visits.count
-            objectWillChange.send()
             entries.removeAll(keepingCapacity: true)
             markSeen = nil
             entryMarked = []
@@ -210,6 +209,9 @@ final class History: ObservableObject {
             if visits.count > 500 { scheduleIndex() }
         }
     }
+    /// Reads the visits, so a follower hears every change (RecentMenu).
+    func followVisits() { _ = visits.count }
+
     /// The last few places, for the History menu, made once per change: the
     /// menu bar is laid out again on every change to the window, a key
     /// typed into the address field included, and sorting the whole history
@@ -345,7 +347,7 @@ final class History: ObservableObject {
     private var addressPosition: [Int] = []
     private var titlePrefixes: [String: TitlePostings] = [:]
     private var indexGeneration = 0
-    private var indexWork: DispatchWorkItem?
+    @ObservationIgnored private var indexWork: DispatchWorkItem?
     let indexReady = PassthroughSubject<Void, Never>()
     var isIndexing: Bool { !indexed && visits.count > History.cap }
     /// The last answer, for the same words asked again: the field asks
@@ -569,7 +571,7 @@ final class History: ObservableObject {
     }
     /// The write a change has scheduled and not yet made, so a flush can
     /// take its place rather than let it land later over newer rows.
-    private var pendingSave: DispatchWorkItem?
+    @ObservationIgnored private var pendingSave: DispatchWorkItem?
     private let storage: URL?
 
     convenience init() { self.init(file: History.file) }
@@ -1068,7 +1070,7 @@ final class History: ObservableObject {
     /// for all its pages, so forgetting the page it showed would only bring
     /// up the next one; it stays out, as a tile removed from Chrome's Most
     /// Visited does, and is still found by typing.
-    private(set) lazy var unfrequent: Set<String> = Set(storage == History.file ? Store.settings.stringArray(forKey: History.unfrequentKey) ?? [] : [])
+    @ObservationIgnored private(set) lazy var unfrequent: Set<String> = Set(storage == History.file ? Store.settings.stringArray(forKey: History.unfrequentKey) ?? [] : [])
     private static let unfrequentKey = "history.unfrequent"
 
     /// A Frequent row's page forgotten and its site kept out of Frequent.
@@ -1077,7 +1079,7 @@ final class History: ObservableObject {
         if storage == History.file { Store.settings.set(unfrequent.sorted(), forKey: History.unfrequentKey) }
         frequentCache = nil
         spaceFrequent = [:]
-        if visits[key] != nil { forget(key) } else { objectWillChange.send() }
+        if visits[key] != nil { forget(key) }
     }
 
     // MARK: - reading

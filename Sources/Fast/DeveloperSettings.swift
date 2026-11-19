@@ -13,11 +13,11 @@ import SwiftUI
 // else. Words come only with something to do, and one button that does it.
 
 struct DevelopersPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var setup = AgentSetupModel.shared
-    @ObservedObject private var inspectorKey = Keymap.shared.slot(.inspector)
-    @ObservedObject private var measureKey = Keymap.shared.slot(.measure)
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    private var setup = AgentSetupModel.shared
+    private var inspectorKey = Keymap.shared.slot(.inspector)
+    private var measureKey = Keymap.shared.slot(.measure)
     @State private var pieces = AgentSetup.pieces()
     @State private var servers = DevSites.servers
     @State private var working: String?

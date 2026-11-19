@@ -105,7 +105,7 @@ struct FinderIcon: View {
 /// the front again (the default may have been changed elsewhere), never
 /// from a view's body.
 @MainActor
-final class DefaultBrowser: ObservableObject {
+@Observable final class DefaultBrowser {
     static let shared = DefaultBrowser()
 
     struct App: Equatable {
@@ -119,9 +119,9 @@ final class DefaultBrowser: ObservableObject {
     }
 
     /// Nil until looked up, and while Yab is the one.
-    @Published private(set) var app: App?
-    private var looking = false
-    private var again = false
+    private(set) var app: App?
+    @ObservationIgnored private var looking = false
+    @ObservationIgnored private var again = false
 
     func refresh() {
         guard !looking else { again = true; return }

@@ -472,7 +472,7 @@ private struct TurnedFace: ViewModifier, Animatable {
 
 /// Settings › About: the stamp, its number and who it's from.
 struct StampAboutSection: View {
-    @ObservedObject private var stamp = MemberStamp.shared
+    @Bindable private var stamp = MemberStamp.shared
 
     var body: some View {
         if let info = stamp.info {
@@ -497,7 +497,7 @@ struct StampAboutSection: View {
 
 /// Invite Friends: what goes on the back of their stamp.
 struct StampNoteRow: View {
-    @ObservedObject private var stamp = MemberStamp.shared
+    @Bindable private var stamp = MemberStamp.shared
 
     /// The stamp's navy pen, lifted to a pale blue on a dark field.
     private static let pen = Color(nsColor: NSColor(name: nil) { look in

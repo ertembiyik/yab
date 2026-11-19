@@ -24,8 +24,8 @@ struct ChatComposer: View {
     /// A tab of the chat's waiting on you: the words answer it.
     let asking: Tab?
     /// The tabs and files the words go with (ChatAttach).
-    @ObservedObject var attach: ChatAttach
-    @ObservedObject private var peek: PeekFront
+    var attach: ChatAttach
+    private var peek: PeekFront
     var foot: CGFloat = 10
     @State private var words = ""
     @State private var fieldHeight: CGFloat = 40
@@ -178,11 +178,7 @@ struct ChatComposer: View {
             // Another chat in the column: the edit was the one before's.
             if browser.chatEditing != nil, editing == nil { browser.chatEditing = nil }
         }
-        .onReceive(MailDesk.shared.$open.combineLatest(MailDesk.shared.$screen, MailDesk.shared.$who, MailDesk.shared.$rows)
-            .map { open, screen, who, rows in
-                "\(screen)|\(open?.id ?? "")|\(who?.address ?? "")|\(rows.count)|\(MailDesk.shared.split)|\(MailDesk.shared.query)"
-            }
-            .removeDuplicates()) { mailShown = $0 }
+        .background(MailShownWatch(shown: $mailShown))
         .onDisappear {
             if let presses { NSEvent.removeMonitor(presses) }
             presses = nil
@@ -852,9 +848,9 @@ struct ChatPlan: View {
 /// card in the field's place (AgentPlaque). Either grows out of the field
 /// and, once answered, shrinks back into it, quicker than it came.
 struct ChatAsk: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var payments = Payments.shared
-    @ObservedObject private var choosing = ChatChoosing.shared
+    var tab: Tab
+    private var payments = Payments.shared
+    private var choosing = ChatChoosing.shared
 
     /// The field's own height, and the air under it, for a card in its
     /// place to grow out of it and stand where it stood.
@@ -1051,17 +1047,17 @@ final class ChatReturn {
 /// choices go), and a question whose choices Esc put away, its words still
 /// answering it.
 @MainActor
-final class ChatChoosing: ObservableObject {
+@Observable final class ChatChoosing {
     static let shared = ChatChoosing()
 
     /// The tab whose question these are.
-    @Published private(set) var tab: UUID?
-    @Published private(set) var lit: Int?
-    @Published private(set) var picked: Int?
+    private(set) var tab: UUID?
+    private(set) var lit: Int?
+    private(set) var picked: Int?
     /// Put away with Esc; ↑ brings them back.
-    @Published private(set) var away: UUID?
-    private var question: String?
-    private var choices: [String] = []
+    private(set) var away: UUID?
+    @ObservationIgnored private var question: String?
+    @ObservationIgnored private var choices: [String] = []
 
     /// These choices are the ones now; a new question in the same tab
     /// starts over.
@@ -1167,10 +1163,10 @@ private struct ChatChoice: View {
 /// picked with a click; in mail, mail's own (MailSuggestions).
 struct ChatSuggestions: View {
     let browser: Browser
-    @ObservedObject private var peek: PeekFront
-    @ObservedObject private var ideas = ChatIdeas.shared
-    @ObservedObject private var hints = Hints.shared
-    @ObservedObject private var items = SiteItems.shared
+    private var peek: PeekFront
+    private var ideas = ChatIdeas.shared
+    private var hints = Hints.shared
+    private var items = SiteItems.shared
 
     init(browser: Browser) {
         self.browser = browser
@@ -1230,9 +1226,20 @@ struct ChatSuggestions: View {
 /// click (MailChat.ideas): mail's own actions first, with their keys, then
 /// what this Mac knows of it. The rows rise in as the column comes, as a
 /// page's ideas do, and change in place as J and K move, the chip with them.
+/// Mail's line in a body of its own, so the field follows only the line.
+private struct MailShownWatch: View {
+    @Binding var shown: String
+
+    var body: some View {
+        let desk = MailDesk.shared
+        let key = "\(desk.screen)|\(desk.open?.id ?? "")|\(desk.who?.address ?? "")|\(desk.rows.count)|\(desk.split)|\(desk.query)"
+        Color.clear.onChange(of: key, initial: true) { _, key in shown = key }
+    }
+}
+
 private struct MailSuggestions: View {
     let browser: Browser
-    @ObservedObject var attach: ChatAttach
+    var attach: ChatAttach
     /// What mail shows, for the rows to follow it.
     @State private var shown = ""
     /// What Sense made of the email in front, read off the main thread.
@@ -1261,12 +1268,9 @@ private struct MailSuggestions: View {
         .padding(.horizontal, ChatLook.fieldInset) // as a page's ideas: in line with the field under them
         .padding(.bottom, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-        .onReceive(MailDesk.shared.$open.combineLatest(MailDesk.shared.$screen, MailDesk.shared.$rows, MailDesk.shared.$person)
-            .combineLatest(MailDesk.shared.$selection, MailDesk.shared.$who, MailDesk.shared.$messages)
-            .map { first, selection, who, messages in
-                Self.key(open: first.0, screen: first.1, rows: first.2, person: first.3, picked: selection, who: who, messages: messages.count)
-            }
-            .removeDuplicates()) { shown = $0 }
+        .onChange(of: Self.key(open: MailDesk.shared.open, screen: MailDesk.shared.screen, rows: MailDesk.shared.rows,
+                               person: MailDesk.shared.person, picked: MailDesk.shared.selection, who: MailDesk.shared.who,
+                               messages: MailDesk.shared.messages.count), initial: true) { _, key in shown = key }
         .task(id: ref?.thread) {
             sensed = nil
             guard let key = ref?.thread else { return }
@@ -1354,15 +1358,15 @@ private struct ChatIdea: View {
 /// Ideas for a page, asked of Claude's small model (Haiku) once per
 /// address, text only: the page's words can ask nothing of it.
 @MainActor
-final class ChatIdeas: ObservableObject {
+@Observable final class ChatIdeas {
     static let shared = ChatIdeas()
-    @Published private(set) var ideas: [URL: [String]] = [:] {
+    private(set) var ideas: [URL: [String]] = [:] {
         didSet { for url in ideas.keys where oldValue[url] == nil { came[url] = CACurrentMediaTime() } }
     }
     /// When each page's ideas came: they rise in only as they come, and
     /// stand with the column when it brings ones already had.
-    private(set) var came: [URL: CFTimeInterval] = [:]
-    private var asking: Set<URL> = []
+    @ObservationIgnored private(set) var came: [URL: CFTimeInterval] = [:]
+    @ObservationIgnored private var asking: Set<URL> = []
 
     /// What any page can be asked, when no model is there to read it.
     static let plain = ["Summarize this page", "What should I know about this?", "Find more like this"]
@@ -1769,13 +1773,13 @@ enum ChatAttachment: Equatable, Identifiable {
 /// new chat): another chat brought into the column shows its own, never
 /// the one before's, which went to the wrong agent (feedback #1238).
 @MainActor
-final class ChatAttach: ObservableObject {
+@Observable final class ChatAttach {
     /// What was added by hand to each chat's field, by `key`.
     private struct Hand: Equatable {
         var items: [ChatAttachment] = []
         var touched = false
     }
-    @Published private var hands: [String: Hand] = [:]
+    private var hands: [String: Hand] = [:]
     /// Each chat's unsent words, by `key`. Not published: the field keeps
     /// its own words as they are typed, and reads these when its chat
     /// changes or it is built again.
@@ -1785,7 +1789,7 @@ final class ChatAttach: ObservableObject {
     var words = ""
     /// Words put in the field from outside it, each time `fill` moves.
     var filling = ""
-    @Published var fill = 0
+    var fill = 0
     var typing = false
     /// The field's glass in the window, from its top left (SwiftUI's
     /// global space): where a press puts the cursor in (watchPresses).
@@ -1794,9 +1798,9 @@ final class ChatAttach: ObservableObject {
     var finishableChatID: String?
     /// The + menu is open over the field; a click anywhere but on it or
     /// on + puts it away, as a menu goes.
-    @Published var menu = false { didSet { if menu != oldValue { away.watch(menu) } } }
+    var menu = false { didSet { if menu != oldValue { away.watch(menu) } } }
     /// The menu and +, where a click leaves the menu up (ClickZone).
-    lazy var away = ClickAway { [weak self] in self?.menu = false }
+    @ObservationIgnored lazy var away = ClickAway { [weak self] in self?.menu = false }
 
     /// The email or list mail shows, taken off with ×: not offered again
     /// until mail shows another.
@@ -1894,7 +1898,6 @@ final class ChatAttach: ObservableObject {
     func remove(_ item: ChatAttachment, chat: Chat?, browser: Browser) {
         if let ref = item.mail, !items(for: chat?.id).contains(item) {
             droppedMail = ref.id
-            objectWillChange.send()
             return
         }
         adopt(chat: chat, browser: browser) { items in items.removeAll { $0 == item } }
@@ -1964,7 +1967,7 @@ final class ChatAttach: ObservableObject {
 struct ChatAddMenu: View {
     let browser: Browser
     let chat: Chat?
-    @ObservedObject var attach: ChatAttach
+    var attach: ChatAttach
     var line: TaskLine? = nil
     @State private var search = ""
     @State private var chosen = 0
@@ -2497,9 +2500,9 @@ struct ChatMenuSearch: NSViewRepresentable {
 private struct ChatDone: View {
     let chat: String
     let browser: Browser
-    @ObservedObject private var option = OptionKey.shared
-    @ObservedObject private var done = Keymap.shared.slot(.chatDone)
-    @ObservedObject private var keepDone = Keymap.shared.slot(.chatDoneKeep)
+    private var option = OptionKey.shared
+    private var done = Keymap.shared.slot(.chatDone)
+    private var keepDone = Keymap.shared.slot(.chatDoneKeep)
 
     var body: some View {
         let left = Agents.shared.leftovers(chat, among: browser.tabs).count

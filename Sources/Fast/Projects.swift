@@ -54,12 +54,12 @@ struct Project: Codable, Identifiable, Equatable {
 /// Every project, kept as a file each in `projects/`, written a moment
 /// after a change in one batch, as Chats keeps chats.
 @MainActor
-final class Projects: ObservableObject {
+@Observable final class Projects {
     static let shared = Projects()
 
-    @Published private(set) var all: [Project] = []
-    private var waiting: [String: Project] = [:]
-    private var writing = false
+    private(set) var all: [Project] = []
+    @ObservationIgnored private var waiting: [String: Project] = [:]
+    @ObservationIgnored private var writing = false
     private static let disk = DispatchQueue(label: "yab.projects", qos: .utility)
     private let storage: URL
 

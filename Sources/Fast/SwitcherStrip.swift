@@ -60,7 +60,7 @@ enum SwitcherStrip {
 /// The row and the page under it, in place of SwitcherPanel's card.
 struct SwitcherStripPanel: View {
     let browser: Browser
-    @ObservedObject var switcher: Switcher
+    var switcher: Switcher
     @Environment(\.accessibilityReduceMotion) private var still
     @Environment(\.accessibilityReduceTransparency) private var solid
 
@@ -336,7 +336,7 @@ private struct StripRow: View {
 /// One tab: the page as it was left, its icon on a plate in the corner,
 /// its title under it, dark ink when the walk is on it.
 private struct StripTile: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let picture: NSImage?
     /// Another space's emoji, for a tab of that space.
     let home: String?

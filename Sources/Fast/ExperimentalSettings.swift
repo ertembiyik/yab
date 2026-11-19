@@ -2,9 +2,9 @@ import SwiftUI
 import YabStore
 
 struct ExperimentalPage: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var keys = APIKeys.shared
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
+    private var keys = APIKeys.shared
     @AppStorage(SwitcherStrip.key, store: Store.settings) private var switcherStrip = false
 
     var body: some View {

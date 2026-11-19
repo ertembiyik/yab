@@ -128,7 +128,7 @@ enum WindowPlacing {
 /// The browser windows, apart from Little yab, Settings, and floating video.
 /// A tab belongs to one Browser. Looking it up here never makes a second web view.
 @MainActor
-final class BrowserWindows: ObservableObject {
+@Observable final class BrowserWindows {
     static let shared = BrowserWindows()
 
     private struct Saved: Codable {
@@ -141,16 +141,16 @@ final class BrowserWindows: ObservableObject {
         let window: NSWindow
     }
 
-    @Published private(set) var focusedID: UUID?
-    @Published private var menuRevision = 0
-    private var entries: [UUID: Entry] = [:]
-    private var order: [UUID] = []
-    private var shown = Saved()
-    private var restored = false
-    private var quitting = false
-    private var watches: [UUID: [NSObjectProtocol]] = [:]
-    private var menuWatches: [UUID: Set<AnyCancellable>] = [:]
-    private var fullscreen: [UUID: WindowFullscreen] = [:]
+    private(set) var focusedID: UUID?
+    private var menuRevision = 0
+    @ObservationIgnored private var entries: [UUID: Entry] = [:]
+    @ObservationIgnored private var order: [UUID] = []
+    @ObservationIgnored private var shown = Saved()
+    @ObservationIgnored private var restored = false
+    @ObservationIgnored private var quitting = false
+    @ObservationIgnored private var watches: [UUID: [NSObjectProtocol]] = [:]
+    @ObservationIgnored private var menuWatches: [UUID: Set<AnyCancellable>] = [:]
+    @ObservationIgnored private var fullscreen: [UUID: WindowFullscreen] = [:]
 
     private init() {
         let file = Store.file("windows.json")
@@ -345,7 +345,7 @@ final class BrowserWindows: ObservableObject {
     /// too, which is never in `shown.closed`: closed while another was up,
     /// ⇧⌘T in that one brought back a tab of its own, and nothing but the
     /// Dock with every window shut brought the first back (feedback #286).
-    private var closedAt: [UUID: Date] = [:]
+    @ObservationIgnored private var closedAt: [UUID: Date] = [:]
     var lastClosedAt: Date? {
         [shown.closed.last.flatMap { closedAt[$0] }, closedFirst].compactMap { $0 }.max()
     }
@@ -536,7 +536,7 @@ final class BrowserWindows: ObservableObject {
 
     /// The windows a shared tab's live page is looked for in; a test's
     /// browsers are no windows, so a test names its own.
-    var handOffWindows: [Browser]?
+    @ObservationIgnored var handOffWindows: [Browser]?
     /// Inside a hand-off, or a close's landing on the next tab: a pick
     /// then takes no page from another window.
     static var handingOff = 0
@@ -626,7 +626,7 @@ final class BrowserWindows: ObservableObject {
             self?.retitle(id)
         }
     }
-    private var titleDue: Set<UUID> = []
+    @ObservationIgnored private var titleDue: Set<UUID> = []
 
     /// The Window menu's list again, a moment after the tabs or the tab in
     /// front changed (it names each window by its page): every revision
@@ -640,7 +640,7 @@ final class BrowserWindows: ObservableObject {
             self?.menuRevision += 1
         }
     }
-    private var menuDue = false
+    @ObservationIgnored private var menuDue = false
 
     private func retitle(_ id: UUID) {
         guard let entry = entries[id] else { return }

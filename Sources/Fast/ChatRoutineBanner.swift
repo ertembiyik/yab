@@ -7,7 +7,7 @@ import SwiftUI
 /// (concept state "Routine News"): its project's circle, the routine's
 /// name and project, and the finding itself; a click opens its chat.
 @MainActor
-final class ChatBanners: ObservableObject {
+@Observable final class ChatBanners {
     static let shared = ChatBanners()
 
     struct Banner: Equatable, Identifiable {
@@ -18,8 +18,8 @@ final class ChatBanners: ObservableObject {
         let body: String
     }
 
-    @Published private(set) var shown: Banner?
-    private var hush: DispatchWorkItem?
+    private(set) var shown: Banner?
+    @ObservationIgnored private var hush: DispatchWorkItem?
 
     /// How long it stays unless the pointer is on it.
     static let stay: TimeInterval = 8

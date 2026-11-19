@@ -41,7 +41,7 @@ struct PrivateFolderTests {
             #expect(browser.folderBook.browser === browser)
             #expect(!Folders.shared.folders.contains { $0.id == folder.key })
             var publications = 0
-            let watch = Folders.shared.objectWillChange.sink { publications += 1 }
+            let watch = ObservedWrites({ _ = (browser.folderBook.folders, browser.folderBook.version) }, told: { publications += 1 })
             defer { watch.cancel() }
             browser.folderBook.toggle(folder.key)
             #expect(!folder.open)

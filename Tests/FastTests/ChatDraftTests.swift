@@ -10,13 +10,13 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ChatDraftTests {
-    @MainActor final class Shown: ObservableObject {
-        @Published var chat: Chat?
+    @MainActor @Observable final class Shown {
+        var chat: Chat?
     }
 
     private struct Host: View {
         let browser: Browser
-        @ObservedObject var shown: Shown
+        var shown: Shown
         var body: some View {
             ChatComposer(browser: browser, chat: shown.chat, live: false, asking: nil, attach: browser.chatAttach)
                 .frame(width: 420, height: 160, alignment: .bottom)

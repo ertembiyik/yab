@@ -17,7 +17,7 @@ import UserNotifications
 // Yab badges the Dock.
 
 @MainActor
-final class MailNotify: ObservableObject {
+@Observable final class MailNotify {
     static let shared = MailNotify(center: MailNotify.system())
 
     /// What an account's new mail says: nothing, what needs you, or
@@ -91,23 +91,23 @@ final class MailNotify: ObservableObject {
 
     let center: MailNotifyCenter
     /// As macOS last said, read and never asked for (Allow… asks).
-    @Published private(set) var permission: Permission = .unasked
-    @Published private(set) var modes: [String: Mode] = [:]
-    @Published private(set) var badgeMode: Badge
+    private(set) var permission: Permission = .unasked
+    private(set) var modes: [String: Mode] = [:]
+    private(set) var badgeMode: Badge
     /// For the bench: mail in front, whatever the windows say.
-    var frontForced: Bool?
+    @ObservationIgnored var frontForced: Bool?
     /// The last ones posted, newest last, for the bench.
-    private(set) var posted: [Posted] = []
+    @ObservationIgnored private(set) var posted: [Posted] = []
     /// Posted this run and still standing, by id: taken down once their
     /// mail is dealt with here.
-    private var standing: [String: (account: String, threads: [String])] = [:]
-    private var watching: NSObjectProtocol?
+    @ObservationIgnored private var standing: [String: (account: String, threads: [String])] = [:]
+    @ObservationIgnored private var watching: NSObjectProtocol?
     /// Accounts being looked at now, and those to look at again after: two
     /// looks at once would say the same mail twice.
-    private var looking: Set<String> = []
+    @ObservationIgnored private var looking: Set<String> = []
     /// What the last look asked for meanwhile wanted held, and when its sync
     /// ended: the look after goes by it.
-    private var lookAgain: [String: (holding: Set<String>, synced: Date?)] = [:]
+    @ObservationIgnored private var lookAgain: [String: (holding: Set<String>, synced: Date?)] = [:]
 
     init(center: MailNotifyCenter) {
         self.center = center
@@ -234,7 +234,7 @@ final class MailNotify: ObservableObject {
 
     /// Seconds from the end of the sync that brought mail to its
     /// notification, the last ones, for the bench.
-    private(set) var lags: [TimeInterval] = []
+    @ObservationIgnored private(set) var lags: [TimeInterval] = []
 
     /// Mail of yours nobody answered by its reminder (MailFollowups), back
     /// in the inbox now: said in one line, "Mila hasn’t answered", its
@@ -637,8 +637,8 @@ extension MailNotify {
 /// account (the Dock's count is with what needs you, MailSortSettings).
 /// macOS is asked nothing until Allow… is pressed.
 struct MailNotifySettings: View {
-    @ObservedObject private var notify = MailNotify.shared
-    @ObservedObject private var center = MailCenter.shared
+    private var notify = MailNotify.shared
+    private var center = MailCenter.shared
 
     var body: some View {
         Section {

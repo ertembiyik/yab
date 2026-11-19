@@ -23,11 +23,11 @@ enum DevTool: String, CaseIterable, Identifiable, Hashable {
 }
 
 /// The drawer: open or not, the tools opened in it, the one shown, its height.
-@MainActor final class DevDrawerState: ObservableObject {
-    @Published var open = false
-    @Published var tool: DevTool = .console
-    @Published var tools: [DevTool] = [.console]
-    @Published var height: CGFloat = (Store.settings.object(forKey: "dev.drawerHeight") as? Double).map { CGFloat($0) } ?? 220
+@MainActor @Observable final class DevDrawerState {
+    var open = false
+    var tool: DevTool = .console
+    var tools: [DevTool] = [.console]
+    var height: CGFloat = (Store.settings.object(forKey: "dev.drawerHeight") as? Double).map { CGFloat($0) } ?? 220
 
     func show(_ tool: DevTool) {
         if !tools.contains(tool) { tools.append(tool) }
@@ -86,8 +86,8 @@ extension Browser {
 
 struct DevDrawerView: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var drawer: DevDrawerState
+    var tab: Tab
+    var drawer: DevDrawerState
     @State private var from: CGFloat?
 
     var body: some View {
@@ -176,7 +176,7 @@ struct DevDrawerView: View {
 
 struct ProtocolMonitor: View {
     let browser: Browser
-    @ObservedObject var log: ProtocolLog
+    var log: ProtocolLog
     @State private var filter = ""
     @State private var command = ""
     @State private var picked: Int?
@@ -312,13 +312,13 @@ struct DevFile: Identifiable, Hashable {
     let folder: String
 }
 
-@MainActor final class DevCommandState: NSObject, ObservableObject, NSWindowDelegate {
+@MainActor @Observable final class DevCommandState: NSObject, NSWindowDelegate {
     /// What is typed: ">" for commands, nothing for files; nil when shut.
-    @Published var query: String?
-    @Published var picked = 0
+    var query: String?
+    var picked = 0
     /// Settings (F1), on which of its tabs.
-    @Published var settings: DevSettingsTab?
-    private(set) var settingsWindow: NSWindow?
+    var settings: DevSettingsTab?
+    @ObservationIgnored private(set) var settingsWindow: NSWindow?
 
     func presentSettings(for browser: Browser) {
         guard settings != nil else {
@@ -451,7 +451,7 @@ enum DevFuzzy {
 
 struct DevCommandMenu: View {
     let browser: Browser
-    @ObservedObject var state: DevCommandState
+    var state: DevCommandState
     @FocusState private var focused: Bool
     var width: CGFloat = 560
     var listHeight: CGFloat = 320
@@ -580,9 +580,9 @@ enum DevSettingsTab: String, CaseIterable, Identifiable {
 
 struct DevSettingsView: View {
     let browser: Browser
-    @ObservedObject var state: DevCommandState
-    @ObservedObject var console = ConsolePrefs.shared
-    @ObservedObject var net = NetPrefs.shared
+    var state: DevCommandState
+    @Bindable var console = ConsolePrefs.shared
+    @Bindable var net = NetPrefs.shared
 
     var body: some View {
         HStack(spacing: 0) {
@@ -864,8 +864,8 @@ extension Browser {
 /// The drawer under the panels, when it is open.
 struct DevDrawerHost: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var drawer: DevDrawerState
+    var tab: Tab
+    var drawer: DevDrawerState
 
     var body: some View {
         if drawer.open {
@@ -877,7 +877,7 @@ struct DevDrawerHost: View {
 /// The command menu and Settings, over the card's panels.
 struct DevOverlays: View {
     let browser: Browser
-    @ObservedObject var state: DevCommandState
+    var state: DevCommandState
 
     var body: some View {
         GeometryReader { room in

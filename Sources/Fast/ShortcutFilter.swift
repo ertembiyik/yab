@@ -1,20 +1,19 @@
 import AppKit
-import Combine
 
 /// Values used by Shortcuts' search and menu. Filtering never records keys
 /// or changes which commands are enabled.
 @MainActor
 enum ShortcutFilter {
     @MainActor
-    final class Selection: ObservableObject {
-        @Published var search = ""
+    @Observable final class Selection {
+        var search = ""
         /// Rows in any of these states; none is every row.
-        @Published var modifications: Set<Modification> = []
+        var modifications: Set<Modification> = []
         /// Rows in any of these sections; none is every section.
-        @Published var chosen: Set<String> = []
-        @Published var categories: [String] = []
+        var chosen: Set<String> = []
+        var categories: [String] = []
         /// How many rows each state and section has, for the list's numbers.
-        @Published var counts = Counts()
+        var counts = Counts()
 
         func clear() {
             search = ""
@@ -30,20 +29,31 @@ enum ShortcutFilter {
         var extensions: [String: String] = [:]
     }
 
-    /// Only the values that affect this inventory wake its filters.
+    /// Only the values that affect this inventory wake its filters: readers read `revision`.
     @MainActor
-    final class Changes: ObservableObject {
-        private var following: AnyCancellable?
+    @Observable final class Changes {
+        private(set) var revision = 0
+        @ObservationIgnored private var told = 0
+        @ObservationIgnored private var following: ObservationLoop?
 
         init() {
-            var signals = Shortcut.Action.allCases.map { Keymap.shared.slot($0).objectWillChange.eraseToAnyPublisher() }
-            signals += CommandHotkeys.commands.map { Keymap.shared.slot(for: $0).objectWillChange.eraseToAnyPublisher() }
-            if #available(macOS 15.4, *) {
-                signals.append(ExtensionsHere.shared.objectWillChange.eraseToAnyPublisher())
+            var first = true
+            following = ObservationLoop { [weak self] in
+                for action in Shortcut.Action.allCases {
+                    let slot = Keymap.shared.slot(action)
+                    _ = (slot.keys, slot.isDefault)
+                }
+                for command in CommandHotkeys.commands {
+                    let slot = Keymap.shared.slot(for: command)
+                    _ = (slot.keys, slot.isDefault)
+                }
+                if #available(macOS 15.4, *) { _ = ExtensionsHere.shared.current.commandGroups() }
+                guard let self else { return }
+                if first { first = false; return }
+                // Set from an ignored tally: reading revision here would make the loop follow its own write.
+                told &+= 1
+                revision = told
             }
-            following = Publishers.MergeMany(signals)
-                .debounce(for: .milliseconds(10), scheduler: RunLoop.main)
-                .sink { [weak self] _ in self?.objectWillChange.send() }
         }
     }
 
@@ -231,7 +241,7 @@ final class ShortcutFilterToolbar: NSObject, NSMenuDelegate {
     private weak var window: NSWindow?
     private let search: ToolbarSearch
     private var filters: NSMenuToolbarItem?
-    private var following: AnyCancellable?
+    private var following: ObservationLoop?
     nonisolated(unsafe) private var keys: Any?
 
     init(selection: ShortcutFilter.Selection, window: NSWindow) {
@@ -240,8 +250,9 @@ final class ShortcutFilterToolbar: NSObject, NSMenuDelegate {
         search = ToolbarSearch(id: Self.searchID, label: "Search shortcuts", prompt: "Search by name or alias", window: window,
                                words: { selection.search }, typed: { selection.search = $0 })
         super.init()
-        following = selection.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.sync() }
+        following = ObservationLoop { [weak self, selection] in
+            _ = selection.search
+            self?.sync()
         }
         keys = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.searchPressed(event) == true ? nil : event

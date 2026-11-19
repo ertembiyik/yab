@@ -19,7 +19,7 @@ extension Tab {
 /// The words on the row of a tab waiting to be shown a screen: muted, at
 /// the row's end where "Presenting" would be, the title giving way to them.
 struct ShareWaiting: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// Room for them: a tab in the strip narrower than `fits` keeps the
     /// bubble on its mark instead.
     var shown = true

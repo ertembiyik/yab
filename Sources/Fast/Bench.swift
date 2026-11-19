@@ -2160,18 +2160,6 @@ final class Bench {
             Spin.wheelColumn(request["dy"] as? Double ?? -120)
             answer(["ok": true])
 
-        case "willchange":
-            // What reading objectWillChange costs, as SwiftUI reads it for
-            // every @ObservedObject on every update: µs a read, of the
-            // window's Browser, its Preferences and its tab in front.
-            func time(_ read: () -> Void) -> Double {
-                let start = CACurrentMediaTime()
-                for _ in 0..<2000 { read() }
-                return ((CACurrentMediaTime() - start) * 1_000_000 / 2000 * 100).rounded() / 100
-            }
-            var out: [String: Any] = ["browser_us": time { _ = browser.objectWillChange }, "prefs_us": time { _ = browser.prefs.objectWillChange }]
-            if let tab = browser.active { out["tab_us"] = time { _ = tab.objectWillChange } }
-            answer(out)
         case "coltrack":
             // The rows of the space on screen as drawn, every display frame
             // for `seconds` (the render server's presentation layers), while
@@ -3137,7 +3125,7 @@ final class Bench {
                             return DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { done(Bench.mainCPU() - cpu0) }
                         }
                         if poke {
-                            if which == "calls" { browser.calls.objectWillChange.send() } else { Meetings.shared.objectWillChange.send() }
+                            if which == "calls" { browser.calls.benchTouch() } else { Meetings.shared.benchTick() }
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.017) { step(i + 1) }
                     }

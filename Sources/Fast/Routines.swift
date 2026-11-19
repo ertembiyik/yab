@@ -97,12 +97,12 @@ struct Routine: Codable, Identifiable, Equatable {
 }
 
 @MainActor
-final class Routines: ObservableObject {
+@Observable final class Routines {
     static let shared = Routines()
 
-    @Published private(set) var all: [Routine] = []
-    private(set) var lastProblem: String?
-    private var timer: Timer?
+    private(set) var all: [Routine] = []
+    @ObservationIgnored private(set) var lastProblem: String?
+    @ObservationIgnored private var timer: Timer?
     private var file: URL { Store.file("routines.json") }
 
     private init() {
@@ -231,13 +231,13 @@ final class Routines: ObservableObject {
 
     /// Folders of yours waiting on the editor to keep them, by the routine
     /// being made for each (Keep Up to Date… in a folder's menu).
-    private var keeping: [String: Nest] = [:]
+    @ObservationIgnored private var keeping: [String: Nest] = [:]
     private final class RepeatSeed {
         let chat: Chat
         weak var browser: Browser?
         init(_ chat: Chat, browser: Browser) { self.chat = chat; self.browser = browser }
     }
-    private var repeating: [String: RepeatSeed] = [:]
+    @ObservationIgnored private var repeating: [String: RepeatSeed] = [:]
 
     /// Closing an unsaved editor leaves every source tab as it was.
     func cancelDraft(_ id: String) {
@@ -831,10 +831,10 @@ final class Routines: ObservableObject {
     nonisolated static let trustAfter = 5
 
     /// Findings handed over by each run still going, by its session.
-    private var handed: [String: Int] = [:]
+    @ObservationIgnored private var handed: [String: Int] = [:]
     /// Tries from the editor, by session: a routine that isn't kept yet,
     /// whose folder its try still fills.
-    private var trials: [String: Routine] = [:]
+    @ObservationIgnored private var trials: [String: Routine] = [:]
 
     /// The routine a session runs, kept or tried.
     func running(_ session: String?) -> Routine? {

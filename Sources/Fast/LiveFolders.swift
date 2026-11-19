@@ -11,7 +11,7 @@ import Foundation
 // the Mac in Low Power Mode, or twice at once.
 
 @MainActor
-final class LiveFolders: ObservableObject {
+@Observable final class LiveFolders {
     static let shared = LiveFolders()
 
     /// How a folder's reading went, by its nest's id. Not saved: a launch
@@ -23,27 +23,27 @@ final class LiveFolders: ObservableObject {
         var failures = 0
     }
 
-    @Published private(set) var states: [UUID: State] = [:]
+    private(set) var states: [UUID: State] = [:]
     /// Routines running now that keep a folder, by id: "Checking" on their
     /// folder's row, wherever that folder is.
-    @Published private(set) var checking: Set<String> = []
+    private(set) var checking: Set<String> = []
     /// What a routine's run handed its folder while the folder's space was
     /// out of sight, by routine: put in when that space is back.
-    private var pending: [String: [LiveItem]] = [:]
+    @ObservationIgnored private var pending: [String: [LiveItem]] = [:]
     /// What each routine's folder held when last seen, for a run told what
     /// it holds while its space is out of sight.
-    private var lastHeld: [String: [(url: String, title: String, said: String)]] = [:]
+    @ObservationIgnored private var lastHeld: [String: [(url: String, title: String, said: String)]] = [:]
     /// Things hidden from a folder (Hide from Folder, or taken out of it),
     /// by nest, until what they say changes.
-    private var hidden: [UUID: [String: LiveWords?]] = LiveFolders.readKept().hidden
+    @ObservationIgnored private var hidden: [UUID: [String: LiveWords?]] = LiveFolders.readKept().hidden
     /// What a new-for-you folder has shown, by nest: never brought twice.
-    private var shown: [UUID: Set<String>] = LiveFolders.readKept().shown
-    @Published private(set) var reading: Set<UUID> = []
+    @ObservationIgnored private var shown: [UUID: Set<String>] = LiveFolders.readKept().shown
+    private(set) var reading: Set<UUID> = []
     /// A read begun before an off/on must never apply after it.
-    private var generation = 0
-    private var timer: Timer?
-    private var soon: DispatchWorkItem?
-    private var watches: [AnyCancellable] = []
+    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var soon: DispatchWorkItem?
+    @ObservationIgnored private var watches: [AnyCancellable] = []
 
     private init() {}
 
@@ -87,7 +87,7 @@ final class LiveFolders: ObservableObject {
         readCounts(force: force)
     }
 
-    private var countsRead = Date.distantPast
+    @ObservationIgnored private var countsRead = Date.distantPast
 
     /// A Gmail or Notion pin's count from the site, every minute while yab
     /// is in front, and when it comes back or the Mac wakes: what it shows

@@ -4,9 +4,9 @@ import SwiftUI
 /// Settings › Sync › Add a Device, using the same code field and page
 /// frame as connecting an assistant. Leaving cancels the invitation.
 struct SyncAddDevicePage: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var adding = SyncDeviceAdding.shared
-    @ObservedObject private var sync = SyncCenter.shared
+    var model: SettingsModel
+    private var adding = SyncDeviceAdding.shared
+    private var sync = SyncCenter.shared
 
     var body: some View {
         GeometryReader { bounds in
@@ -39,9 +39,9 @@ struct SyncAddDevicePage: View {
 }
 
 private struct SyncDeviceInvitation: View {
-    @ObservedObject var invite: SyncInvite
-    @ObservedObject var adding: SyncDeviceAdding
-    @ObservedObject var sync = SyncCenter.shared
+    var invite: SyncInvite
+    var adding: SyncDeviceAdding
+    var sync = SyncCenter.shared
     let compact: Bool
 
     var body: some View {
@@ -131,20 +131,20 @@ private struct SyncDeviceInvitation: View {
 /// Owns the active page's invitation and ignores callbacks after leaving
 /// or starting a new code. Typing a code never approves it by itself.
 @MainActor
-final class SyncDeviceAdding: ObservableObject {
+@Observable final class SyncDeviceAdding {
     static let shared = SyncDeviceAdding()
-    @Published private(set) var invite: SyncInvite?
-    @Published private(set) var code = ""
-    @Published private(set) var busy = false
-    @Published private(set) var trouble: String?
-    @Published private(set) var finished = false
+    private(set) var invite: SyncInvite?
+    private(set) var code = ""
+    private(set) var busy = false
+    private(set) var trouble: String?
+    private(set) var finished = false
     /// The code typed is another syncing Mac's: this Mac waits under it.
-    @Published private(set) var joining = false
+    private(set) var joining = false
     /// Half a minute and no Let In: a slow person, or a mistyped code.
-    @Published private(set) var slow = false
-    private var generation = 0
-    private var joinTrouble: AnyCancellable?
-    private var watch: AnyCancellable?
+    private(set) var slow = false
+    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var joinTrouble: AnyCancellable?
+    @ObservationIgnored private var watch: AnyCancellable?
     private let makeInvite: @MainActor () -> SyncInvite?
     private let approveCode: @MainActor (String, @escaping (Bool) -> Void) -> Void
     private let letIn: @MainActor (SyncInvite) -> Void
@@ -163,7 +163,7 @@ final class SyncDeviceAdding: ObservableObject {
         self.letIn = letIn
         self.joinCode = joinCode
         self.stopJoin = stopJoin
-        self.joinWords = joinWords ?? SyncCenter.shared.$joinTrouble.eraseToAnyPublisher()
+        self.joinWords = joinWords ?? SyncCenter.shared.observed(\.joinTrouble).eraseToAnyPublisher()
     }
 
     func start() {
@@ -258,7 +258,7 @@ final class SyncDeviceAdding: ObservableObject {
     private func newInvite() {
         watch = nil
         invite = makeInvite()
-        watch = invite?.$phase.sink { [weak self] phase in
+        watch = invite?.observed(\.phase).sink { [weak self] phase in
             if phase == .letIn { self?.finished = true }
         }
         invite?.start { _ in }

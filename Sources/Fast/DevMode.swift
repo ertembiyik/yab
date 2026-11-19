@@ -108,9 +108,21 @@ extension Tab {
 @MainActor
 enum DevSites {
     private static let key = "devSites"
-    private static var kept: [String: Bool] = Store.settings.dictionary(forKey: key) as? [String: Bool] ?? [:]
     private static let tabsKey = "devTabSites"
-    private static var tabs: [String: [String]] = Store.settings.dictionary(forKey: tabsKey) as? [String: [String]] ?? [:]
+    /// Observed, so a tab's mark and Settings' list redraw for a choice.
+    @MainActor @Observable fileprivate final class Choices {
+        var kept: [String: Bool] = Store.settings.dictionary(forKey: key) as? [String: Bool] ?? [:]
+        var tabs: [String: [String]] = Store.settings.dictionary(forKey: tabsKey) as? [String: [String]] ?? [:]
+    }
+    fileprivate static let choices = Choices()
+    private static var kept: [String: Bool] {
+        get { choices.kept }
+        set { choices.kept = newValue }
+    }
+    private static var tabs: [String: [String]] {
+        get { choices.tabs }
+        set { choices.tabs = newValue }
+    }
     /// Asked this launch, answered Not Now or still up: not asked again
     /// until yab is opened next.
     static var asked: Set<String> = []
@@ -213,35 +225,31 @@ extension Browser {
     func setDevMode(_ tab: Tab, _ on: Bool) {
         guard let name = DevSites.name(tab.address) else { return }
         DevSites.set(tab: tab.id, name: name, on)
-        tab.objectWillChange.send()
         if !on, tab.measuring { tab.measuring = false }
-        objectWillChange.send()
     }
 
-    /// On or off for a server by name (Settings › Developers' list), its
-    /// open pages drawn again for it.
+    /// On or off for a server by name (Settings › Developers' list).
     static func setDevMode(server name: String, _ on: Bool) {
         let ids = BrowserWindows.shared.browsers.flatMap { browser in
             browser.everyTab.filter { DevSites.name($0.address) == name }.map(\.id)
         }
         DevSites.set(name: name, on, tabs: ids)
-        redraw(server: name, on)
+        stopMeasuring(server: name, on)
     }
 
     /// Forgotten (Settings › Developers): off for now, and its next page
     /// asks again.
     static func forgetDevMode(server name: String) {
         DevSites.forget(name)
-        redraw(server: name, false)
+        stopMeasuring(server: name, false)
     }
 
-    private static func redraw(server name: String, _ on: Bool) {
+    private static func stopMeasuring(server name: String, _ on: Bool) {
+        guard !on else { return }
         for browser in BrowserWindows.shared.browsers {
-            for other in browser.everyTab where DevSites.name(other.address) == name {
-                other.objectWillChange.send()
-                if !on, other.measuring { other.measuring = false }
+            for other in browser.everyTab where DevSites.name(other.address) == name && other.measuring {
+                other.measuring = false
             }
-            browser.objectWillChange.send()
         }
     }
 
@@ -265,7 +273,7 @@ extension Browser {
 // MARK: - what the page said
 
 @MainActor
-final class DevLog: ObservableObject {
+@Observable final class DevLog {
     enum Level: String { case error, warning }
 
     /// One kind of message: every time the page said the same words, the
@@ -299,11 +307,11 @@ final class DevLog: ObservableObject {
         var failed: Bool { status == 0 ? failure != nil : status >= 400 }
     }
 
-    @Published private(set) var entries: [Entry] = []
-    @Published private(set) var requests: [Request] = []
+    private(set) var entries: [Entry] = []
+    private(set) var requests: [Request] = []
     /// Kinds not kept, past the most a page may have, only counted.
-    @Published private(set) var dropped = 0
-    @Published private(set) var since = Date()
+    private(set) var dropped = 0
+    private(set) var since = Date()
 
     var errors: Int { counts.errors }
     var warnings: Int { counts.warnings }
@@ -311,37 +319,37 @@ final class DevLog: ObservableObject {
     /// How many kinds of error and warning there are, apart from the rows:
     /// the band's word watches only this, and is left alone while a page in
     /// a loop only raises the count of a row it already has.
-    final class Counts: ObservableObject {
-        @Published fileprivate(set) var errors = 0
-        @Published fileprivate(set) var warnings = 0
-        @Published fileprivate(set) var requests = 0
+    @Observable final class Counts {
+        fileprivate(set) var errors = 0
+        fileprivate(set) var warnings = 0
+        fileprivate(set) var requests = 0
     }
     let counts = Counts()
 
     /// The page's requests kept, the latest.
     static let keptRequests = 300
 
-    private var index: [String: Int] = [:]
-    private var nextRequest = 0
+    @ObservationIgnored private var index: [String: Int] = [:]
+    @ObservationIgnored private var nextRequest = 0
     /// The rows as last heard, not yet shown: a batch that only raises
     /// counts waits here, and the rows are shown at most once a second.
-    private var heard: [Entry]?
-    private var showing: DispatchWorkItem?
+    @ObservationIgnored private var heard: [Entry]?
+    @ObservationIgnored private var showing: DispatchWorkItem?
     /// How often a count alone is shown going up.
     static let countEvery: TimeInterval = 1
     /// Counts pages, so a batch parsed for the page before is dropped.
-    private var page = 0
+    @ObservationIgnored private var page = 0
 
     /// When the page's own script began to hear this document, for a page
     /// heard only once the card is out; nil for one heard from its start.
-    var heardFrom: Date?
+    @ObservationIgnored var heardFrom: Date?
     /// What the inspector handed over from before that, by row: added to
     /// what the page's script counts from then on.
-    private var earlyCounts: [String: Int] = [:]
+    @ObservationIgnored private var earlyCounts: [String: Int] = [:]
     /// Each message taken, by its row and when it was said, with how many
     /// of its repeats: the inspector hands its whole console over again
     /// every time it connects, and each is counted once.
-    private var earlyTaken: [String: Int] = [:]
+    @ObservationIgnored private var earlyTaken: [String: Int] = [:]
 
     /// Said before the card listened, as WebKit's inspector keeps it and
     /// hands it over when it connects. Only what came between the document
@@ -460,7 +468,7 @@ final class DevLog: ObservableObject {
     }
 
     /// Where an EventSource's events go: the tab's Network (DevNet.swift).
-    var heardStream: ((String, [NetResource.Event]) -> Void)?
+    @ObservationIgnored var heardStream: ((String, [NetResource.Event]) -> Void)?
 
     private func show(_ entries: [Entry]) {
         heard = nil
@@ -801,7 +809,7 @@ struct DevTape: View {
 }
 
 struct DevPort: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let hovering: Bool
     let gap: CGFloat
     /// The speaker is at the tab's end too, in the row of tabs; the
@@ -851,9 +859,9 @@ struct DevPort: View {
 /// the errors in words when there are any, which open the tools too. A
 /// page with none says nothing: all is well is what a quiet band means.
 struct DevBandDoors: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: DevLog.Counts
+    var browser: Browser
+    var tab: Tab
+    var log: DevLog.Counts
     @Environment(\.tone) private var tone
 
     var body: some View {
@@ -1001,7 +1009,7 @@ struct DevSheet: View {
     /// Not watched: the browser changes all the time and the card needs
     /// nothing of it but to call it; what it shows is handed in.
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// Not watched here either: the head watches the counts, each pane its
     /// rows, so a page in a loop redraws the one row whose count went up.
     let log: DevLog
@@ -1016,7 +1024,7 @@ struct DevSheet: View {
     /// Concentric with the corner it sits in (DevRoom.Rim).
     let corner: CGFloat
     /// The Fixed-width font code is set in (DevMono).
-    @ObservedObject private var mono = DevMono.shared
+    private var mono = DevMono.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1092,11 +1100,11 @@ struct DevQuiet: View {
 /// Where the card's edge was dragged: its height under the page, its width
 /// beside it, kept for the next time it comes out; and how high the room is
 /// they share, read as a drag starts.
-final class DevSize: ObservableObject {
+@Observable final class DevSize {
     static let shared = DevSize()
-    @Published var height: CGFloat? = (Store.settings.object(forKey: "dev.height") as? Double).map { CGFloat($0) }
-    @Published var width: CGFloat? = (Store.settings.object(forKey: "dev.width") as? Double).map { CGFloat($0) }
-    var room: CGFloat = 800
+    var height: CGFloat? = (Store.settings.object(forKey: "dev.height") as? Double).map { CGFloat($0) }
+    var width: CGFloat? = (Store.settings.object(forKey: "dev.width") as? Double).map { CGFloat($0) }
+    @ObservationIgnored var room: CGFloat = 800
 }
 
 /// The card's edge toward the page, in the air between the two, dragged

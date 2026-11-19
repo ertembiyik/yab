@@ -426,23 +426,23 @@ struct CaptureBox: Equatable {
 /// The words and state the hosted parts draw. Its own object, watched only
 /// by the capture's hosting views, never by the window.
 @MainActor
-final class CaptureModel: ObservableObject {
-    @Published var style = CaptureStyle.saved
-    @Published var pixels = CGSize.zero
-    @Published var name = ""
-    @Published var host = ""
-    @Published var secrets = 0
-    @Published var tint: NSColor?
-    @Published var wallpaper: NSImage?
+@Observable final class CaptureModel {
+    var style = CaptureStyle.saved
+    var pixels = CGSize.zero
+    var name = ""
+    var host = ""
+    var secrets = 0
+    var tint: NSColor?
+    var wallpaper: NSImage?
     /// Said in the pill while a long page is being taken.
-    @Published var busy: String?
+    var busy: String?
     /// The picture's size in points, for which shapes suit it.
-    @Published var size = CGSize.zero
+    var size = CGSize.zero
     /// Its view is up in the window's room (CaptureSkyLayer).
-    @Published var up = false
+    var up = false
     /// While picking: whether the cookie notice, a chat bubble, anything
     /// fixed over the page is left out.
-    var act: (CaptureAction) -> Void = { _ in }
+    @ObservationIgnored var act: (CaptureAction) -> Void = { _ in }
 
     var dims: String { "\(Int(pixels.width)) × \(Int(pixels.height))" }
 }

@@ -85,6 +85,27 @@ final class ObservationLoop {
     }
 }
 
+extension Observable where Self: AnyObject {
+    /// `$name` for any Observable: the value now, then each new one a turn later.
+    @MainActor
+    func observed<Value>(_ path: KeyPath<Self, Value>) -> AnyPublisher<Value, Never> {
+        Deferred { [weak self] () -> AnyPublisher<Value, Never> in
+            MainActor.assumeIsolated {
+                guard let self else { return Empty().eraseToAnyPublisher() }
+                let subject = CurrentValueSubject<Value, Never>(self[keyPath: path])
+                var first = true
+                let loop = ObservationLoop { [weak self, weak subject] in
+                    guard let self else { return }
+                    let value = self[keyPath: path]
+                    if first { first = false } else { subject?.send(value) }
+                }
+                return subject.handleEvents(receiveCancel: { loop.cancel() }).eraseToAnyPublisher()
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+}
+
 
 /// For a test run (YAB_BODY_AUDIT=1): a body SwiftUI ran inside a property's
 /// setter, from Observation's willSet, reads the old value and can miss the

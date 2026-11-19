@@ -13,7 +13,7 @@ import Foundation
 // lib/invite-posts.ts). Still up a day later: one of the icons you don't
 // have yet. One post a week counts, three in all.
 @MainActor
-final class PostReward: ObservableObject {
+@Observable final class PostReward {
     static let shared = PostReward()
 
     /// What a post wins, one at a time, in no order the person sees.
@@ -35,25 +35,25 @@ final class PostReward: ObservableObject {
         var opens: Date?
     }
 
-    @Published private(set) var posts: [Post]
+    private(set) var posts: [Post]
     /// When the next post counts, while the last win is under a week old.
-    @Published private(set) var after: Date?
+    private(set) var after: Date?
     /// Kept while Settings closes and opens again, as the invite message is.
-    @Published var draft: String { didSet { Store.settings.set(draft, forKey: "invite.post.draft") } }
-    @Published private(set) var writing = false
+    var draft: String { didSet { Store.settings.set(draft, forKey: "invite.post.draft") } }
+    private(set) var writing = false
     /// An X tab is open with the draft, and Yab waits for the post's address.
-    @Published private(set) var waiting = false
+    private(set) var waiting = false
     /// Waiting two minutes and more without seeing the post.
-    @Published private(set) var waitedLong = false
-    private var waitTimer: Timer?
-    @Published private(set) var sending = false
-    @Published private(set) var problem: String?
+    private(set) var waitedLong = false
+    @ObservationIgnored private var waitTimer: Timer?
+    private(set) var sending = false
+    private(set) var problem: String?
     /// The one that just opened, for its tile's reveal.
-    @Published var fresh: AppIconStyle?
+    var fresh: AppIconStyle?
 
-    private var step = 0
-    private var watch: AnyCancellable?
-    private var openers: [String]?
+    @ObservationIgnored private var step = 0
+    @ObservationIgnored private var watch: AnyCancellable?
+    @ObservationIgnored private var openers: [String]?
 
     private init() {
         posts = Self.decode(Store.settings.data(forKey: "invite.posts")) ?? []

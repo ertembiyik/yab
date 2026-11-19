@@ -3,10 +3,10 @@ import Foundation
 
 /// The model's app-level choice. Hardware availability remains FormModel's.
 @MainActor
-final class AppleModelControl: ObservableObject {
+@Observable final class AppleModelControl {
     static let shared = AppleModelControl()
-    @Published private(set) var enabled: Bool
-    private var changes: AnyCancellable?
+    private(set) var enabled: Bool
+    @ObservationIgnored private var changes: AnyCancellable?
 
     init() {
         enabled = AppleModelAccess.enabled

@@ -14,7 +14,7 @@ final class DevEditorWebView: WKWebView, DevKeyTarget {
 struct DevSourceEditor: NSViewRepresentable {
     @Environment(\.colorScheme) private var colorScheme
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> DevEditorWebView {
         let config = WKWebViewConfiguration()
@@ -81,14 +81,14 @@ struct DevSourceEditor: NSViewRepresentable {
 
 struct DevSourcesPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     private var filter: String { model.paneFilters["sources"] ?? "" }
     private var filterText: Binding<String> { Binding(get: { model.paneFilters["sources"] ?? "" }, set: { model.paneFilters["sources"] = $0 }) }
     @State private var watchExpression = ""
     @State private var snippet = ""
     @State private var snippetName = "Untitled snippet"
     @State private var snippetID: UUID?
-    @ObservedObject private var sourcePrefs = DevSourcePrefs.shared
+    private var sourcePrefs = DevSourcePrefs.shared
     @State private var snippets = false
     @State private var exceptionMode = "none"
     @State private var navOpen = true
@@ -368,7 +368,7 @@ extension Browser {
 /// lit, a line picked opening its file on it, the count at the foot.
 struct DevSourcesSearch: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    @Bindable var model: DevWorkbench
     @FocusState private var focused: Bool
 
     var body: some View {

@@ -5,14 +5,14 @@ import SwiftUI
 /// pane is the way in (MailArrival). As AI is: the accounts and the mail
 /// pin here, and a row for each page further in, saying how it is set.
 struct MailSettings: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var center = MailCenter.shared
-    @ObservedObject private var outlook = OutlookCalendars.shared
-    @ObservedObject private var list = MailList.shared
-    @ObservedObject private var notify = MailNotify.shared
-    @ObservedObject private var agents = AgentSetupModel.shared
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
+    private var center = MailCenter.shared
+    private var outlook = OutlookCalendars.shared
+    private var list = MailList.shared
+    private var notify = MailNotify.shared
+    private var agents = AgentSetupModel.shared
     @AppStorage("mail.ahead", store: Store.settings) private var ahead = false
     @AppStorage("mail.pixels", store: Store.settings) private var pixels = true
     @AppStorage("mail.agents", store: Store.settings) private var agentsWork = false
@@ -174,8 +174,8 @@ struct MailSettings: View {
 /// with the rest while mail is.
 struct MailSettingsPage: View {
     let page: SettingsPage
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
 
     var body: some View {
         PageHero(page: page)
@@ -202,9 +202,9 @@ struct MailSettingsPage: View {
 
 /// Settings › Mail › Reading: how mail is sorted, summed up and shown.
 private struct MailReadingSettings: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var agents = AgentSetupModel.shared
+    var model: SettingsModel
+    @Bindable var prefs: Preferences
+    private var agents = AgentSetupModel.shared
     @AppStorage("mail.summaries", store: Store.settings) private var summaries = false
     @AppStorage("mail.sense", store: Store.settings) private var sense = true
     @AppStorage("mail.pixels", store: Store.settings) private var pixels = true
@@ -281,9 +281,9 @@ private struct MailReadingSettings: View {
 /// Settings › Mail › Writing: replies written ahead, Undo send, read
 /// statuses and each address's signature.
 private struct MailWritingSettings: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var center = MailCenter.shared
-    @ObservedObject private var agents = AgentSetupModel.shared
+    var model: SettingsModel
+    private var center = MailCenter.shared
+    private var agents = AgentSetupModel.shared
     @AppStorage("mail.ahead", store: Store.settings) private var ahead = false
     @AppStorage("mail.undo", store: Store.settings) private var undo = 5
     @AppStorage("mail.signature.replies", store: Store.settings) private var signsReplies = true
@@ -344,7 +344,7 @@ private struct MailAgentSettings: View {
     @AppStorage(MailConsent.aheadKey, store: Store.settings) private var ahead = false
     @AppStorage(MailConsent.othersKey, store: Store.settings) private var others = false
     @AppStorage(MailPeople.key, store: Store.settings) private var people = true
-    @ObservedObject private var agents = AgentSetupModel.shared
+    private var agents = AgentSetupModel.shared
 
     var body: some View {
         Section {
@@ -413,7 +413,7 @@ private struct MailAgentSettings: View {
 /// Show in All Accounts (MailAllAccounts), a switch an account: on until
 /// turned off; the last one left in can't be.
 private struct MailAllAccountsSettings: View {
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
 
     var body: some View {
         Section {
@@ -440,7 +440,7 @@ private struct MailAllAccountsSettings: View {
 
 /// The one number the mail pin, mail's door and the Dock show.
 private struct MailCountSettings: View {
-    @ObservedObject private var notify = MailNotify.shared
+    private var notify = MailNotify.shared
 
     var body: some View {
         Section {
@@ -459,7 +459,7 @@ private struct MailCountSettings: View {
 /// Mac: Gmail's inbox is left as it is unless ads are set to be archived
 /// there too.
 private struct MailSortSettings: View {
-    @ObservedObject private var list = MailList.shared
+    private var list = MailList.shared
     @AppStorage(MailOffers.declinesKey, store: Store.settings) private var declines = false
 
     var body: some View {
@@ -505,7 +505,7 @@ private struct MailSortSettings: View {
 /// its store, as `yab mail flush` sends too): how they work, under the
 /// first, and that the picture can send mail to spam.
 private struct MailReadsSettings: View {
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
 
     static let detail = "Your mail ends with an invisible picture from Yab’s site, which notes when it loads. Addresses and words never leave this Mac.\n"
         + "Mail with such a picture lands in spam more often: if yours stops arriving, turn this off."
@@ -535,7 +535,7 @@ private struct MailReadsSettings: View {
 /// stays as it is). Edit… opens it to write in, with a mail's marks; Use
 /// Gmail's there takes yours away.
 private struct MailSignatures: View {
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
     @State private var editing: Editing?
 
     struct Editing: Identifiable {
@@ -656,7 +656,7 @@ private struct MailCalendarSettings: View {
     @AppStorage("mail.slots.end", store: Store.settings) private var end = 18 * 60
     @AppStorage("mail.slots.length", store: Store.settings) private var length = 30
     @AppStorage("mail.booking", store: Store.settings) private var booking = ""
-    @ObservedObject private var slot = Keymap.shared.slot(.mailSlots)
+    private var slot = Keymap.shared.slot(.mailSlots)
 
     /// Every half hour of the day, as mail says its times.
     private static let times: [(title: String, value: Int)] = stride(from: 0, through: 24 * 60, by: 30).map { minutes in
@@ -709,7 +709,7 @@ private struct MailCalendarSettings: View {
 /// when, Unblock on a right click, as the other tables of Settings take
 /// theirs away. Only while there is one.
 private struct MailBlockedList: View {
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
 
     /// "Oct 1", as mail says its days.
     static let day: DateFormatter = {
@@ -775,9 +775,9 @@ private struct MailBlockedList: View {
 /// An account across the table: its face, its address, and under them how
 /// much of it is here, or what went wrong and the way out.
 private struct MailAccountRow: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let account: String
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
     @State private var size: (threads: Int, bytes: Int64)?
     @State private var fixing = false
     private var imap: Bool { MailCenter.kind(of: account) == .imap }
@@ -889,9 +889,9 @@ private struct MailAccountRow: View {
 
 /// An Outlook or Microsoft 365 account, connected for its calendar alone.
 private struct OutlookAccountRow: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let account: String
-    @ObservedObject private var outlook = OutlookCalendars.shared
+    private var outlook = OutlookCalendars.shared
 
     var body: some View {
         let out = outlook.signedOut.contains(account)
@@ -932,10 +932,10 @@ private struct OutlookAccountRow: View {
 /// in Yab's spaces, or another, signed in to in a tab. While Google is
 /// asked, the row says so and can be called off.
 private struct MailAddAccount: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var center = MailCenter.shared
-    @ObservedObject private var found = MailFound.shared
-    @ObservedObject private var outlook = OutlookCalendars.shared
+    var browser: Browser
+    private var center = MailCenter.shared
+    private var found = MailFound.shared
+    private var outlook = OutlookCalendars.shared
     @State private var hovering = false
     /// Add a Mail Account's sheet, on the address it starts with: "@icloud.com" for iCloud….
     @State private var other: MailSheetStart?
@@ -1018,8 +1018,8 @@ private struct MailAddAccount: View {
 /// Full Disk Access is never asked for on the way; Allow… opens the place
 /// to give it only once texts were turned on.
 struct OneTimeCodes: View {
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var center = MailCenter.shared
+    @Bindable var prefs: Preferences
+    private var center = MailCenter.shared
     @AppStorage("mail.codes.archive", store: Store.settings) private var archive = false
     /// Whether Messages can be read now; nil until looked.
     @State private var readable: Bool?

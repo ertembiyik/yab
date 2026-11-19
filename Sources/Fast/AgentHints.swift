@@ -88,21 +88,25 @@ struct Hint: Identifiable, Equatable, Codable {
 }
 
 @MainActor
-final class Hints: ObservableObject {
+@Observable final class Hints {
     static let shared = Hints()
 
     /// Now, as the rows see it. A test run moves it on (`agent-clock`) to
     /// see times come, puts off end and rows age.
-    static var offset: TimeInterval = 0
-    static var now: Date { Date().addingTimeInterval(offset) }
+    static var offset: TimeInterval {
+        get { shared.clockOffset }
+        set { shared.clockOffset = newValue }
+    }
+    static var now: Date { Date().addingTimeInterval(shared.clockOffset) }
+    private var clockOffset: TimeInterval = 0
 
     /// The last rows shown, kept so a new tab has them at once, before
     /// anything is worked out again.
-    @Published private(set) var rows: [Hint] = Hints.cached
+    private(set) var rows: [Hint] = Hints.cached
     /// Rows not yet seen on a new tab: they come in, the rest stand.
-    @Published private(set) var arriving: Set<String> = []
+    private(set) var arriving: Set<String> = []
     /// Something new came while you were elsewhere: New Tab wears a dot.
-    @Published private(set) var waiting = false
+    private(set) var waiting = false
     /// What came in and what went with a tick, newest last, for the bench.
     private(set) var journal: [String] = []
     /// Everything that would show but for the four, for the bench.
@@ -217,21 +221,23 @@ final class Hints: ObservableObject {
     /// itself (a link just copied, a meeting about to start) and your
     /// habits, with no agent and nothing sent anywhere. On unless turned off.
     var suggesting: Bool {
-        get { store.object(forKey: "hints.noticing") as? Bool ?? true }
+        get {
+            access(keyPath: \.suggesting)
+            return store.object(forKey: "hints.noticing") as? Bool ?? true
+        }
         set {
-            objectWillChange.send()
-            store.set(newValue, forKey: "hints.noticing")
+            withMutation(keyPath: \.suggesting) { store.set(newValue, forKey: "hints.noticing") }
             compose()
         }
     }
     /// The row a task it started is working for, with that task's session.
-    @Published private(set) var working: [String: String] = [:]
+    private(set) var working: [String: String] = [:]
     /// Tabs a row just sent somewhere an agent can act, and where: the pill
     /// at the page's foot, until the page is touched or left.
-    @Published var offered: [UUID: String] = [:]
+    var offered: [UUID: String] = [:]
     /// What the pill offers on such a tab when its site has no skill for
     /// it: cancelling a subscription.
-    @Published var extra: [UUID: Skills.Action] = [:]
+    var extra: [UUID: Skills.Action] = [:]
 
     /// The pill's offer on a tab is over: the page moved on or was touched.
     func unoffer(_ tab: UUID) {
@@ -1462,8 +1468,8 @@ extension Agents {
 /// ground rather than on the card.
 struct HintList: View {
     let browser: Browser
-    @ObservedObject private var hints = Hints.shared
-    @ObservedObject private var agents = Agents.shared
+    private var hints = Hints.shared
+    private var agents = Agents.shared
     @State private var hovered: String?
 
     /// Rows closing up after one goes, or making room for one coming.
@@ -1648,7 +1654,7 @@ struct HintList: View {
 /// found came while you were on a page. No number; gone once a new tab has
 /// shown it. Its own view, so only it is drawn again when it changes.
 struct NewsDot: View {
-    @ObservedObject private var hints = Hints.shared
+    private var hints = Hints.shared
     @Environment(\.accessibilityReduceMotion) private var still
 
     var body: some View {
@@ -1670,7 +1676,7 @@ struct NewsDot: View {
 /// A modifier of its own, so only it is drawn again when the dot changes.
 struct PlusNews: ViewModifier {
     let nearby: Bool
-    @ObservedObject private var hints = Hints.shared
+    private var hints = Hints.shared
 
     func body(content: Content) -> some View {
         let shown = nearby || hints.waiting
@@ -1777,10 +1783,10 @@ extension Hints {
 
 /// ⌘J, in the Agent menu beside Take Over.
 struct PageActionCommand: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var peek: PeekFront
+    var browser: Browser
+    private var peek: PeekFront
     /// A plan connected or gone: the item comes and goes with it (AIUse.offers).
-    @ObservedObject private var setup = AgentSetupModel.shared
+    private var setup = AgentSetupModel.shared
 
     init(browser: Browser) {
         self.browser = browser
@@ -1813,10 +1819,10 @@ struct PageActionCommand: View {
 /// A page action offered at the foot, with a real Skip beside the action.
 /// Dismissing this offer leaves the new-tab row and ⌘J available.
 struct PagePill: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var embedded = false
     var sharedActions = false
-    @ObservedObject private var hints = Hints.shared
+    private var hints = Hints.shared
     @Environment(\.accessibilityReduceMotion) private var still
 
     private var action: Skills.Action? {
@@ -1917,11 +1923,11 @@ struct PagePill: View {
 /// agent's when both are out: the agent speaks first.
 struct PageFoot: View {
     let availableWidth: CGFloat
-    @ObservedObject var tab: Tab
-    @ObservedObject var selection: SelectionCommands
-    @ObservedObject private var line = TaskLine.shared
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var debugger = ExtensionDebugger.shared
+    var tab: Tab
+    var selection: SelectionCommands
+    private var line = TaskLine.shared
+    private var agents = Agents.shared
+    private var debugger = ExtensionDebugger.shared
     @Environment(\.accessibilityReduceMotion) private var still
     /// How tall the agent's side of the foot stands, its 14 off the foot
     /// with it: anything more is a plate Measure's dock stands on.
@@ -1966,7 +1972,7 @@ struct PageFoot: View {
 
 /// The agent's pointer over a page, for the same reason.
 struct PagePointer: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         if tab.worker != nil { AgentPointer(tab: tab) }

@@ -4,11 +4,11 @@ import SwiftUI
 /// An absent host inherits it; allowing a site again removes its exception.
 /// Calls and manually requested PiP do not consult this list.
 @MainActor
-final class AutomaticPiPSites: ObservableObject {
+@Observable final class AutomaticPiPSites {
     static let shared = AutomaticPiPSites()
     nonisolated static let key = "float.deniedSites"
 
-    @Published private(set) var denied: Set<String>
+    private(set) var denied: Set<String>
     private let store: UserDefaults
 
     init(store: UserDefaults = Store.settings) {

@@ -6,7 +6,7 @@ import Carbon.HIToolbox
 /// apps' keys would need. The small window's (⌥⌘N) and Show Yab's (none out
 /// of the box) are two of them, told apart by their id.
 @MainActor
-final class GlobalKey: ObservableObject {
+@Observable final class GlobalKey {
     enum State: Equatable {
         case heard, off
         /// macOS gave it to another app first, Arc's Little Arc say.
@@ -15,15 +15,15 @@ final class GlobalKey: ObservableObject {
 
     /// Whether the key is heard from every app, for the rows that name it:
     /// they say so when it isn't.
-    @Published private(set) var state: State = .off
+    private(set) var state: State = .off
 
     private let id: UInt32
     private let pressed: () -> Void
     /// Asked again as the keyboard layout changes.
     private let again: () -> Void
-    private var hot: EventHotKeyRef?
-    private var registered: Hotkey?
-    private var registeredCode: UInt16?
+    @ObservationIgnored private var hot: EventHotKeyRef?
+    @ObservationIgnored private var registered: Hotkey?
+    @ObservationIgnored private var registeredCode: UInt16?
 
     private static var keys: [UInt32: GlobalKey] = [:]
     private static var hearing: EventHandlerRef?

@@ -20,35 +20,35 @@ import WebKit
 // in (`base`) stands in.
 
 @MainActor
-final class Shield: ObservableObject {
+@Observable final class Shield {
     static let shared = Shield()
 
     /// Set the one time building the lists didn't work and nothing is
     /// blocking. The toggle in Settings can say "on" all it wants, so it is
     /// the one thing worth telling a person about rather than failing the
     /// quiet way a missing ad is quiet.
-    @Published private(set) var trouble: String?
+    private(set) var trouble: String?
 
     /// On unless somebody said otherwise. Every tab's controller is told when
     /// this changes, so it takes effect on the next request rather than the
     /// next launch.
-    var enabled = true
+    @ObservationIgnored var enabled = true
 
     /// Sites it is off for, the ones it broke. A checkout that never
     /// finishes, a video that never starts: switching off here, for this site,
     /// beats switching off everywhere and forgetting to switch back.
-    @Published private(set) var paused: Set<String> = Set(
+    private(set) var paused: Set<String> = Set(
         Store.settings.stringArray(forKey: "shield.paused") ?? []
     )
 
     /// The compiled lists, attached to every page in this order.
-    private(set) var lists: [WKContentRuleList] = []
+    @ObservationIgnored private(set) var lists: [WKContentRuleList] = []
 
     /// A list switched off stays cached; its rules leave the next build.
-    @Published private(set) var disabledSources: Set<String> = Set(
+    private(set) var disabledSources: Set<String> = Set(
         Store.settings.stringArray(forKey: "shield.disabled-sources") ?? []
     )
-    @Published private(set) var customSources: [ShieldSubscription] = ShieldSubscription.read(in: Store.settings)
+    private(set) var customSources: [ShieldSubscription] = ShieldSubscription.read(in: Store.settings)
 
     func setSource(_ name: String, enabled: Bool) {
         guard availableSources.contains(where: { $0.name == name }), disabledSources.contains(name) == enabled else { return }
@@ -96,11 +96,11 @@ final class Shield: ObservableObject {
 
     /// Each list's rule count, title and date, read from the copies kept
     /// on disk (the texts the build compiles), for Settings' rows.
-    @Published private(set) var facts: [String: ShieldLists.Facts] = [:]
-    private var readingFacts = false
-    private var readFactsAgain = false
+    private(set) var facts: [String: ShieldLists.Facts] = [:]
+    @ObservationIgnored private var readingFacts = false
+    @ObservationIgnored private var readFactsAgain = false
     /// Settings has shown the lists: their facts are kept current after.
-    private var factsWanted = false
+    @ObservationIgnored private var factsWanted = false
 
     func readFacts() {
         factsWanted = true
@@ -140,30 +140,30 @@ final class Shield: ObservableObject {
     /// The extension picked to block, kept across launches; nil for
     /// Built-in. It blocks (`source`) only once its rules are compiled:
     /// until then Shield's lists stay on, so there is no gap.
-    @Published private(set) var chosen: String? = Store.settings.string(forKey: "shield.source").flatMap { $0.isEmpty ? nil : $0 }
+    private(set) var chosen: String? = Store.settings.string(forKey: "shield.source").flatMap { $0.isEmpty ? nil : $0 }
 
     /// Who blocks now. Built-in until the chosen extension's first compiled
     /// rule file is held (ExtensionRules), and again whenever it is gone.
-    @Published private(set) var source: Blocking = .builtIn {
+    private(set) var source: Blocking = .builtIn {
         didSet { if source != oldValue { apply() } }
     }
 
     /// The chosen extension's rules didn't load: Built-in blocks meanwhile,
     /// and Settings › Privacy says so.
-    @Published private(set) var failed: String?
+    private(set) var failed: String?
 
     /// Sites turned off through an extension, waiting on its recompile:
     /// when the off was asked for, for the countdown in ⌘E.
-    @Published private(set) var waiting: [String: Date] = [:]
+    private(set) var waiting: [String: Date] = [:]
 
     /// Whether this extension blocks pages in a tab, private or not: a
     /// private tab gets its rules only when it is allowed in private tabs,
     /// and Shield blocks there otherwise.
-    var handsOver: (_ id: String, _ persistent: Bool) -> Bool = { _, persistent in persistent }
+    @ObservationIgnored var handsOver: (_ id: String, _ persistent: Bool) -> Bool = { _, persistent in persistent }
 
     /// Takes the extension's compiled list off a page, or puts it back
     /// (ExtensionRules.drop), so "off on this site" is at once whoever blocks.
-    var dropExtension: (_ controller: WKUserContentController, _ id: String, _ off: Bool) -> Void = { _, _, _ in }
+    @ObservationIgnored var dropExtension: (_ controller: WKUserContentController, _ id: String, _ off: Bool) -> Void = { _, _, _ in }
 
     /// Whether this page has the blocking extension's list taken off.
     func dropped(_ controller: WKUserContentController) -> Bool {
@@ -218,7 +218,7 @@ final class Shield: ObservableObject {
     /// which of them costs a page its time. YAB_SHIELD_SKIP=1,3 at launch,
     /// or the bench's "skip" meanwhile (a test run). ";" separates too, for
     /// the stand's variants, which split on ",".
-    var skipping: Set<Int> = Set(
+    @ObservationIgnored var skipping: Set<Int> = Set(
         (ProcessInfo.processInfo.environment["YAB_SHIELD_SKIP"] ?? "").split(whereSeparator: { $0 == "," || $0 == ";" })
             .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
     ) {
@@ -228,7 +228,7 @@ final class Shield: ObservableObject {
     /// A list the bench made from part of one of them, put on pages in its
     /// place (Shield.trial), to cut a list in halves until what costs is
     /// found.
-    var trial: (index: Int, list: WKContentRuleList)? {
+    @ObservationIgnored var trial: (index: Int, list: WKContentRuleList)? {
         didSet { apply() }
     }
 
@@ -352,15 +352,15 @@ final class Shield: ObservableObject {
     /// hiding costs a quiet site's pages.
     nonisolated static let quietHides = ProcessInfo.processInfo.environment["YAB_SHIELD_QUIET_HIDING"] != "0"
 
-    private(set) var quiet: QuietSites = Store.settings.data(forKey: "shield.quiet")
+    @ObservationIgnored private(set) var quiet: QuietSites = Store.settings.data(forKey: "shield.quiet")
         .flatMap { try? JSONDecoder().decode(QuietSites.self, from: $0) } ?? QuietSites()
 
     /// Sites with hiding rules of their own, written beside the lists when
     /// they are built and read at launch. Left empty, and no site quiet,
     /// until it is known which lists hold the generic hiding.
-    private var hidingSites: Set<String> = []
+    @ObservationIgnored private var hidingSites: Set<String> = []
     /// How many of `lists`, at the end, hold only the generic hiding.
-    private var hiding = 0
+    @ObservationIgnored private var hiding = 0
 
     /// The lists a quiet site's pages keep: the generic hiding, less any
     /// the bench left off.
@@ -369,8 +369,8 @@ final class Shield: ObservableObject {
     }
 
     /// Quiet sites' lists, compiled, by the addresses they hold.
-    private var quietLists: [String: WKContentRuleList] = [:]
-    private var compilingQuiet: Set<String> = []
+    @ObservationIgnored private var quietLists: [String: WKContentRuleList] = [:]
+    @ObservationIgnored private var compilingQuiet: Set<String> = []
 
     /// WebKit says the lists (or, `quietly`, a quiet site's list) blocked a
     /// load of the page in this controller.
@@ -400,7 +400,7 @@ final class Shield: ObservableObject {
         keep()
     }
 
-    private var keeping = false
+    @ObservationIgnored private var keeping = false
 
     private func keep() {
         guard !keeping else { return }
@@ -456,7 +456,7 @@ final class Shield: ObservableObject {
         Store.folder.appendingPathComponent("Shield/skips.json")
     }
 
-    var skipper: Filters.Skipper?
+    @ObservationIgnored var skipper: Filters.Skipper?
 
     nonisolated static func writeSkips(_ skips: [Filters.Skip]) {
         try? FileManager.default.createDirectory(at: skipsFile.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -523,7 +523,7 @@ final class Shield: ObservableObject {
 
     /// For the bench: how often a page asked, how often that changed what
     /// was on it, and the main thread's time spent here.
-    private(set) var fits = (asked: 0, changed: 0, seconds: 0.0)
+    @ObservationIgnored private(set) var fits = (asked: 0, changed: 0, seconds: 0.0)
 
     private func fit(_ controller: WKUserContentController, for host: String?) {
         let t0 = CACurrentMediaTime()
@@ -703,13 +703,13 @@ final class Shield: ObservableObject {
         "shield-\(build)-\(index)"
     }
 
-    private var building = false
-    private var again = false
+    @ObservationIgnored private var building = false
+    @ObservationIgnored private var again = false
     /// Discarded builds still own their identifiers until WebKit removes them.
-    private var lastBuild = 0
+    @ObservationIgnored private var lastBuild = 0
     /// How the last build went, for the bench: how long each step took and
     /// on which thread.
-    private(set) var last: [String: Any] = [:]
+    @ObservationIgnored private(set) var last: [String: Any] = [:]
 
     /// Converts and compiles off the main thread, one list after another,
     /// then puts the new lists on every tab at once and drops the old.
@@ -1020,10 +1020,10 @@ final class Shield: ObservableObject {
     }
     var selected: [Source] { Self.selectedSources(disabling: disabledSources, custom: customSources) }
 
-    @Published private(set) var refreshing = false
-    @Published private(set) var refreshFailed = false
-    private var needsRefresh = false
-    private var scheduler: NSBackgroundActivityScheduler?
+    private(set) var refreshing = false
+    private(set) var refreshFailed = false
+    @ObservationIgnored private var needsRefresh = false
+    @ObservationIgnored private var scheduler: NSBackgroundActivityScheduler?
 
     /// A look a while after launch, and then about once a day for as long
     /// as yab is open; each one fetches only if the lists are a week old.

@@ -93,12 +93,12 @@ struct BoostEditorLook: Codable, Equatable {
 }
 
 @MainActor
-final class BoostEditorLooks: ObservableObject {
+@Observable final class BoostEditorLooks {
     static let shared = BoostEditorLooks()
-    @Published private(set) var looks: [String: [String: BoostEditorLook]] = [:]
+    private(set) var looks: [String: [String: BoostEditorLook]] = [:]
     private let file: URL
-    private var saving: DispatchWorkItem?
-    @Published private(set) var problem: String?
+    @ObservationIgnored private var saving: DispatchWorkItem?
+    private(set) var problem: String?
 
     init(file: URL = Store.file("site-looks.json")) {
         self.file = file

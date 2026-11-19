@@ -2035,7 +2035,7 @@ extension View {
 struct MenuKey: ViewModifier {
     let action: Shortcut.Action
     let enabled: Bool
-    @ObservedObject var slot: KeySlot
+    var slot: KeySlot
 
     init(action: Shortcut.Action, enabled: Bool) {
         self.action = action
@@ -2059,7 +2059,7 @@ struct MenuKey: ViewModifier {
 /// A button's visible key, driven by the same slot as its handler and menu.
 @MainActor
 struct ShortcutGlyphs: View {
-    @ObservedObject private var slot: KeySlot
+    private var slot: KeySlot
     let size: CGFloat
     let tint: Color?
 
@@ -2076,11 +2076,11 @@ struct ShortcutGlyphs: View {
 
 /// One action's key as it is now, for what shows it to watch.
 @MainActor
-final class KeySlot: ObservableObject {
-    @Published fileprivate(set) var keys: Hotkey?
-    @Published fileprivate(set) var isDefault = true
+@Observable final class KeySlot {
+    fileprivate(set) var keys: Hotkey?
+    fileprivate(set) var isDefault = true
     /// The bench asked its row to start recording.
-    @Published var asked = false
+    var asked = false
     /// The bench drew its row as if the pointer were on it, for a picture.
-    @Published var pointed = false
+    var pointed = false
 }

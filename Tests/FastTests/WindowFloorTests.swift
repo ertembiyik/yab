@@ -75,10 +75,10 @@ struct WindowFloorTests {
         }
     }
 
-    final class Grows: ObservableObject { @Published var big = false }
+    @Observable final class Grows { var big = false }
 
     struct Rows: View {
-        @ObservedObject var grows: Grows
+        var grows: Grows
         let floor: Bool
         var body: some View {
             let rows = ScrollView { VStack { ForEach(0..<30) { Text("Row \($0)") } } }

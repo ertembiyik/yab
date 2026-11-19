@@ -10,7 +10,7 @@ struct ExtensionCommandSections: View {
     let filter: String
     var visibleIDs: Set<String>? = nil
     /// The window's sign-in's extensions (ExtensionSignIns).
-    @ObservedObject private var here = ExtensionsHere.shared
+    private var here = ExtensionsHere.shared
     private var extensions: Extensions { here.current }
 
     var body: some View {
@@ -47,7 +47,7 @@ struct ExtensionCommandSections: View {
 struct ExtensionCommandRow: View {
     let entry: Extensions.CommandEntry
     let icon: NSImage?
-    @ObservedObject var extensions: Extensions
+    var extensions: Extensions
 
     var body: some View {
         HStack(spacing: 12) {
@@ -112,7 +112,7 @@ struct ExtensionCommandRow: View {
 @available(macOS 15.4, *)
 private struct ExtensionAliasCell: View {
     let entry: Extensions.CommandEntry
-    @ObservedObject var extensions: Extensions
+    var extensions: Extensions
     @State private var word = ""
     @State private var hovering = false
     @State private var refused: (word: String, why: String)?

@@ -7,9 +7,9 @@ import WebKit
 // switches immediately. Other actions retain their existing motion.
 
 struct MailPane: View {
-    @ObservedObject var desk = MailDesk.shared
-    @ObservedObject var list = MailList.shared
-    @ObservedObject var center = MailCenter.shared
+    var desk = MailDesk.shared
+    var list = MailList.shared
+    var center = MailCenter.shared
     @MailStill private var still
     @MailInstant private var instant
 
@@ -250,8 +250,8 @@ struct MailWash: ViewModifier {
 /// The foot's pill, or Commands alone where the page is narrow; gone, its
 /// place kept, while ⌘J's line stands at the page's foot: one thing there.
 private struct MailFootPills: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject private var line = TaskLine.shared
+    var desk: MailDesk
+    private var line = TaskLine.shared
 
     var body: some View {
         let lined = line.tab != nil && line.tab == Agents.shared.browser?.mailPageTab?.id
@@ -265,10 +265,10 @@ private struct MailFootPills: View {
 }
 
 struct MailFootPill: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     var commandsOnly = false
-    @ObservedObject private var hotkeys = Hotkeys.shared
-    @ObservedObject private var list = MailList.shared
+    private var hotkeys = Hotkeys.shared
+    private var list = MailList.shared
     @MailStill private var still
 
     struct Item: Identifiable, Equatable {
@@ -351,11 +351,11 @@ struct MailFootPill: View {
 // MARK: - the list
 
 struct MailListView: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
-    @ObservedObject var center: MailCenter
+    var desk: MailDesk
+    var list: MailList
+    var center: MailCenter
     /// An act on many on its way to Gmail (Get Me To Zero): said in the head.
-    @ObservedObject private var going = MailGoing.shared
+    private var going = MailGoing.shared
     @MailStill private var still
 
     var body: some View {
@@ -711,8 +711,8 @@ enum MailListHeadings {
 private struct MailListHead: View {
     let saved: MailList.Split
     var draft = false
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
+    var desk: MailDesk
+    var list: MailList
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -774,7 +774,7 @@ private struct MailListHead: View {
 /// own. Paying and sending wait for you either way.
 private struct MailRoutineLine: View {
     let split: MailList.Split
-    @ObservedObject private var routines = Routines.shared
+    private var routines = Routines.shared
     @State private var editing = false
     @State private var words = ""
     @State private var asks = true
@@ -921,8 +921,8 @@ extension View {
 /// Nothing for the rest: quiet is the all clear.
 private struct MailInboxHead: View {
     let split: String
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
+    var desk: MailDesk
+    var list: MailList
 
     var body: some View {
         Group {
@@ -1014,8 +1014,8 @@ private struct MailInboxHead: View {
 /// thank anyone for: a choice and it goes.
 private struct MailOfferCard: View {
     let offer: MailOffer
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
+    var desk: MailDesk
+    var list: MailList
     @State private var asking = false
 
     private var said: AttributedString {
@@ -1069,8 +1069,8 @@ private struct MailOfferCard: View {
 /// A split that skips the inbox, under its name: its new mail is archived
 /// as it comes, and today's, a click away in Archived Today.
 private struct MailSkipLine: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
+    var desk: MailDesk
+    var list: MailList
     let id: String
 
     var body: some View {
@@ -1178,8 +1178,8 @@ private struct MailThinking: View {
 /// opens them as tabs in the space you came from.
 private struct MailPages: View {
     let saved: MailList.Split
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
+    var desk: MailDesk
+    var list: MailList
 
     var body: some View {
         HStack(spacing: 6) {
@@ -1625,7 +1625,7 @@ private struct MailWork: View {
     let account: String
     let thread: String
     let size: CGFloat
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         if let work = MailList.shared.work(account, thread) {
@@ -1662,7 +1662,7 @@ struct MailAvatar: View {
 /// Above a thread and staying there while J and K change it: esc and the
 /// list's name, and where in it the thread is.
 private struct MailCrumb: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     @State private var hovered = false
 
     var body: some View {
@@ -1696,8 +1696,8 @@ private struct MailCrumb: View {
 }
 
 struct MailThreadView: View {
-    @ObservedObject var desk: MailDesk
-    @ObservedObject var list: MailList
+    var desk: MailDesk
+    var list: MailList
     /// Its own words, as the pane handed them. One going out as another
     /// comes in (J and K, done, ⌘Z) or the list does is still drawn while
     /// it goes, with the desk already on the next: it shows them as they
@@ -1929,7 +1929,7 @@ enum MailThreadEntries {
 /// "and 3 more" opens them all as chips, with Copy All.
 private struct MailCrowd: View {
     let people: [MailPerson]
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     @State private var open = false
 
     var body: some View {
@@ -1978,8 +1978,8 @@ private struct MailMessageView: View {
     /// (MailThreadView.letter).
     let count: Int
     let live: Bool
-    @ObservedObject var desk: MailDesk
-    @ObservedObject private var events = MailEvents.shared
+    var desk: MailDesk
+    private var events = MailEvents.shared
     @State private var pointer = CGPoint.zero
     @State private var senderHovering = false
     @State private var copyTip = KeyTipAnchor()
@@ -2330,7 +2330,7 @@ private struct MailStackLine: View {
 private struct MailAgentBanner: View {
     let account: String
     let thread: String
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         if let work = MailList.shared.work(account, thread) {
@@ -2356,7 +2356,7 @@ private struct MailAgentBanner: View {
 /// yours, its tabs 1, 2, 3 named for what each does, ⌘↩ sends it as it is,
 /// ↩ writes in it, in the same place. Nothing is kept until you do.
 private struct MailReady: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     /// Its letter's replies, the one picked and to whom (MailThreadView.letter).
     let ready: [MailDesk.Ready]
     let pick: Int
@@ -2515,7 +2515,7 @@ private struct MailKeyed: View {
 /// to write them; ⌘J writes them again. Files dropped anywhere on it, or a
 /// picture pasted into its words, are attached.
 private struct MailReply: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     let draft: MailDesk.Draft
     let fresh: Bool
     /// In the letter in front: one going out shows its own draft as it
@@ -2531,7 +2531,7 @@ private struct MailReply: View {
     @State private var dropping = false
     @State private var droppingOnWords = false
     /// The snippets under the caret after ";" (MailSnippetPicker).
-    @ObservedObject private var picker = MailSnippetPicker.shared
+    private var picker = MailSnippetPicker.shared
     /// How tall the words are: changed, the reply is laid out again, as
     /// the words alone don't tell it at each key.
     @State private var wordsTall: CGFloat = 0
@@ -2754,7 +2754,7 @@ private struct MailReply: View {
 /// sends as more than one (MailSendAs): the name and the address; a click,
 /// or ⇧⌘F, raises the field's From rows to choose another.
 private struct MailFromRow: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     let sender: MailPerson
     let live: Bool
 
@@ -2833,7 +2833,7 @@ private struct MailSignaturePicture: View {
     let url: URL
     let width: Double?
     let height: Double?
-    @ObservedObject private var pictures = MailSignaturePictures.shared
+    private var pictures = MailSignaturePictures.shared
 
     var body: some View {
         let size = pictures.size(url, width: width, height: height)
@@ -2855,10 +2855,10 @@ private struct MailSignaturePicture: View {
 /// Yab runs: by mail's own kind of session (no cookie, no cache on disk,
 /// MailWire), the bytes of a data: address read as they are, 2 MB at most.
 @MainActor
-final class MailSignaturePictures: ObservableObject {
+@Observable final class MailSignaturePictures {
     static let shared = MailSignaturePictures()
-    @Published private(set) var images: [URL: NSImage] = [:]
-    private var asked: Set<URL> = []
+    private(set) var images: [URL: NSImage] = [:]
+    @ObservationIgnored private var asked: Set<URL> = []
     private let session = URLSession(configuration: MailWire.configuration())
 
     func load(_ url: URL) async {
@@ -2923,7 +2923,7 @@ private struct MailUnder: View {
 /// stays), its size, and × to take it off. A click chooses one; ⌫ takes
 /// the chosen one off (MailDesk.take).
 private struct MailDraftChips: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     let files: [MailDraftFile]
     /// In the letter in front: one going out is only shown.
     let live: Bool
@@ -2941,7 +2941,7 @@ private struct MailDraftChips: View {
 
 /// One of them: chosen, a ring, as a thread's chip has it.
 private struct MailDraftChip: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     let file: MailDraftFile
     let chosen: Bool
     let live: Bool
@@ -2984,7 +2984,7 @@ private struct MailDraftChip: View {
 /// Space in an empty reply: what to ask your AI, in any words; ↩ and it
 /// writes the reply in place, esc and you write it.
 private struct MailAsk: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     @FocusState private var focus: Bool
 
     var body: some View {
@@ -3019,7 +3019,7 @@ private final class Keeper {
 /// copies its address. A chip that isn't an address is red, and says so
 /// under the pointer; nothing more is said of it.
 private struct MailRecipients<Trailing: View>: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     let label: String
     @Binding var header: String
     var first = false
@@ -3202,7 +3202,7 @@ private struct MailSuggestions: View {
 private struct MailChip: View {
     let person: MailPerson
     var chosen = false
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     var remove: (() -> Void)? = nil
     @State private var open = false
     @State private var copied = false
@@ -3482,7 +3482,7 @@ private struct MailFlow: Layout {
 
 /// A new mail where the list was, as wide as a thread is read.
 private struct MailComposeView: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
 
     var body: some View {
         ThreadScrollView(.vertical) {
@@ -3919,7 +3919,7 @@ final class MailBodyView: WKWebView {
 /// peek as the words grow; sent or closed, it stays as it was while the
 /// card goes back into the link.
 struct MailtoCard: View {
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     let tall: (CGFloat) -> Void
 
     var body: some View {

@@ -16,7 +16,7 @@ import WebKit
 /// A message's files under its words, a chip each.
 struct MailFileChips: View {
     let message: MailDesk.Message
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
 
     var body: some View {
         MailChipFlow(spacing: 6) {
@@ -33,7 +33,7 @@ struct MailFileChips: View {
 private struct MailFileChip: View {
     let file: MailFile
     let message: MailDesk.Message
-    @ObservedObject var desk: MailDesk
+    var desk: MailDesk
     @State private var hovering = false
 
     var body: some View {

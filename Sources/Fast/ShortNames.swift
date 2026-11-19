@@ -12,7 +12,7 @@ import FoundationModels
 // Settings › AI › While You Browse › Tidy Tab Titles.
 
 @MainActor
-final class ShortNames: ObservableObject {
+@Observable final class ShortNames {
     static let shared = ShortNames()
 
     /// Past this, a title is asked to be said shorter.
@@ -20,15 +20,15 @@ final class ShortNames: ObservableObject {
 
     /// Settings › AI › While You Browse › Tidy Tab Titles (Preferences
     /// keeps it here as it changes).
-    static var enabled = true {
-        didSet {
-            guard enabled != oldValue else { return }
-            for browser in BrowserWindows.shared.browsers { for tab in browser.tabs where tab.kept { tab.objectWillChange.send() } }
-        }
+    static var enabled: Bool {
+        get { shared.tidying }
+        set { if shared.tidying != newValue { shared.tidying = newValue } }
     }
+    private var tidying = true
 
     private var known: [String: String]
-    private var asking: Set<String> = []
+    /// Written while a row is drawn (`name(for:)`): nothing draws it.
+    @ObservationIgnored private var asking: Set<String> = []
     private static var file: URL { Store.file("short-names.json") }
 
     private init() {
@@ -93,7 +93,6 @@ final class ShortNames: ObservableObject {
         known[key] = name
         if known.count > 800 { known = Dictionary(uniqueKeysWithValues: known.suffix(600).map { ($0.key, $0.value) }) }
         save()
-        tab?.objectWillChange.send()
     }
 
     /// A test run's stand-in for the model (bench "tidy-name"): this name
@@ -164,7 +163,6 @@ enum ChatTitles {
             kept.title = name
             Chats.shared.keep(kept)
         }
-        Agents.shared.objectWillChange.send()
     }
 
     nonisolated static func fits(_ said: String, asked: String = "") -> Bool {

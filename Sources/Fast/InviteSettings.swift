@@ -19,7 +19,7 @@ enum CharmSwatch {
 
 /// The charm as the Dock shows it now, any size.
 struct CharmPicture: View {
-    @ObservedObject private var invites = Invites.shared
+    @Bindable private var invites = Invites.shared
     var side: CGFloat
     /// Drawn whole whatever the Dock shows, for the page's own picture.
     var whole = false
@@ -44,7 +44,7 @@ struct CharmPicture: View {
 /// under the pointer, joining again when it leaves. The halves move as
 /// layers, out along the break and turned as `CharmDraw` parts them.
 private struct HoverCharm: View {
-    @ObservedObject private var invites = Invites.shared
+    @Bindable private var invites = Invites.shared
     var side: CGFloat
     var whole: Bool
     @State private var hovering = false
@@ -184,7 +184,7 @@ private struct RewardTile: View {
 /// Post About Yab (PostReward): a post on X for one of three icons, a
 /// surprise until its day is up.
 private struct PostSection: View {
-    @ObservedObject private var reward = PostReward.shared
+    @Bindable private var reward = PostReward.shared
     @State private var pasting = false
 
     var body: some View {
@@ -274,7 +274,7 @@ private struct PostSection: View {
 /// The post's link, given by hand when Yab didn't see X show it.
 private struct PasteLinkPopover: View {
     @Binding var shown: Bool
-    @ObservedObject private var reward = PostReward.shared
+    @Bindable private var reward = PostReward.shared
     @State private var link = ""
     @FocusState private var focused: Bool
 
@@ -343,8 +343,8 @@ private struct RevealTile: View {
 
 /// Settings › Invite Friends.
 struct InviteFriendsPage: View {
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var invites = Invites.shared
+    var model: SettingsModel
+    @Bindable private var invites = Invites.shared
 
     var body: some View {
         PageHero(page: .inviteFriends)
@@ -442,7 +442,7 @@ struct InviteFriendsPage: View {
 
 /// Settings › Invite Friends › Best Friend.
 struct BestFriendPage: View {
-    @ObservedObject private var invites = Invites.shared
+    @Bindable private var invites = Invites.shared
     @State private var changing = false
 
     var body: some View {

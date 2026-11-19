@@ -58,11 +58,11 @@ private func tabs(_ count: Int) -> String { count == 1 ? "1 tab" : "\(count) tab
 /// what you could add, the sources your history goes to most first; a
 /// folder further in, its own page.
 struct LiveFoldersSettings: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
-    @ObservedObject private var live = LiveFolders.shared
-    @ObservedObject private var folders = Folders.shared
+    var browser: Browser
+    var prefs: Preferences
+    var model: SettingsModel
+    private var live = LiveFolders.shared
+    private var folders = Folders.shared
     @State private var entries: [LiveFolderSummary] = []
     /// Read from history once the page is on, never before.
     @State private var visits: [(url: String, count: Int)]?
@@ -96,8 +96,8 @@ struct LiveFoldersSettings: View {
         .onAppear { reload() }
         .onReceive(browser.changes(\.tabs)) { _ in DispatchQueue.main.async { reload() } }
         .onReceive(browser.changes(\.spaceID)) { _ in DispatchQueue.main.async { reload() } }
-        .onReceive(folders.$empties) { _ in DispatchQueue.main.async { reload() } }
-        .onReceive(live.$states) { _ in DispatchQueue.main.async { reload() } }
+        .onChange(of: folders.empties.map(\.id)) { _, _ in reload() }
+        .onChange(of: live.states) { _, _ in reload() }
         .onReceive(NotificationCenter.default.publisher(for: Session.written)) { _ in reload() }
         .onChange(of: model.opened) { _, _ in reload() }
         .onChange(of: prefs.usesLiveFolders) { _, _ in reload() }
@@ -235,11 +235,11 @@ struct LiveFoldersSettings: View {
 /// Your folders, a row each as the spaces' list has them: the site's mark
 /// on its plate, the name, how many tabs, and only what needs doing.
 private struct LiveFolderList: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     let entries: [LiveFolderSummary]
     let made: UUID?
     let open: (LiveFolderSummary) -> Void
-    @ObservedObject private var live = LiveFolders.shared
+    private var live = LiveFolders.shared
 
     static let row = SettingsList.row
 
@@ -355,7 +355,7 @@ private struct LiveSourceRow: View {
 /// Follow a repository: the row, and the popover that takes it, the ones
 /// opened most from history and any typed.
 private struct LiveRepoRow: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     @Binding var picking: Bool
     let title: String
     let detail: String
@@ -388,7 +388,7 @@ private struct LiveRepoRow: View {
 /// The repositories to follow: a field for owner/name or an address, and
 /// under it the ones this Mac opened most.
 private struct RepoPicker: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     var issuesIn: Nest? = nil
     let done: (Nest?) -> Void
     @State private var typed = ""
@@ -521,12 +521,12 @@ private struct LiveFoldersArrival: View {
 /// line of facts, what needs doing first, then what it shows, and at the
 /// foot stopping.
 private struct LiveFolderDetail: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var nest: Nest
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    @Bindable var nest: Nest
+    var model: SettingsModel
     /// A repository followed from here: the list shows its new folder.
     let added: (UUID?) -> Void
-    @ObservedObject private var folders = LiveFolders.shared
+    private var folders = LiveFolders.shared
     @State private var pickingRepo = false
 
     private var source: LiveSource? { nest.live.flatMap { LiveSource.of($0.source) } }

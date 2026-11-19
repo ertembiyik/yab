@@ -1,21 +1,22 @@
 import AppKit
 import Foundation
+import Observation
 
 /// One immutable outgoing operation, with as many callers as asked for it.
 /// A tab is only a page; neither it nor the caller owns a pending send.
-@MainActor
+@MainActor @Observable
 final class MailSendAsk {
     let id = UUID().uuidString.lowercased()
     let permit: AgentPermit
     let outs: [MailAgent.Outgoing]
     let hold: TimeInterval?
-    var callers: Set<String>
-    var calls: [String: Set<String>] = [:]
+    @ObservationIgnored var callers: Set<String>
+    @ObservationIgnored var calls: [String: Set<String>] = [:]
     var phase: AskPhase = .ready
-    var result: [String: Any]?
-    var task: Task<[String: Any], Never>?
-    var results: [[String: Any]?]
-    var kept: [String?]
+    @ObservationIgnored var result: [String: Any]?
+    @ObservationIgnored var task: Task<[String: Any], Never>?
+    @ObservationIgnored var results: [[String: Any]?]
+    @ObservationIgnored var kept: [String?]
     let connected: [Bool]
 
     init(_ outs: [MailAgent.Outgoing], permit: AgentPermit, hold: TimeInterval?) {
@@ -165,7 +166,6 @@ extension Agents {
         if self === Agents.shared { AssistantApprovals.shared.settled(mail: request.id, request.permit, yes: true) }
         request.result = nil
         request.phase = .going(since: Date())
-        objectWillChange.send()
         for caller in request.callers {
             if let session = session(caller), session.state == .waiting {
                 session.state = session.process != nil ? .running : session.agent == .external ? .attached : .signingIn
@@ -213,7 +213,6 @@ extension Agents {
             request.task = nil
             if let trouble {
                 request.phase = .failed(trouble)
-                objectWillChange.send()
             } else {
                 let drafts = results.compactMap { $0["sending"] as? Bool == true ? $0["draft"] as? String : nil }
                 if drafts.count == results.count, !drafts.isEmpty, self === Agents.shared {

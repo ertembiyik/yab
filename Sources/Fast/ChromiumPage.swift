@@ -88,7 +88,7 @@ final class ChromiumPage: YabTextCheckingView, PageHandle, PageAudioControl {
         return ChromiumPersistentProfiles.plan(for: tab.pageStore).logical
     }
     private weak var extensionTab: Tab?
-    private var extensionWatch: AnyCancellable?
+    private var extensionWatch: ObservationLoop?
     private(set) lazy var extensions = ChromiumExtensions.shared(profile: profile, privateMode: privateMode, store: navigationTab?.pageStore)
     /// A close batch committed this page (Leaving): its row is the batch's to keep or drop.
     var closeCommitted = false
@@ -273,9 +273,7 @@ final class ChromiumPage: YabTextCheckingView, PageHandle, PageAudioControl {
         // Match Chromium's CALayerHost geometry. Its bounds MUST stay zero.
         remoteParent.isGeometryFlipped = true
         layer?.addSublayer(remoteParent)
-        extensionWatch = extensions.objectWillChange.sink { [weak self] in
-            Task { @MainActor [weak self] in self?.tellNativeStore() }
-        }
+        extensionWatch = ObservationLoop { [weak self] in self?.tellNativeStore() }
     }
     required init?(coder: NSCoder) { nil }
     func adoptRemote(_ id: String) {
@@ -1410,9 +1408,12 @@ final class ChromiumPage: YabTextCheckingView, PageHandle, PageAudioControl {
         }
     }
     private func tellNativeStore() {
+        // Read before the guard: extensionWatch follows what this reads.
+        let installed = extensions.items.map { JSONValue.string($0.id) }
+        let busy = extensions.busy
         guard ChromiumStoreBridge.accepts(url) else { return }
-        let state: JSONValue = .object(["installed": .array(extensions.items.map { .string($0.id) }),
-                                        "busy": extensions.busy ? Crx.id(in: url?.absoluteString ?? "").map(JSONValue.string) ?? .null : .null])
+        let state: JSONValue = .object(["installed": .array(installed),
+                                        "busy": busy ? Crx.id(in: url?.absoluteString ?? "").map(JSONValue.string) ?? .null : .null])
         enqueue { core, id in
             _ = try await core.evaluate(tab: id, world: ChromiumStoreBridge.world,
                                        function: "function(state){window.__yabStore?.state(state)}", arguments: state)

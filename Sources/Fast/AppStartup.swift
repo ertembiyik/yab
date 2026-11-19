@@ -114,22 +114,7 @@ enum AppStartup {
             for tab in all where tab.address.flatMap(Favicons.site) == host && !Favicons.shared.wearsOwn(tab) && !tab.awaitingDocumentMetadata {
                 tab.icon = tab.address.flatMap(Favicons.shared.pageIcon) ?? image
             }
-            // On the bookmarks' row, while there is one to see.
-            if browser.prefs.bookmarkBar != .never, browser.bookmarks.contains(host: host) {
-                browser.bookmarks.objectWillChange.send()
-            }
-            // And on the row under the field offering that site, if there is one.
-            if browser.query.offers.contains(where: { $0.url?.host()?.lowercased() == host || QuickActions.site(of: $0)?.lowercased() == host }) {
-                browser.query.objectWillChange.send()
-            }
-            // And on the corner of a row that needs you (HintPicture).
-            if Hints.shared.rows.contains(where: { hint in
-                if case .picture(_, let site) = hint.icon { return HintPicture.badge(site) == host }
-                return false
-            }) {
-                Hints.shared.objectWillChange.send()
-                browser.query.objectWillChange.send()
-            }
+            // Readers use Favicons.shared.cached, which is observed.
         }
         // The sites the field knows from the start wear their own icons the
         // first time they are offered, not a letter: fetched once, quietly,
@@ -137,16 +122,14 @@ enum AppStartup {
         // G kept for its products before goes first, once (Favicons.tidy),
         // and off the tabs wearing it: a letter until their page names their
         // own, asked for at once where the page is open.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak browser] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             let gone = Favicons.shared.tidy()
-            if let browser, !gone.isEmpty {
+            if !gone.isEmpty {
                 for tab in BrowserWindows.shared.browsers.flatMap({ $0.tabs + $0.parkedTabs })
                 where gone.contains(tab.address?.host()?.lowercased() ?? "") {
                     tab.adoptIcon()
                     if tab.builtPage != nil, !tab.asleep { Favicons.shared.fetch(for: tab) }
                 }
-                browser.bookmarks.objectWillChange.send()
-                browser.query.objectWillChange.send()
             }
             // Once: kept icons that draw nothing (ChatGPT's, feedback #368)
             // go, and their tabs show a letter until their page names one.

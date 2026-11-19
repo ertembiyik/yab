@@ -70,23 +70,23 @@ struct KeyFlight: Equatable, Identifiable {
 /// Watched by the flight alone, so a mark taking off doesn't redraw the
 /// window around it.
 @MainActor
-final class KeySky: ObservableObject {
-    @Published var flight: KeyFlight?
+@Observable final class KeySky {
+    var flight: KeyFlight?
 
     /// Where each tab's mark and each tab's pill mark last were, in the
     /// window's SwiftUI space. Written as they are laid out, read only when
     /// something takes off, nothing redraws because they moved.
-    var marks: [Tab.ID: CGRect] = [:]
+    @ObservationIgnored var marks: [Tab.ID: CGRect] = [:]
     /// Which mark said so last: a mark going takes back only its own word.
-    var markers: [Tab.ID: UUID] = [:]
-    var pills: [Tab.ID: CGRect] = [:]
+    @ObservationIgnored var markers: [Tab.ID: UUID] = [:]
+    @ObservationIgnored var pills: [Tab.ID: CGRect] = [:]
     /// Where the window's own top-left is in that space: not the same in
     /// every window, which can lay its root out under the title bar's
     /// safe area (TearGround).
-    var ground: CGPoint = .zero
+    @ObservationIgnored var ground: CGPoint = .zero
     /// An AppKit view laid over the whole window there, to take that space
     /// to the screen and back exactly (TearGround).
-    weak var groundView: NSView?
+    @ObservationIgnored weak var groundView: NSView?
     /// And each tab's whole shape, in the same space, for a page's question
     /// to hang from, a card to come out of, a middle press to close: read
     /// through `place`. A row in the column says where it is in that space
@@ -98,10 +98,10 @@ final class KeySky: ObservableObject {
     /// strip came down from past the window's top or the run scrolled. At
     /// launch every tab across the top was said to be a strip's height
     /// above where it was drawn, and the pointer on it was taken to be off it.
-    private var laid: [Tab.ID: CGRect] = [:]
+    @ObservationIgnored private var laid: [Tab.ID: CGRect] = [:]
     /// What each pill across the top said, a tab's pills in strips going
     /// and coming both, each until it goes (`current`).
-    private var strip: [Tab.ID: [StripSpot]] = [:]
+    @ObservationIgnored private var strip: [Tab.ID: [StripSpot]] = [:]
 
     /// Where along the top a tab stands: the pins every space shares, ahead
     /// of the capsule, or the run of the space's own.
@@ -143,7 +143,7 @@ final class KeySky: ObservableObject {
 
     /// The tabs are along the top now, not down the side: which of a
     /// tab's two words on where it is holds (`place`). Told by Browser.
-    var across: () -> Bool = { false }
+    @ObservationIgnored var across: () -> Bool = { false }
 
     /// A row in the column, in the window's SwiftUI space. It leaves the
     /// strip's word alone: the column sliding out as the tabs went to the
@@ -287,12 +287,12 @@ final class KeySky: ObservableObject {
     }
 
     /// The tab with a question hanging from it, which the card watches.
-    var watched: Tab.ID? {
+    @ObservationIgnored var watched: Tab.ID? {
         didSet { if watched != oldValue { watchedAt = watched.flatMap(place) } }
     }
-    private var watchedAt: CGRect?
+    @ObservationIgnored private var watchedAt: CGRect?
     /// Counts the watched tab's moves.
-    @Published private(set) var moved = 0
+    private(set) var moved = 0
 }
 
 /// Laid under a room of the strip's tabs, exactly its size, so KeySky can
@@ -607,8 +607,8 @@ extension Browser {
 /// the dimming is Not now: the page is live behind it, and a sign-in that
 /// wanted answering first would be one that got in the way.
 struct KeepCard: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
     let offer: PasswordOffer
 
     static let width: CGFloat = 400
@@ -761,7 +761,7 @@ struct KeepCard: View {
 /// A tab's mark, or, while a password waits on the tab, a key in its place.
 /// A click on the key brings the question back.
 struct TabMark<Content: View>: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let sky: KeySky
     let size: CGFloat
     let tint: Color
@@ -896,7 +896,7 @@ struct TabMark<Content: View>: View {
 /// Over the whole window, since the mark crosses from the page to the strip
 /// or the column.
 struct KeyFlightLayer: View {
-    @ObservedObject var sky: KeySky
+    var sky: KeySky
 
     var body: some View {
         GeometryReader { proxy in

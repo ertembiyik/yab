@@ -6,22 +6,22 @@ import SwiftUI
 /// is let go of. The wait is what keeps it quiet: ⌘ goes down hundreds of
 /// times a day on the way to ⌘C or ⌘T, and none of those should flash.
 @MainActor
-final class KeyNumbers: ObservableObject {
+@Observable final class KeyNumbers {
     static let shared = KeyNumbers()
 
-    @Published private(set) var shown = false
+    private(set) var shown = false
 
-    private var monitor: Any?
-    private var wait: DispatchWorkItem?
-    private var began: TimeInterval?
-    private var presses: UInt32 = 0
-    private var chord = false
+    @ObservationIgnored private var monitor: Any?
+    @ObservationIgnored private var wait: DispatchWorkItem?
+    @ObservationIgnored private var began: TimeInterval?
+    @ObservationIgnored private var presses: UInt32 = 0
+    @ObservationIgnored private var chord = false
     private let now: () -> TimeInterval
     private let keyPresses: () -> UInt32
     private let commandAlone: () -> Bool
     private let pointer: () -> CGPoint
     /// Where the pointer was when ⌘ went down.
-    private var from: CGPoint = .zero
+    @ObservationIgnored private var from: CGPoint = .zero
 
     /// How far the pointer goes with ⌘ held before the hold reads as
     /// aiming a ⌘-click rather than counting tabs.
@@ -145,7 +145,7 @@ final class KeyNumbers: ObservableObject {
 
     /// Each window's numbers while ⌘ is held, worked out once for all its
     /// rows rather than once a row.
-    private var counted: [ObjectIdentifier: [UUID: Int]] = [:]
+    @ObservationIgnored private var counted: [ObjectIdentifier: [UUID: Int]] = [:]
 
     /// What ⌘ and a digit reach this tab by, if anything: the very tab
     /// `Browser.select(index:)` goes to for that digit, so a number is
@@ -187,12 +187,12 @@ final class KeyNumbers: ObservableObject {
 /// the number is read afresh each time ⌘ is held.
 struct PinNumber<Mark: View>: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var size: CGFloat
     var tint: Color
     @ViewBuilder var mark: () -> Mark
 
-    @ObservedObject private var numbers = KeyNumbers.shared
+    private var numbers = KeyNumbers.shared
 
     var body: some View {
         ZStack {

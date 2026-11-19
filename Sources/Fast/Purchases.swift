@@ -12,7 +12,7 @@ import MailCore
 // button for the person's yes (AgentPermit's commits).
 
 @MainActor
-final class Purchases: ObservableObject {
+@Observable final class Purchases {
     static let shared = Purchases()
 
     struct Item: Identifiable, Equatable {
@@ -58,19 +58,19 @@ final class Purchases: ObservableObject {
         func unused(now: Date) -> Bool { (idle(now: now) ?? 0) >= Purchases.unusedDays }
     }
 
-    @Published private(set) var subscriptions: [Item] = []
-    @Published private(set) var orders: [Item] = []
-    @Published private(set) var receipts: [Item] = []
+    private(set) var subscriptions: [Item] = []
+    private(set) var orders: [Item] = []
+    private(set) var receipts: [Item] = []
     /// Counts every change, for what is made from it (Places' memo).
-    private(set) var version = 0
-    private var read: Date?
-    private var reading = false
+    @ObservationIgnored private(set) var version = 0
+    @ObservationIgnored private var read: Date?
+    @ObservationIgnored private var reading = false
     /// What each mail read as, by `Purchases.key`: a mail's words don't
     /// change, so a refresh reads only mail it hasn't read before. Every
     /// candidate read again every ten minutes was the owner's whole 400
     /// days, 8,000 mails, and the run took longer than the ten minutes it
     /// waited, so one core never rested (2026-10-25).
-    private var known = Known()
+    @ObservationIgnored private var known = Known()
 
     struct Known: Sendable, Codable {
         /// The rules that read them (MailPurchases.rules): other rules may
@@ -99,7 +99,7 @@ final class Purchases: ObservableObject {
         guard let data = try? JSONEncoder().encode(known) else { return }
         try? data.write(to: knownFile, options: .atomic)
     }
-    private var loaded = false
+    @ObservationIgnored private var loaded = false
 
     /// A mail as it was read: its id and account, how much of it was there
     /// (the snippet first, its words when they arrive, and gone again when
@@ -127,7 +127,7 @@ final class Purchases: ObservableObject {
 
     /// Purchases a test world hands over (bench `purchases` seed), with
     /// the last visit of each site; nil reads the mail.
-    var testing: [(purchase: MailPurchase, account: String, opened: Date?)]?
+    @ObservationIgnored var testing: [(purchase: MailPurchase, account: String, opened: Date?)]?
 
     // MARK: - reading
 

@@ -145,8 +145,9 @@ extension ChromiumExtensions {
         try FileManager.default.createDirectory(at: migrationFile.deletingLastPathComponent(), withIntermediateDirectories: true,
                                                attributes: [.posixPermissions: 0o700])
         try JSONEncoder().encode(state).write(to: migrationFile, options: .atomic)
-        if pinCache != state.pins { objectWillChange.send() }
+        let changed = pinCache != state.pins
         pinCache = state.pins
+        if changed { pinRevision &+= 1 }
     }
     var pendingImport: Set<String> {
         (try? migration().pending) ?? []
@@ -156,6 +157,7 @@ extension ChromiumExtensions {
         if #available(macOS 15.4, *), let list = oneList {
             return list.installed.filter { $0.pinned == true }.map(\.id)
         }
+        _ = pinRevision
         if let pinCache { return pinCache }
         let read = (try? migration().pins) ?? []
         pinCache = read

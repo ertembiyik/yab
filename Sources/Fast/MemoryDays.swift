@@ -101,13 +101,13 @@ extension Diary {
 
 /// The days' threads Memory shows, read from the diary as its pages open.
 @MainActor
-final class DaysModel: ObservableObject {
+@Observable final class DaysModel {
     static let shared = DaysModel()
 
-    @Published private(set) var threads: [String: [DayThread]] = [:]
+    private(set) var threads: [String: [DayThread]] = [:]
     /// The day's note open as text, by its path: Edit as Markdown (⌘E).
-    @Published var editing: String?
-    private var watching: Any?
+    var editing: String?
+    @ObservationIgnored private var watching: Any?
 
     private init() {
         watching = NotificationCenter.default.addObserver(forName: Diary.threadsChanged, object: nil, queue: .main) { [weak self] _ in
@@ -115,7 +115,7 @@ final class DaysModel: ObservableObject {
         }
     }
 
-    private var asked: [String] = []
+    @ObservationIgnored private var asked: [String] = []
 
     /// These days' threads, "2026-10-20", read off the main thread.
     func load(_ days: [String]) {
@@ -165,7 +165,7 @@ struct DayPage: View {
     let body_: String
     let browser: Browser?
     let editAsText: () -> Void
-    @ObservedObject private var days = DaysModel.shared
+    private var days = DaysModel.shared
 
     init(note: MemoryNote, text: String, browser: Browser?, editAsText: @escaping () -> Void) {
         self.note = note

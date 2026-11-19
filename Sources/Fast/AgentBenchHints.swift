@@ -164,8 +164,6 @@ extension Bench {
         if request["reset"] as? Bool == true { Hints.offset = 0 }
         if request["forget"] as? Bool == true { Hints.shared.forget() }
         if let ids = request["drop"] as? [String] { Hints.shared.drop(ids) }
-        // The rows count their minutes by the clock: drawn again for the new one.
-        Hints.shared.objectWillChange.send()
         Hints.shared.refresh()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { answer(Hints.shared.state()) }
     }

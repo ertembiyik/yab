@@ -189,7 +189,7 @@ enum PinList {
 /// folder's preview (FolderPreview) on Actions' panel, its pieces and all.
 struct PinPreview: View {
     let browser: Browser
-    @ObservedObject var glance: TabGlance
+    var glance: TabGlance
     let heading: String
     /// A pinned pair's card: its two halves, no search (PinPairs.swift).
     var halves = false

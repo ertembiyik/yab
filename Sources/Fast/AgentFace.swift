@@ -37,7 +37,7 @@ enum FacePose: Equatable {
 
 /// What an agent last did in which tab, for its face to show.
 @MainActor
-final class AgentFeed: ObservableObject {
+@Observable final class AgentFeed {
     static let shared = AgentFeed()
 
     struct Act: Equatable {
@@ -46,16 +46,16 @@ final class AgentFeed: ObservableObject {
         let count: Int
     }
 
-    @Published private(set) var last: [UUID: Act] = [:]
+    private(set) var last: [UUID: Act] = [:]
     /// Agents' tabs you took the wheel in: the agent waits until you hand
     /// them back (AgentBench refuses its actions there).
-    @Published private(set) var driving: Set<UUID> = []
+    private(set) var driving: Set<UUID> = []
     /// The one on screen, when you are driving it.
-    @Published private(set) var drivingHere: UUID?
+    private(set) var drivingHere: UUID?
     /// The last Stop on each page, kept for the dock after its worker leaves.
-    @Published private(set) var stopped: [UUID: String] = [:]
+    private(set) var stopped: [UUID: String] = [:]
     /// Where the agent last clicked on each tab's page, for its pointer.
-    @Published private(set) var pointer: [UUID: AgentPoint] = [:]
+    private(set) var pointer: [UUID: AgentPoint] = [:]
     private var count = 0
 
     weak var browser: Browser? {
@@ -65,8 +65,8 @@ final class AgentFeed: ObservableObject {
             }
         }
     }
-    private var watching: AnyCancellable?
-    private var looking: [NSObjectProtocol] = []
+    @ObservationIgnored private var watching: AnyCancellable?
+    @ObservationIgnored private var looking: [NSObjectProtocol] = []
     /// When you last clicked or typed in each page: an agent keeps its
     /// hands off the tab in front of you for a moment after.
     fileprivate(set) var touched: [UUID: Date] = [:]
@@ -98,7 +98,7 @@ final class AgentFeed: ObservableObject {
             if tab.settled != session.id { tab.settled = session.id }
         }
         Folders.shared.refresh()
-        Agents.shared.objectWillChange.send()
+        session.lull &+= 1
     }
 
     func atWorkHere(_ tab: Tab) -> Bool {
@@ -215,7 +215,7 @@ final class AgentFeed: ObservableObject {
 
     /// Tabs in front of you with something unread, read when the beat is up
     /// or when they leave the front, whichever comes first.
-    private var reading: [Tab.ID: DispatchWorkItem] = [:]
+    @ObservationIgnored private var reading: [Tab.ID: DispatchWorkItem] = [:]
 
     /// A task is over: what it worked in and leaves behind is unread, but
     /// for what is in front of you, which only smiles. Stopped by you, the
@@ -284,7 +284,7 @@ final class AgentFeed: ObservableObject {
         }
     }
 
-    private var chatReading: [Tab.ID: DispatchWorkItem] = [:]
+    @ObservationIgnored private var chatReading: [Tab.ID: DispatchWorkItem] = [:]
 
     /// Looked at: the tick goes, and the folder's with the last of its task's.
     func read(_ tab: Tab, after delay: TimeInterval) {
@@ -370,7 +370,7 @@ extension Tab {
 
 /// The face at the end of an agent's tab.
 struct AgentFace: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var size: CGFloat = 15
     /// The row's own ink, muted on a tab you aren't on, as its title is.
     var tint: Color = Palette.ink
@@ -385,8 +385,8 @@ struct AgentFace: View {
     /// itself, the strip's next space coming up.
     var still = false
     var weight: CGFloat? = nil
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var feed = AgentFeed.shared
+    private var agents = Agents.shared
+    private var feed = AgentFeed.shared
 
     /// Bumped when a step the face shows has run its time, so the face is
     /// worked out again then, rather than polled.

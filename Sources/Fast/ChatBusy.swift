@@ -124,7 +124,7 @@ enum ChatBusy {
 /// cut (MarkCorners): the loading ring, small, while it works; a blue dot
 /// once it is done and you haven't come back. A call's dot wins over both.
 struct ChatCorner: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     var body: some View {
         if tab.camera == .none, tab.microphone == .none {

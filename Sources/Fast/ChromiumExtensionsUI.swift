@@ -212,8 +212,8 @@ extension ChromiumExtensions {
 /// The existing corner offer, observed without constructing a WK controller.
 struct ChromiumStoreOffer: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var native: ChromiumExtensions
+    var tab: Tab
+    var native: ChromiumExtensions
 
     private var wanted: String? {
         guard !tab.shy, ChromiumStoreBridge.accepts(tab.address),
@@ -245,9 +245,9 @@ struct ChromiumStoreOffer: View {
 }
 
 struct ChromiumExtensionsSettings: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject var extensions: ChromiumExtensions
+    var browser: Browser
+    var model: SettingsModel
+    var extensions: ChromiumExtensions
 
     var body: some View {
         Group {

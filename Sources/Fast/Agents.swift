@@ -28,7 +28,7 @@ enum AgentKind: String, Sendable {
 }
 
 @MainActor
-final class Agents: ObservableObject {
+@Observable final class Agents {
     static let shared = Agents()
 
     enum State: String {
@@ -47,7 +47,7 @@ final class Agents: ObservableObject {
         let suggestions: Data?
     }
 
-    final class Session: Identifiable {
+    @Observable final class Session: Identifiable {
         let id: String
         /// A task sent from the iPhone (SyncTaskRead): it only reads pages of
         /// its own, and nothing local can widen it. Never a permission.
@@ -56,7 +56,7 @@ final class Agents: ObservableObject {
         /// starts, its plan out of room (choose). "external" for one
         /// that attached itself, "aside" for a chat brought from Aside.
         var cli: String { didSet { capabilityMembershipChanged?() } }
-        fileprivate var capabilityMembershipChanged: (() -> Void)?
+        @ObservationIgnored fileprivate var capabilityMembershipChanged: (() -> Void)?
         /// `cli` as an agent Yab knows, nil for a name it doesn't. `cli`
         /// stays the string: chats keep it on disk as it is, the bench
         /// answers it in JSON, and `run` takes whatever name it is asked.
@@ -87,9 +87,9 @@ final class Agents: ObservableObject {
         let began = Date()
         /// The id the CLI gave its conversation, to carry on from.
         var thread: String?
-        var process: Process?
+        @ObservationIgnored var process: Process?
         /// Output not yet ending in a newline.
-        var partial = Data()
+        @ObservationIgnored var partial = Data()
         var ended: Date?
         /// The model asked for, or nil for the CLI's own default.
         var model: String?
@@ -100,7 +100,7 @@ final class Agents: ObservableObject {
         /// What to do next, once the current turn is over.
         var queue: [String] = []
         /// Claude Code's stdin, while it is there to be written to.
-        var input: FileHandle?
+        @ObservationIgnored var input: FileHandle?
         /// Messages written to it that it hasn't taken in yet. A steer that
         /// lands mid-turn is folded into that turn and answered with it; one
         /// that lands between turns starts one of its own. Either way, a turn
@@ -111,13 +111,13 @@ final class Agents: ObservableObject {
         var remembering = false
         var memoryOnly = false
         /// Codex through `codex app-server`, for as long as its process is up.
-        var server: CodexServer?
-        var cursor: CursorServer?
-        var cursorAlert: NSAlert?
+        @ObservationIgnored var server: CodexServer?
+        @ObservationIgnored var cursor: CursorServer?
+        @ObservationIgnored var cursorAlert: NSAlert?
         /// Retiring this provider conversation before a follow-up resumes it.
-        var archiveTask: Task<Void, Never>?
+        @ObservationIgnored var archiveTask: Task<Void, Never>?
         var archiveError: String?
-        var retiringProcess: Process?
+        @ObservationIgnored var retiringProcess: Process?
         /// A turn can finish before Codex acknowledges its starting message.
         var turnFinished = false
         /// The launched process's actual home, including isolated probe homes.
@@ -137,7 +137,7 @@ final class Agents: ObservableObject {
         /// growing Unicode text on every feed tick walks the whole answer.
         private(set) var itemsRevision: UInt64 = 0
         /// Cursor's tokens share one pending publication, never one per token.
-        var streamPublication: UUID?
+        @ObservationIgnored var streamPublication: UUID?
         /// Where its chat began: the field, Here, tabs of its own.
         var origin = Chat.Began.other
         /// The message Claude Code is writing, for its words as they come.
@@ -391,7 +391,12 @@ final class Agents: ObservableObject {
         /// ever says what it did, for as long as it is doing things.
         var script: Bool { id == Agents.script }
 
+        /// Bumped once a time-based look (busy, resting, the foot's "Done") is due to change.
+        var lull = 0
+        @ObservationIgnored var calm: DispatchWorkItem?
+
         var busy: Bool {
+            _ = lull
             switch state {
             case .starting, .signingIn, .running, .waiting: return true
             case .attached: return Date().timeIntervalSince(touched) < 5
@@ -408,7 +413,7 @@ final class Agents: ObservableObject {
 
         /// Attached through `yab mcp` and no call for a while: its turn is
         /// most likely over in its terminal, which never tells Yab so.
-        var resting: Bool { state == .attached && Date().timeIntervalSince(touched) >= AgentFeed.rests }
+        var resting: Bool { _ = lull; return state == .attached && Date().timeIntervalSince(touched) >= AgentFeed.rests }
 
         /// Its face belongs on its folder: live, and not an attached agent
         /// gone quiet.
@@ -420,9 +425,9 @@ final class Agents: ObservableObject {
         var goingOn: Bool { atWork && state != .waiting }
     }
 
-    @Published private(set) var sessions: [Session] = []
+    private(set) var sessions: [Session] = []
     /// Mail sends belong to the app, not a tab slot or a short-lived CLI.
-    @Published var mailRequests: [MailSendAsk] = []
+    var mailRequests: [MailSendAsk] = []
     var mailReceipts: [String: MailSendAsk] = [:]
     /// The chat a window's column shows now: what it asks stands there, not on the page.
     /// Told on its own (ColumnChat), not as a change of Agents: some thirty
@@ -460,9 +465,9 @@ final class Agents: ObservableObject {
             }
         }
     }
-    private var leaving: NSObjectProtocol?
-    private var coming: NSObjectProtocol?
-    private var watching: AnyCancellable?
+    @ObservationIgnored private var leaving: NSObjectProtocol?
+    @ObservationIgnored private var coming: NSObjectProtocol?
+    @ObservationIgnored private var watching: AnyCancellable?
 
     /// An agent waiting on you in a tab you aren't looking at: the corner
     /// says so, with the way there.
@@ -471,7 +476,7 @@ final class Agents: ObservableObject {
         let name: String
     }
 
-    @Published private(set) var calling: Calling?
+    private(set) var calling: Calling?
 
     /// The tab the corner calls for: the last one waiting on you that isn't
     /// in front. Never one out of sight (sealed): Show couldn't bring it
@@ -492,14 +497,13 @@ final class Agents: ObservableObject {
         if now != calling { calling = now }
     }
     /// Waiting on a session to change: long polls from `agent-wait`.
-    private var waiters: [String: [() -> Void]] = [:]
-    private var calm: DispatchWorkItem?
+    @ObservationIgnored private var waiters: [String: [() -> Void]] = [:]
     /// Per attached session, the moment it will have gone quiet (AgentFeed.rest).
-    private var quieting: [String: DispatchWorkItem] = [:]
+    @ObservationIgnored private var quieting: [String: DispatchWorkItem] = [:]
 
     private var sessionsByID: [String: Session] = [:]
     private let assistantTaskChanges = AgentCapabilityRevision()
-    private var assistantTaskLists: [String: (Int, [String])] = [:]
+    @ObservationIgnored private var assistantTaskLists: [String: (Int, [String])] = [:]
 
     /// Only membership/CLI changes affect this list; progress and tool events
     /// do not. Repeated capability calls never walk the session archive.
@@ -613,7 +617,7 @@ final class Agents: ObservableObject {
         let sessions = sessions.filter { !$0.quiet && !$0.sealed }
         return sessions.first { $0.state == .waiting }
             ?? sessions.last { $0.busy }
-            ?? sessions.last { ($0.state == .done || $0.state == .failed) && Date().timeIntervalSince($0.ended ?? .distantPast) < 6 }
+            ?? sessions.last { _ = $0.lull; return ($0.state == .done || $0.state == .failed) && Date().timeIntervalSince($0.ended ?? .distantPast) < 6 }
     }
 
     /// Its tabs in the row, and those parked in their own space while
@@ -770,7 +774,7 @@ final class Agents: ObservableObject {
 
     /// Told of every change to a task from the iPhone, after it is kept
     /// (SyncTaskRead turns them into the task's records).
-    private var taskObservers: [UUID: (Session) -> Void] = [:]
+    @ObservationIgnored private var taskObservers: [UUID: (Session) -> Void] = [:]
 
     func observeRemoteTasks(_ observer: @escaping (Session) -> Void) -> UUID {
         let id = UUID()
@@ -783,7 +787,6 @@ final class Agents: ObservableObject {
     private func changed(_ session: Session) {
         // A structural change publishes all words already received immediately.
         session.streamPublication = nil
-        objectWillChange.send()
         if let root = chatRoot(session) { Chats.shared.keep(chat(of: root)) }
         recall()
         let heard = waiters.removeValue(forKey: session.id) ?? []
@@ -824,10 +827,10 @@ final class Agents: ObservableObject {
         if session.knowing, let host = Agents.readHost(what) { session.seen.insert(host) }
         // An agent the browser runs says what it does in its own stream;
         // only one that came on its own is told about here.
-        if session.agent == .external, step { note(session, what) } else { objectWillChange.send() }
-        calm?.cancel()
-        let work = DispatchWorkItem { [weak self] in self?.objectWillChange.send() }
-        calm = work
+        if session.agent == .external, step { note(session, what) }
+        session.calm?.cancel()
+        let work = DispatchWorkItem { [weak session] in session?.lull &+= 1 }
+        session.calm = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.2, execute: work)
         // One that came on its own never says its turn is over: quiet this
         // long, its tabs and folder stop wearing the face.
@@ -1502,7 +1505,6 @@ final class Agents: ObservableObject {
             session.result = why
             session.broke = true
         }
-        objectWillChange.send()
     }
 
     /// The turn's process is gone: done with its answer, the next queued
@@ -2629,7 +2631,6 @@ final class Agents: ObservableObject {
         }
         let text = session.queue.remove(at: index)
         session.queue.insert(text, at: 0)
-        objectWillChange.send()
         guard session.state.live else { return }
         note(session, "Sent now: \(text)")
         if let cursor = session.cursor {
@@ -3143,7 +3144,7 @@ final class Agents: ObservableObject {
             putAway(session)
         }
         // The line at the foot of the page, gone once "Done" has been read.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.2) { [weak self] in self?.objectWillChange.send() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.2) { [weak session] in session?.lull &+= 1 }
         archiveProvider(session)
     }
 
@@ -3895,20 +3896,20 @@ final class Agents: ObservableObject {
     /// A CLI signing in: its process, the tab its page is in, and, for
     /// Connect, the file its page comes through, where it has got to and
     /// how it ends.
-    @MainActor private final class Login {
+    @MainActor @Observable fileprivate final class Login {
         let id: String
         let cli: String
         let process: Process
         let privately: Bool
         let began = Date()
         var tab: Tab?
-        weak var browser: Browser?
+        @ObservationIgnored weak var browser: Browser?
         /// The page's address: as the CLI handed it to its browser, or as it
         /// printed it, to open again.
         var url: URL?
         /// What the CLI has said so far, for an address in it.
-        var heard = ""
-        var page: (@MainActor (SignInPage) -> Void)?
+        @ObservationIgnored var heard = ""
+        @ObservationIgnored var page: (@MainActor (SignInPage) -> Void)?
         var said: SignInPage?
         var limit: TimeInterval = .infinity
         /// Why Yab is ending it, once it is.
@@ -3920,11 +3921,11 @@ final class Agents: ObservableObject {
         /// Its tab wasn't in any window a moment ago: asked again shortly.
         var missing = false
         /// Where Connect's browser writes the page it was sent to.
-        var file: URL?
-        var ticks: DispatchSourceTimer?
-        var watching: AnyCancellable?
-        var pipes: [Pipe] = []
-        var done: ((SignInEnd) -> Void)?
+        @ObservationIgnored var file: URL?
+        @ObservationIgnored var ticks: DispatchSourceTimer?
+        @ObservationIgnored var watching: AnyCancellable?
+        @ObservationIgnored var pipes: [Pipe] = []
+        @ObservationIgnored var done: ((SignInEnd) -> Void)?
         var connect: Bool { id.hasPrefix(Agents.connecting) }
         /// A task out of sight signing in (Session.sealed): its page is a
         /// tab of yours in front, as Connect's is, since its own tabs sit
@@ -3944,7 +3945,7 @@ final class Agents: ObservableObject {
     /// Sign-ins under way, a task's each: two tasks signing in at once
     /// don't lose track of either.
     private var logins: [String: Login] = [:]
-    private var quitting: NSObjectProtocol?
+    @ObservationIgnored private var quitting: NSObjectProtocol?
 
     /// `claude auth login` / `codex login`, with the browser it opens being
     /// this one: the CLI hands its sign-in page to `yab browse`, which opens
@@ -4168,7 +4169,6 @@ final class Agents: ObservableObject {
                 return
             }
             logins[id] = login
-            objectWillChange.send()
             guard connect else { return }
             say(.opening, login)
             watch(login)
@@ -4248,14 +4248,12 @@ final class Agents: ObservableObject {
         NSApp.activate()
         if login.watched { watchTabs(login) }
         say(.yab, login)
-        objectWillChange.send()
     }
 
     private func say(_ page: SignInPage, _ login: Login) {
         guard login.said != page else { return }
         login.said = page
         login.page?(page)
-        objectWillChange.send()
     }
 
     /// What the CLI says: the first sign-in address in it is kept, to open
@@ -4335,7 +4333,6 @@ final class Agents: ObservableObject {
             browser.close(tab)
         }
         if logins[login.id] === login { logins[login.id] = nil }
-        objectWillChange.send()
         let end: SignInEnd = clean && !login.told ? .signedIn : login.ending ?? .refused
         let done = login.done
         login.done = nil
@@ -4440,7 +4437,6 @@ final class Agents: ObservableObject {
                 AssistantApprovals.shared.handed(tab, session: session.id, reason: line, grant: grant)
             }
         }
-        objectWillChange.send()
     }
 
     /// A request cut to a line: its first sentence, if that is short
@@ -4515,7 +4511,6 @@ final class Agents: ObservableObject {
             if session.state == .waiting { session.state = session.process != nil ? .running : session.agent == .external ? .attached : .signingIn }
             note(session, "Back to \(session.planName)")
         }
-        objectWillChange.send()
     }
 }
 
@@ -5268,7 +5263,7 @@ extension Array {
 /// The chat the column shows (Agents.columnChat), watched by the dock at the
 /// page's foot, which leaves what that chat asks to the column.
 @MainActor
-final class ColumnChat: ObservableObject {
+@Observable final class ColumnChat {
     static let shared = ColumnChat()
-    @Published var id: String?
+    var id: String?
 }

@@ -81,7 +81,7 @@ extension MailConsent {
 struct MailConsentList: View {
     @AppStorage(MailConsent.agentsKey, store: Store.settings) private var hand = false
     @AppStorage(MailConsent.aheadKey, store: Store.settings) private var ahead = false
-    @ObservedObject private var agents = AgentSetupModel.shared
+    private var agents = AgentSetupModel.shared
 
     var body: some View {
         VStack(spacing: 0) {

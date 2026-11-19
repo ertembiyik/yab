@@ -49,10 +49,10 @@ private extension View {
 /// while the corner says it; the site stays where it is. Split View is the
 /// band's last door, as Arc keeps it.
 struct AddressBar: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var tab: Tab
+    var browser: Browser
+    var tab: Tab
     /// The column out over the page: its own door is there while it shows.
-    @ObservedObject var peek: SidePeek
+    var peek: SidePeek
     /// The tabs run across the top, and the band has their doors.
     let strip: Bool
     let height: CGFloat
@@ -324,7 +324,7 @@ struct AddressBar: View {
 /// holder, so it grows, goes home and is kept with the page.
 struct PeekBand: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     static let height = AddressBar.height(sidebar: true, carded: true)
 
@@ -354,8 +354,8 @@ struct PeekBand: View {
 /// each side, so the plate grows evenly and stays on the words.
 private struct Site: View {
     let browser: Browser
-    @ObservedObject private var prefs: Preferences
-    @ObservedObject var tab: Tab
+    private var prefs: Preferences
+    var tab: Tab
     /// The browser's count of copies, handed in as a value: the browser
     /// is the same object before and after one, and this view would
     /// otherwise have nothing to notice.
@@ -369,7 +369,7 @@ private struct Site: View {
     @State private var hovering = false
     @State private var linkHovering = false
     @State private var starHovering = false
-    @ObservedObject private var bookmarks = Bookmarks.shared
+    private var bookmarks = Bookmarks.shared
     /// The tick, for a moment after a copy.
     @State private var ticked = false
     @State private var untick: DispatchWorkItem?
@@ -389,7 +389,7 @@ private struct Site: View {
     private static let gap: ClosedRange<CGFloat> = 4...8
     /// Round the words alone, a page of the app's own.
     private static let bare: ClosedRange<CGFloat> = 8...12
-    @ObservedObject private var card = SiteControlsState.shared
+    private var card = SiteControlsState.shared
     @State private var lockFrame: CGRect = .zero
     @State private var lockHovering = false
 
@@ -852,15 +852,15 @@ private struct Hatch: Shape {
 /// behind, as the plate keeps its own: the popup hangs from the pin.
 private struct BandPins: View {
     let quiet: Bool
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// The window's sign-in's extensions (ExtensionSignIns).
-    @ObservedObject private var here = ExtensionsHere.shared
+    private var here = ExtensionsHere.shared
     private var extensions: Extensions { here.current }
     /// A Chromium tab's own extensions (ChromiumColumn).
-    @ObservedObject private var column = ChromiumColumn.shared
-    @ObservedObject private var nativePopup = ChromiumPopupHost.shared
+    private var column = ChromiumColumn.shared
+    private var nativePopup = ChromiumPopupHost.shared
     /// Pins a window of the extension's own stands under (ExtensionWindowFrame).
-    @ObservedObject private var hung = ExtensionWindowFrame.Hung.shared
+    private var hung = ExtensionWindowFrame.Hung.shared
 
     /// As many as a narrow band keeps beside its site; the rest are in the
     /// sliders' list.

@@ -24,8 +24,8 @@ struct PlayerVisibilityTests {
     }
 
     private struct RoomProbe: View {
-        @ObservedObject var prefs: Preferences
-        @ObservedObject var room: PlayerRoom
+        var prefs: Preferences
+        var room: PlayerRoom
         let measured: (CGFloat) -> Void
 
         var body: some View {

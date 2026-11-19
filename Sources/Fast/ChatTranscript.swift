@@ -1054,7 +1054,7 @@ private struct ChatBubbleActions: View {
     let browser: Browser
     let item: ChatItem
     let chat: String?
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         if let chat, agents.session(chat)?.state.live != true, agents.followUpProblem(chat) == nil {
@@ -1785,7 +1785,7 @@ private struct AnswerWords: View {
     let words: String
     let fresh: Bool
     let size: CGFloat
-    @ObservedObject private var links = AnswerLinks.shared
+    private var links = AnswerLinks.shared
 
     var body: some View {
         if fresh {
@@ -2551,7 +2551,7 @@ struct SiteMark: View {
 /// pictures Yab took of its own page nobody saw, side by side.
 struct ChatBoostPictures: View {
     let chat: String
-    @ObservedObject private var boosts = Boosts.shared
+    private var boosts = Boosts.shared
 
     var body: some View {
         if let pair = boosts.pictures[chat] {

@@ -190,9 +190,9 @@ struct ConsolePromptView: NSViewRepresentable {
 
 struct ConsolePrompt: View {
     let browser: Browser
-    @ObservedObject var log: ConsoleLog
-    @ObservedObject var panel: ConsolePanel
-    @ObservedObject var prefs: ConsolePrefs
+    var log: ConsoleLog
+    var panel: ConsolePanel
+    var prefs: ConsolePrefs
     /// How tall the list it stands at the end of is on screen.
     let viewport: CGFloat
     /// Scrolls the list down to it, for typing while it is out of sight.

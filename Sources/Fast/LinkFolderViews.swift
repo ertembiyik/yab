@@ -94,7 +94,7 @@ struct LinkFolderShimmer: ViewModifier {
 /// A ⌘-click folder's mark: the site's icon of the page it grew from, or
 /// the emoji its name came with, a blue wash leaving it as the name lands.
 struct LinkFolderMark: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// The emoji it wears in place of the site's icon, for pages of more
     /// than one site.
     var mark: NSImage? = nil

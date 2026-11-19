@@ -49,26 +49,26 @@ enum AssistantBot: String, CaseIterable, Identifiable {
 /// its own and reads it back. Shared by the way in and the page's rows, so
 /// leaving the page doesn't lose it.
 @MainActor
-final class AssistantConnect: ObservableObject {
+@Observable final class AssistantConnect {
     static let shared = AssistantConnect()
 
     /// The bot being connected, while it is.
-    @Published private(set) var bot: AssistantBot?
+    private(set) var bot: AssistantBot?
     /// The task's tab is open: Show Tab brings it forward.
-    @Published private(set) var tabOpen = false
-    @Published private(set) var needsYou = false
-    @Published var code = ""
-    @Published private(set) var stopped: AssistantBot?
-    @Published var justConnected: String?
-    private var lastSession: String?
+    private(set) var tabOpen = false
+    private(set) var needsYou = false
+    var code = ""
+    private(set) var stopped: AssistantBot?
+    var justConnected: String?
+    @ObservationIgnored private var lastSession: String?
     /// Why the last try stopped, until the next press.
-    @Published var trouble: String?
+    var trouble: String?
     /// The bot whose connection stopped without a code: the way in offers
     /// its message to send by hand, until the next press or Back.
-    @Published var stalled: AssistantBot?
+    var stalled: AssistantBot?
     /// A code the task brought back with the nonce it has to carry; the
     /// page takes it and opens Enter a Code with it.
-    @Published var found: Found?
+    var found: Found?
 
     struct Found: Equatable {
         let code: String
@@ -76,8 +76,8 @@ final class AssistantConnect: ObservableObject {
         let bot: AssistantBot
     }
 
-    private var session: String?
-    private var run = 0
+    @ObservationIgnored private var session: String?
+    @ObservationIgnored private var run = 0
 
     func connect(_ bot: AssistantBot) {
         guard self.bot == nil else { return }
@@ -224,14 +224,14 @@ final class AssistantConnect: ObservableObject {
 /// The same path for first connection and Add… from an existing list. The
 /// code field lives outside the changing header, preserving focus and input.
 struct AssistantsIntro: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     var initial: AssistantBot? = .dots
     var adding = false
     var back: () -> Void = {}
     var enterCode: (String, String?) -> Void
-    @ObservedObject private var connect = AssistantConnect.shared
-    @ObservedObject private var assistants = Assistants.shared
-    @ObservedObject private var setup = AgentSetupModel.shared
+    private var connect = AssistantConnect.shared
+    private var assistants = Assistants.shared
+    private var setup = AgentSetupModel.shared
     @State private var pick: AssistantBot? = .dots
     @State private var face: AssistantBot?
     @State private var revealed = false

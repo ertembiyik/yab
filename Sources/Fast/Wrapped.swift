@@ -16,7 +16,7 @@ import UniformTypeIdentifiers
 // at will in between (2026-10-14).
 
 @MainActor
-final class Wrapped: ObservableObject {
+@Observable final class Wrapped {
     static let shared = Wrapped()
     static let finishedKey = "wrapped.finished"
     static let playedKey = "wrapped.played"
@@ -24,17 +24,17 @@ final class Wrapped: ObservableObject {
     static var finished: Bool { Store.settings.bool(forKey: finishedKey) }
 
     /// What is up, and over which browser.
-    @Published private(set) var model: WrappedModel?
-    private(set) weak var browser: Browser?
+    private(set) var model: WrappedModel?
+    @ObservationIgnored private(set) weak var browser: Browser?
     /// The moment ⌘T offers, until it is played.
-    @Published private(set) var due: WrappedMoment?
-    private var checked: Date?
+    private(set) var due: WrappedMoment?
+    @ObservationIgnored private var checked: Date?
     /// Esc, wherever the keyboard is in the window: the window's own keys
     /// take it before the arcade could (as LookCard's).
-    private var keys: Any?
+    @ObservationIgnored private var keys: Any?
 
     /// The bench's world, stood in for what this Mac counted.
-    var stand: (counts: WrappedCounts, first: Date, period: String?)?
+    @ObservationIgnored var stand: (counts: WrappedCounts, first: Date, period: String?)?
 
     func show(in browser: Browser?) {
         guard let browser else { return }
@@ -142,8 +142,8 @@ struct WrappedMoment: Equatable {
 
 /// The arcade over the window it belongs to.
 struct WrappedLayer: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject private var wrapped = Wrapped.shared
+    var browser: Browser
+    private var wrapped = Wrapped.shared
 
     static let size = CGSize(width: 360, height: 692)
 
@@ -191,30 +191,30 @@ struct WrappedStageView: NSViewRepresentable {
 
 /// What the story is at, kept by the window's stage.
 @MainActor
-final class WrappedModel: ObservableObject {
+@Observable final class WrappedModel {
     let story: WrappedStory?
     /// The levels there are so far, when too few for a story.
     let waiting: Int
     let period: String
-    @Published var initials: String
-    @Published private(set) var index = 0
-    @Published var iconWorn = AppIconStyle.saved == .arcade
-    @Published var muted = WrappedSound.muted {
+    var initials: String
+    private(set) var index = 0
+    var iconWorn = AppIconStyle.saved == .arcade
+    var muted = WrappedSound.muted {
         didSet { WrappedSound.muted = muted }
     }
     /// The sounds of the screen up, still to play.
-    private var cues: [(at: Double, sfx: WrappedSfx)] = []
+    @ObservationIgnored private var cues: [(at: Double, sfx: WrappedSfx)] = []
     /// What the card says besides the character.
-    @Published var showHours = true
-    @Published var showDash = true
-    private var started = CACurrentMediaTime()
-    private var pausedAt: CFTimeInterval?
+    var showHours = true
+    var showDash = true
+    @ObservationIgnored private var started = CACurrentMediaTime()
+    @ObservationIgnored private var pausedAt: CFTimeInterval?
     let opened = CACurrentMediaTime()
     let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-    lazy var icon: CGImage? = AppIconStyle.arcade.image(dark: false)?.cgImage(forProposedRect: nil, context: nil, hints: nil)
-    private var share: NSWindow?
+    @ObservationIgnored lazy var icon: CGImage? = AppIconStyle.arcade.image(dark: false)?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+    @ObservationIgnored private var share: NSWindow?
     /// The browser window the arcade is up in, for the card's sheet.
-    weak var host: NSWindow?
+    @ObservationIgnored weak var host: NSWindow?
 
     init(story: WrappedStory?, waiting: Int, period: String, initials: String) {
         self.story = story
@@ -399,7 +399,7 @@ final class WrappedStage: NSView {
 
 /// Under the tube: what can be done now, said with its key.
 struct WrappedStrip: View {
-    @ObservedObject var model: WrappedModel
+    @Bindable var model: WrappedModel
 
     var body: some View {
         HStack(spacing: 8) {
@@ -436,7 +436,7 @@ struct WrappedStrip: View {
 /// The card to post: a live picture, three letters, which rows go on it,
 /// and where it goes.
 struct WrappedShareSheet: View {
-    @ObservedObject var model: WrappedModel
+    @Bindable var model: WrappedModel
     var done: () -> Void
     @State private var picture: CGImage?
     @State private var said: String?

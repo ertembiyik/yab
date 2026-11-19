@@ -27,8 +27,8 @@ struct TabHistory {
 /// The panel's words and times, kept apart from the page's SwiftUI so that
 /// only the panel draws again when they change.
 @MainActor
-final class HistoryPanelModel: ObservableObject {
-    @Published var seen: [String: Date] = [:]
+@Observable final class HistoryPanelModel {
+    var seen: [String: Date] = [:]
 }
 
 extension PullView {
@@ -149,7 +149,7 @@ extension PullView {
 
 struct HistoryPanelView: View {
     let history: TabHistory
-    @ObservedObject var model: HistoryPanelModel
+    var model: HistoryPanelModel
     let go: (Int) -> Void
     let all: (String) -> Void
     let close: () -> Void

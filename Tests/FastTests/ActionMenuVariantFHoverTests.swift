@@ -13,7 +13,7 @@ struct ActionMenuVariantFHoverTests {
         list.point(1, at: CGPoint(x: 100, y: 50))
         let originalChild = list.child
         var updates = 0
-        let observation = list.objectWillChange.sink { updates += 1 }
+        let observation = ObservedWrites({ _ = (list.child, list.highlighted, list.lines.count, list.option, list.searching) }, told: { updates += 1 })
         for x in 101...200 { list.point(1, at: CGPoint(x: x, y: 50)) }
         withExtendedLifetime(observation) {
             #expect(updates == 0)
@@ -27,7 +27,7 @@ struct ActionMenuVariantFHoverTests {
         list.point(2)
         list.leave()
         var updates = 0
-        let observation = list.objectWillChange.sink { updates += 1 }
+        let observation = ObservedWrites({ _ = (list.child, list.highlighted, list.lines.count, list.option, list.searching) }, told: { updates += 1 })
         for _ in 0..<100 { list.leave() }
         withExtendedLifetime(observation) { #expect(updates == 0) }
     }

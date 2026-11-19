@@ -55,7 +55,7 @@ struct Installed: Codable, Identifiable, Equatable {
 
 @available(macOS 15.4, *)
 @MainActor
-final class Extensions: NSObject, ObservableObject {
+@Observable final class Extensions: NSObject {
     static let shared = Extensions(signIn: nil)
 
     /// Every page view built for a tab is handed the controller at birth,
@@ -94,21 +94,23 @@ final class Extensions: NSObject, ObservableObject {
     /// first `startingFor` seconds part of the browser starting up.
     private let made = Date()
     static let startingFor: TimeInterval = 5.5
-    @Published private(set) var installed: [Installed] = []
+    private(set) var installed: [Installed] = []
     /// Whether installed.json was read: false when it is there and couldn't
     /// be, and the list is empty for that, not for being empty (sync takes
     /// nothing away for it).
     private(set) var loaded = true
     /// The loaded ones, by id.
-    @Published private(set) var contexts: [String: WKWebExtensionContext] = [:]
+    private(set) var contexts: [String: WKWebExtensionContext] = [:]
     /// Bumped when any extension's button changes, icon, badge, enabled.
-    @Published var actionsChanged = 0
+    var actionsChanged = 0
     func panelOptionsChanged() { actionsChanged += 1 }
-    @Published var busy: String?
+    /// Bumped when a choice kept in settings changes (site access, keys, commands, rules left off); its readers read it.
+    var revision = 0
+    var busy: String?
     private(set) var installErrors: [String: String] = [:]
     /// Errors an extension's pages and worker ran into, newest last, a few
     /// dozen at most per extension.
-    @Published private(set) var errors: [String: [String]] = [:]
+    private(set) var errors: [String: [String]] = [:]
     /// Of those, what went wrong between the extension and Yab, WebKit or
     /// an app (a worker restarted, an app that wouldn't talk): what its row
     /// in Settings warns of. What its own code threw is in `errors` only,
@@ -117,7 +119,7 @@ final class Extensions: NSObject, ObservableObject {
     /// core a moment before its worker has it up, is nothing you or Yab can
     /// act on, and a store extension's card read "12 warnings" for them
     /// (feedback #140). A folder's extension, someone's own, shows them all.
-    @Published private(set) var notes: [String: [String]] = [:]
+    private(set) var notes: [String: [String]] = [:]
     /// How many were ever noted, per extension, past the few kept.
     private(set) var errorsNoted: [String: Int] = [:]
     /// What WebKit's own errors on each loaded context say, in words. Read
@@ -125,7 +127,7 @@ final class Extensions: NSObject, ObservableObject {
     /// changed (watch), never from a view: crash #60 was Settings ›
     /// Extensions' rows asking `context.errors` at every redraw, on macOS
     /// 15.8, and one of the NSErrors WebKit handed back was already freed.
-    @Published private(set) var contextErrors: [String: [String]] = [:]
+    private(set) var contextErrors: [String: [String]] = [:]
 
     /// In a test run, a line among its errors for what Yab did to its
     /// worker, so a run's timeline shows who started it.
@@ -149,9 +151,10 @@ final class Extensions: NSObject, ObservableObject {
     /// The rule sets each extension wanted on that are kept off, too large
     /// for WebKit to compile with the rest (ExtensionRuleBudget), as kept
     /// beside it; read once per extension.
-    private var leftOff: [String: [String]] = [:]
+    @ObservationIgnored private var leftOff: [String: [String]] = [:]
 
     func rulesLeftOff(_ id: String) -> [String] {
+        _ = revision
         if let known = leftOff[id] { return known }
         let read = ExtensionRuleBudget.leftOff(in: Extensions.folder(for: id))
         leftOff[id] = read
@@ -162,8 +165,8 @@ final class Extensions: NSObject, ObservableObject {
         let now = rulesLeftOff(id)
         let next = Array(Set(now + adding).subtracting(removing)).sorted()
         guard next != now.sorted() else { return }
-        objectWillChange.send()
         leftOff[id] = next
+        revision &+= 1
         ExtensionRuleBudget.keep(next, in: Extensions.folder(for: id))
     }
 
@@ -182,16 +185,16 @@ final class Extensions: NSObject, ObservableObject {
     private var placed: [UUID: [Tab.ID]] = [:]
     /// The window each told tab is in.
     private var home: [Tab.ID: UUID] = [:]
-    private var watching: [Tab.ID: [AnyCancellable]] = [:]
-    private var bag = Set<AnyCancellable>()
+    @ObservationIgnored private var watching: [Tab.ID: [AnyCancellable]] = [:]
+    @ObservationIgnored private var bag = Set<AnyCancellable>()
     /// One for each browser window WebKit knows, in the order they opened.
     private var windows: [UUID: ExtensionWindow] = [:]
     private var panelPages: [UUID: [String: ExtensionSidePanelPage]] = [:]
-    private var loading: [String: Task<Bool, Never>] = [:]
-    private var removingData: [String: (token: UUID, task: Task<Bool, Never>)] = [:]
+    @ObservationIgnored private var loading: [String: Task<Bool, Never>] = [:]
+    @ObservationIgnored private var removingData: [String: (token: UUID, task: Task<Bool, Never>)] = [:]
     private let removeStorageData: @MainActor (WKWebExtensionController, Set<WKWebExtension.DataType>, [WKWebExtension.DataRecord]) async -> [Error]
     private var windowOrder: [UUID] = []
-    private var rows: [UUID: [AnyCancellable]] = [:]
+    @ObservationIgnored private var rows: [UUID: [AnyCancellable]] = [:]
     /// Where each extension's button is on screen, for its popup to hang from.
     /// Every sign-in's: the buttons are the window's.
     var anchors: [String: WeakView] {
@@ -294,11 +297,11 @@ final class Extensions: NSObject, ObservableObject {
         // Which pages may talk to which extension, as the list changes.
         // On a later turn: what listens asks which sign-in is on screen,
         // and this one isn't known as its space's until it is made.
-        $installed.map { _ in () }.merge(with: $busy.map { _ in () })
+        observed(\.installed).map { _ in () }.merge(with: observed(\.busy).map { _ in () })
             .receive(on: DispatchQueue.main)
             .sink { MainActor.assumeIsolated { Extensions.listsChanged.send() } }
             .store(in: &bag)
-        $installed.receive(on: DispatchQueue.main).sink { [signIn] list in
+        observed(\.installed).receive(on: DispatchQueue.main).sink { [signIn] list in
             MainActor.assumeIsolated {
                 // Every sign-in's: a page reaches only its own sign-in's.
                 ExtensionExternal.shared.refresh(Extensions.all.flatMap(\.installed))
@@ -349,7 +352,7 @@ final class Extensions: NSObject, ObservableObject {
     // MARK: - starting
 
     private var firstPagesReady = true
-    private var waitingPages: [() -> Void] = []
+    @ObservationIgnored private var waitingPages: [() -> Void] = []
     /// The ad blockers the first pages wait for (ExtensionLaunch.blocks).
     private var holdingFirstPages: Set<String> = []
 
@@ -472,7 +475,7 @@ final class Extensions: NSObject, ObservableObject {
     private func watchWindows(_ browser: Browser) {
         follow(browser)
         for other in BrowserWindows.shared.browsers where other !== browser { follow(other) }
-        BrowserWindows.shared.$focusedID
+        BrowserWindows.shared.observed(\.focusedID)
             .removeDuplicates()
             .sink { [weak self] id in
                 guard let self, let id, let window = windows[id] else { return }
@@ -1268,7 +1271,7 @@ final class Extensions: NSObject, ObservableObject {
     /// the start of the launch (shims, manifest, WKWebExtension) rather
     /// than once the window is up: only the controller's load waits for
     /// the first frame (YAB_LAUNCH_BLOCKER_EARLY=0 reads them then).
-    private var readAhead: [String: Task<WKWebExtension?, Never>] = [:]
+    @ObservationIgnored private var readAhead: [String: Task<WKWebExtension?, Never>] = [:]
 
     private func readEarly(_ ids: Set<String>) {
         for id in ids where readAhead[id] == nil {
@@ -1306,7 +1309,7 @@ final class Extensions: NSObject, ObservableObject {
     /// worker, no permissions, is loaded and stays: the controller goes
     /// from none to one, which WebKit allows, and never back. Kept out of
     /// `contexts`; nothing lists it.
-    private var standIn: Task<Void, Never>?
+    @ObservationIgnored private var standIn: Task<Void, Never>?
     static let standInID = "yab-stand-in"
 
     private func keepOneLoaded() async {
@@ -1415,7 +1418,7 @@ final class Extensions: NSObject, ObservableObject {
 
     /// The icon an extension ships, read from its folder, for when it isn't
     /// loaded: turned off, it keeps its face in Settings.
-    private var shelved: [String: NSImage] = [:]
+    @ObservationIgnored private var shelved: [String: NSImage] = [:]
 
     func icon(for id: String, side: CGFloat) -> NSImage? {
         if let context = contexts[id] { return ExtensionIconShape.rounded(context.webExtension.icon(for: CGSize(width: side * 2, height: side * 2))) }
@@ -1574,7 +1577,7 @@ final class Extensions: NSObject, ObservableObject {
     /// What was chosen for it changed outside WebKit: put back on its
     /// context, as a load puts it (`applyChoices`, `applyAccess`).
     func choicesChanged(_ id: String) {
-        objectWillChange.send()
+        revision &+= 1
         guard let context = contexts[id] else { return }
         applyChoices(context)
         applyAccess(context)
@@ -1843,14 +1846,14 @@ final class Extensions: NSObject, ObservableObject {
     /// 1Password's extensions whose app wouldn't talk to Yab when they last
     /// called it: their row in Settings says so, and how to connect, until
     /// the app answers one of them (appUnreached, appReached).
-    @Published private(set) var unconnected: Set<String> = []
+    private(set) var unconnected: Set<String> = []
     /// A reply from 1Password's native host in this browser session. This
     /// confirms the app link, not its vault state or a successful fill.
-    @Published private(set) var onePasswordAnswered: Set<String> = []
+    private(set) var onePasswordAnswered: Set<String> = []
     /// Extensions whose app on this Mac macOS killed as Yab started it:
     /// iCloud Passwords' helper, until Apple approves Yab. Their row in
     /// Settings says so (ExtensionDetail.stoppedLine).
-    @Published private(set) var stoppedByMacOS: Set<String> = []
+    private(set) var stoppedByMacOS: Set<String> = []
 
     /// Said on its row from now on.
     func macOSStopped(_ id: String) {
@@ -1903,7 +1906,7 @@ final class Extensions: NSObject, ObservableObject {
     private(set) var starting: Set<String> = []
     /// Left asleep by the launch until their first use (ExtensionLaunch):
     /// their buttons show as the waiting ones do, and a press wakes them.
-    @Published private(set) var asleep: Set<String> = []
+    private(set) var asleep: Set<String> = []
     /// Woken by their first use after such a launch, until unloaded: what
     /// WebKit says to them on loading is not said (the shim's onInstalled).
     private var lateLoads: Set<String> = []
@@ -1933,7 +1936,7 @@ final class Extensions: NSObject, ObservableObject {
         tipFacts[id] = ExtensionTip.facts(manifest, folder: folder, saved: saved)
     }
     /// What each worker listened for in its last run (listeners.json).
-    private lazy var heardEvents: [String: ExtensionLaunch.Heard] = ExtensionLaunch.read(from: ownFolder)
+    @ObservationIgnored private lazy var heardEvents: [String: ExtensionLaunch.Heard] = ExtensionLaunch.read(from: ownFolder)
     /// Where its own files beside the list are: the shared one's in the
     /// extensions' folder, a space's own in a folder of its own.
     private var ownFolder: URL { signIn.map { Extensions.signIns.appendingPathComponent($0.uuidString, isDirectory: true) } ?? Extensions.folder }
@@ -1942,7 +1945,7 @@ final class Extensions: NSObject, ObservableObject {
     private(set) var idleWakes: [String: [String: Int]] = [:]
     /// The badge and label each button last showed, for the first seconds
     /// of the next launch, before the extension has set them again.
-    private lazy var lastFaces: [String: [String: String]] = (Store.settings.dictionary(forKey: kept("extensions.faces")) as? [String: [String: String]]) ?? [:]
+    @ObservationIgnored private lazy var lastFaces: [String: [String: String]] = (Store.settings.dictionary(forKey: kept("extensions.faces")) as? [String: [String: String]]) ?? [:]
     private var facesDirty = false
     /// One of those pressed before its turn came.
     private var pressWhenLoaded: String?
@@ -2012,7 +2015,7 @@ final class Extensions: NSObject, ObservableObject {
     /// WebKit records a worker that failed to start as an error on its
     /// context, and then doesn't try again: the extension would be dead
     /// until someone noticed. It is taken up afresh as soon as that shows.
-    private var errorWatchers: [String: NSObjectProtocol] = [:]
+    @ObservationIgnored private var errorWatchers: [String: NSObjectProtocol] = [:]
     private func watch(_ context: WKWebExtensionContext) {
         let id = context.uniqueIdentifier
         if let old = errorWatchers[id] { NotificationCenter.default.removeObserver(old) }
@@ -2059,7 +2062,7 @@ final class Extensions: NSObject, ObservableObject {
             }
         }
     }
-    private var removalWatchers: [String: [NSObjectProtocol]] = [:]
+    @ObservationIgnored private var removalWatchers: [String: [NSObjectProtocol]] = [:]
     /// What yab itself has just kept from an extension, by key, for a
     /// moment after: WebKit says what went on a later turn of the main
     /// loop, not while yab sets it, and what yab took away, or what a
@@ -2613,6 +2616,16 @@ final class Extensions: NSObject, ObservableObject {
         return Store.settings.object(forKey: "extensions.newtab.\(id)") as? Bool == true ? url : nil
     }
 
+    func drawsNewTab(_ id: String) -> Bool {
+        _ = revision
+        return Store.settings.object(forKey: "extensions.newtab.\(id)") as? Bool == true
+    }
+
+    func setDrawsNewTab(_ on: Bool, for id: String) {
+        Store.settings.set(on, forKey: "extensions.newtab.\(id)")
+        revision &+= 1
+    }
+
     private var newTabCandidate: (String, URL)? {
         for item in installed.reversed() where item.enabled {
             if let url = contexts[item.id]?.overrideNewTabPageURL { return (item.id, url) }
@@ -2634,7 +2647,7 @@ final class Extensions: NSObject, ObservableObject {
                 icon: ExtensionIconShape.rounded(contexts[id]?.webExtension.icon(for: CGSize(width: 64, height: 64))),
                 yes: "Allow", no: "Don’t Allow"
             ))
-            Store.settings.set(yes, forKey: "extensions.newtab.\(id)")
+            setDrawsNewTab(yes, for: id)
             if yes { show(url) }
         }
     }
@@ -2652,7 +2665,8 @@ final class Extensions: NSObject, ObservableObject {
     /// The extension, on and running, that asked the browser not to offer to
     /// save passwords, a password manager doing the saving itself.
     var passwordSavingTakenBy: String? {
-        installed.first { $0.enabled && Extensions.settings(for: $0.id)["privacy.services.passwordSavingEnabled"] as? Bool == false }?.name
+        _ = revision
+        return installed.first { $0.enabled && Extensions.settings(for: $0.id)["privacy.services.passwordSavingEnabled"] as? Bool == false }?.name
     }
 
     func setEnabled(_ id: String, _ on: Bool) {
@@ -2703,31 +2717,34 @@ final class Extensions: NSObject, ObservableObject {
     enum SiteAccess: String { case asked, sites, click }
 
     func access(_ id: String) -> SiteAccess {
-        Store.settings.string(forKey: "extensions.access.\(id)").flatMap(SiteAccess.init) ?? .asked
+        _ = revision
+        return Store.settings.string(forKey: "extensions.access.\(id)").flatMap(SiteAccess.init) ?? .asked
     }
 
     /// Sites kept from it whatever else it may reach, by host.
     func blocked(_ id: String) -> [String] {
-        Store.settings.stringArray(forKey: "extensions.blocked.\(id)") ?? []
+        _ = revision
+        return Store.settings.stringArray(forKey: "extensions.blocked.\(id)") ?? []
     }
 
     /// The only sites it runs on, while its access is `.sites`, by host.
     func allowed(_ id: String) -> [String] {
-        Store.settings.stringArray(forKey: "extensions.allowed.\(id)") ?? []
+        _ = revision
+        return Store.settings.stringArray(forKey: "extensions.allowed.\(id)") ?? []
     }
 
     func allow(_ host: String, for id: String) {
         let list = allowed(id)
         guard !list.contains(host) else { return }
         Store.settings.set(list + [host], forKey: "extensions.allowed.\(id)")
-        objectWillChange.send()
+        revision &+= 1
         Extensions.listsChanged.send()
         if let context = contexts[id] { applyAccess(context) }
     }
 
     func disallow(_ host: String, for id: String) {
         Store.settings.set(allowed(id).filter { $0 != host }, forKey: "extensions.allowed.\(id)")
-        objectWillChange.send()
+        revision &+= 1
         Extensions.listsChanged.send()
         guard let context = contexts[id] else { return }
         for pattern in Extensions.patterns(for: host) { context.setPermissionStatus(.unknown, for: pattern) }
@@ -2737,7 +2754,7 @@ final class Extensions: NSObject, ObservableObject {
     func setAccess(_ id: String, _ access: SiteAccess) {
         if access == .asked { Store.settings.removeObject(forKey: "extensions.access.\(id)") }
         else { Store.settings.set(access.rawValue, forKey: "extensions.access.\(id)") }
-        objectWillChange.send()
+        revision &+= 1
         Extensions.listsChanged.send()
         guard let context = contexts[id] else { return }
         // The chosen sites go back to what the manifest says of them.
@@ -2751,13 +2768,13 @@ final class Extensions: NSObject, ObservableObject {
         let list = blocked(id)
         guard !list.contains(host) else { return }
         Store.settings.set(list + [host], forKey: "extensions.blocked.\(id)")
-        objectWillChange.send()
+        revision &+= 1
         if let context = contexts[id] { applyAccess(context) }
     }
 
     func unblock(_ host: String, for id: String) {
         Store.settings.set(blocked(id).filter { $0 != host }, forKey: "extensions.blocked.\(id)")
-        objectWillChange.send()
+        revision &+= 1
         guard let context = contexts[id] else { return }
         for pattern in Extensions.patterns(for: host) { context.setPermissionStatus(.unknown, for: pattern) }
         applyAccess(context)
@@ -2842,7 +2859,7 @@ final class Extensions: NSObject, ObservableObject {
         var all = Store.settings.dictionary(forKey: "extensions.keys.\(id)") ?? [:]
         all[command.id] = ["key": key ?? "", "flags": Int(key == nil ? 0 : flags.rawValue)]
         Store.settings.set(all, forKey: "extensions.keys.\(id)")
-        objectWillChange.send()
+        revision &+= 1
     }
 
     private func applyKeys(_ context: WKWebExtensionContext) {
@@ -3274,7 +3291,7 @@ final class Extensions: NSObject, ObservableObject {
     }
 
     /// The list behind the puzzle button.
-    @Published var menuOpen = false {
+    var menuOpen = false {
         // Opened, the dot has done its job; closed, what was new has been seen.
         didSet {
             guard menuOpen != oldValue else { return }
@@ -3283,7 +3300,7 @@ final class Extensions: NSObject, ObservableObject {
         }
     }
     /// Counts the icons that have flown into the puzzle; each gives it a hop.
-    @Published var arrivals = 0
+    var arrivals = 0
 
     /// A hop, in turn with the downloads button's.
     func hop() {
@@ -3292,10 +3309,10 @@ final class Extensions: NSObject, ObservableObject {
 
     /// Added since the list was last opened: first among its rows until it
     /// has been seen there.
-    @Published private(set) var unseen: Set<String> = []
+    private(set) var unseen: Set<String> = []
     /// Some came in with nothing flying to say so, from Settings, or a
     /// batch from another browser: a dot on the puzzle until the list opens.
-    @Published private(set) var dotted = false
+    private(set) var dotted = false
 
     /// In from somewhere the puzzle can't be flown to: one hop however many
     /// there are, and the dot.
@@ -4288,7 +4305,7 @@ func extensionMenuPicture(dark: Bool? = nil) -> NSBitmapImageRep? {
 /// part.
 @available(macOS 15.4, *)
 struct ExtensionMenu: View {
-    @ObservedObject var extensions: Extensions
+    var extensions: Extensions
     @State private var query = ""
     /// What Return presses: an index into the tiles, then the rows.
     @State private var chosen = 0
@@ -4465,7 +4482,7 @@ struct ExtensionMenu: View {
         let key: Int
         let chosen: Bool
         let icons: Namespace.ID
-        @ObservedObject var extensions: Extensions
+        var extensions: Extensions
         @State private var hovering = false
 
         var body: some View {
@@ -4526,7 +4543,7 @@ struct ExtensionMenu: View {
         let glyph: String
         let chosen: Bool
         let icons: Namespace.ID
-        @ObservedObject var extensions: Extensions
+        var extensions: Extensions
         @State private var hovering = false
 
         var body: some View {
@@ -4631,7 +4648,7 @@ struct ExtensionMenu: View {
     /// this Mac that have some, each brought over in one go with one
     /// question; the store; a folder.
     private struct Empty: View {
-        @ObservedObject var extensions: Extensions
+        var extensions: Extensions
         @State private var sources: [(source: Chromium.Source, found: [Chromium.Extension])] = []
 
         var body: some View {

@@ -18,8 +18,8 @@ import UniformTypeIdentifiers
 /// rows of the form; adding, and the page itself while nothing is
 /// installed, takes the whole pane.
 struct ExtensionsPane<Rows: View>: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var model: SettingsModel
     @ViewBuilder let rows: () -> Rows
 
     var body: some View {
@@ -32,10 +32,10 @@ struct ExtensionsPane<Rows: View>: View {
 
     @available(macOS 15.4, *)
     private struct Chooser: View {
-        @ObservedObject var browser: Browser
-        @ObservedObject var model: SettingsModel
-        @ObservedObject var extensions: Extensions
-        @ObservedObject var adding: ExtensionAdding
+        var browser: Browser
+        var model: SettingsModel
+        var extensions: Extensions
+        @Bindable var adding: ExtensionAdding
         let rows: () -> Rows
 
         var body: some View {
@@ -72,31 +72,31 @@ struct ExtensionsPane<Rows: View>: View {
 /// ticked, the extension waiting on a yes, and what the button is doing.
 @available(macOS 15.4, *)
 @MainActor
-final class ExtensionAdding: ObservableObject {
+@Observable final class ExtensionAdding {
     static let shared = ExtensionAdding()
 
     enum Way: Hashable { case browser(String), store, folder }
     enum Phase: Equatable { case idle, working(String), landed }
 
     /// The way picked in the menu; until then, the best one there is.
-    @Published var chosen: Way?
-    @Published private(set) var sources: [Chromium.Source] = []
+    var chosen: Way?
+    private(set) var sources: [Chromium.Source] = []
     /// What each browser has that isn't here yet, by the browser's name.
-    @Published private(set) var fresh: [String: [Chromium.Extension]] = [:]
-    @Published private(set) var icons: [String: NSImage] = [:]
-    @Published private(set) var counted = false
-    @Published var picked: Set<String> = []
+    private(set) var fresh: [String: [Chromium.Extension]] = [:]
+    private(set) var icons: [String: NSImage] = [:]
+    private(set) var counted = false
+    var picked: Set<String> = []
     /// The ticked ones in the order they were ticked: the button's stack.
-    @Published var order: [String] = []
-    @Published private(set) var candidate: Extensions.Candidate?
+    var order: [String] = []
+    private(set) var candidate: Extensions.Candidate?
     /// What it may ask for later that was ticked, by key: given now. None
     /// is to begin with; the rest it is asked about when it asks.
-    @Published var given: Set<String> = []
-    @Published var link = ""
-    @Published private(set) var phase = Phase.idle
-    @Published var error: String?
-    @Published private(set) var landedNames: [String] = []
-    @Published private(set) var landedIcon: NSImage?
+    var given: Set<String> = []
+    var link = ""
+    private(set) var phase = Phase.idle
+    var error: String?
+    private(set) var landedNames: [String] = []
+    private(set) var landedIcon: NSImage?
 
     var busy: Bool { phase != .idle }
     var way: Way { chosen ?? suggested }
@@ -111,8 +111,8 @@ final class ExtensionAdding: ObservableObject {
     var linkIsGood: Bool { Crx.id(in: link) != nil }
 
     /// The sign-in what is added goes to: the one Settings lists.
-    var target: Extensions = .shared
-    var chromium: ChromiumExtensions?
+    @ObservationIgnored var target: Extensions = .shared
+    @ObservationIgnored var chromium: ChromiumExtensions?
     private var extensions: Extensions { target }
 
     // MARK: looking
@@ -346,10 +346,10 @@ struct ExtensionAdd: View {
     static var benchFlight: Animation { Flight.curve }
 
     let step: Step
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
-    @ObservedObject var extensions: Extensions
-    @ObservedObject var adding: ExtensionAdding
+    var browser: Browser
+    var model: SettingsModel
+    var extensions: Extensions
+    @Bindable var adding: ExtensionAdding
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var rowFrames: [String: CGRect] = [:]
     @State private var stackFrame: CGRect = .zero

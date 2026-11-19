@@ -13,7 +13,7 @@ import Foundation
 // say always asks. In Bypass nothing asks at all, as the mode says.
 
 @MainActor
-final class AgentRules: ObservableObject {
+@Observable final class AgentRules {
     static let shared = AgentRules()
 
     enum Verdict: String, Codable { case always, never }
@@ -30,12 +30,12 @@ final class AgentRules: ObservableObject {
     /// The thresholds a person can pick, in dollars; 0 is off.
     static let limits = [0, 20, 50, 100]
 
-    @Published private(set) var rules: [Rule] = []
-    @Published var payLimit: Int {
+    private(set) var rules: [Rule] = []
+    var payLimit: Int {
         didSet { store.set(payLimit, forKey: "agents.pay-limit") }
     }
     /// Paid without asking or with a yes, this month, in dollars.
-    @Published private(set) var paidThisMonth: Double = 0
+    private(set) var paidThisMonth: Double = 0
 
     private var store: UserDefaults { Store.settings }
 

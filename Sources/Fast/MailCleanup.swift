@@ -264,11 +264,11 @@ extension MailDesk {
 /// once Gmail has heard all of it, or the act was taken back. Only for an
 /// act Gmail hears in more than one call; one call is over before it reads.
 @MainActor
-final class MailGoing: ObservableObject {
+@Observable final class MailGoing {
     static let shared = MailGoing()
-    @Published private(set) var line: String?
-    private var watched: (verb: String, parts: [(account: String, part: MailOps.Part)])?
-    private var timer: Timer?
+    private(set) var line: String?
+    @ObservationIgnored private var watched: (verb: String, parts: [(account: String, part: MailOps.Part)])?
+    @ObservationIgnored private var timer: Timer?
 
     func watch(_ verb: String, acted: [String: MailOps.Acted], after: TimeInterval) {
         let parts = acted.flatMap { account, act in act.entries.flatMap(\.parts).map { (account, $0) } }
@@ -282,7 +282,7 @@ final class MailGoing: ObservableObject {
     }
 
     /// When Gmail starts hearing it: the act's undo window over.
-    private var start = Date.distantFuture
+    @ObservationIgnored private var start = Date.distantFuture
 
     func stop() {
         timer?.invalidate()

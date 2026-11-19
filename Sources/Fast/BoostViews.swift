@@ -7,9 +7,9 @@ import SwiftUI
 /// the page checks pass: only a failure or a problem says anything. An
 /// agent's boost comes here only once it passed (Boosts.fit).
 struct BoostTrialView: View {
-    @ObservedObject var tab: Tab
-    @ObservedObject private var boosts = Boosts.shared
-    @ObservedObject private var option = OptionKey.shared
+    var tab: Tab
+    private var boosts = Boosts.shared
+    private var option = OptionKey.shared
     @State private var keeping = false
     @State private var reviewing = false
 
@@ -118,10 +118,10 @@ struct BoostTrialView: View {
 /// creation, the Store and file import; a `.user.js` can also be dropped here.
 struct BoostSiteBlock: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject private var boosts = Boosts.shared
-    @ObservedObject private var catalog = StoreCatalog.shared
-    @ObservedObject private var installs = SyncInstalls.shared
+    var tab: Tab
+    private var boosts = Boosts.shared
+    private var catalog = StoreCatalog.shared
+    private var installs = SyncInstalls.shared
     @State private var deleting: BoostRecord?
     @State private var history: BoostRecord?
 

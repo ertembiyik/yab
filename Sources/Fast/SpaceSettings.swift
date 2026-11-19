@@ -12,8 +12,8 @@ import SyncKit
 /// Extensions is before there is one. What they are, a few of them drawn,
 /// and the one button; the toolbar's switch does the same.
 struct SpacesArrival: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    @Bindable var prefs: Preferences
     @Environment(\.colorScheme) private var scheme
 
     /// Kept from before, or three to show what they are.
@@ -67,9 +67,9 @@ enum SpacePlace {
 }
 
 struct SpacesPage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
 
     var body: some View {
         if let opened = model.opened {
@@ -116,9 +116,9 @@ struct SpacesPage: View {
 /// "From Arc · Match Arc" in a group of its own, only once there is
 /// another browser's look to match, and only until it is matched.
 private struct SpacesBrowserLook: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var finder = BrowserLookFinder.shared
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    private var finder = BrowserLookFinder.shared
     @AppStorage("browserLookMatched", store: Store.settings) private var matched = false
 
     var body: some View {
@@ -133,8 +133,8 @@ private struct SpacesBrowserLook: View {
 /// Every space, a row each: its grip, its emoji on its color, its name,
 /// how many tabs, its key.
 private struct SpaceList: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    var model: SettingsModel
 
     /// The row in the hand, and how far it has come.
     @State private var lifted: UUID?
@@ -339,35 +339,35 @@ private struct AddSpaceRow: View {
 /// What a space's page edits: kept here while the page is up, written
 /// through at once for a space that is there, all at Create for a new one.
 @MainActor
-private final class SpaceForm: ObservableObject {
+@Observable private final class SpaceForm {
     /// The space it edits, nil for a new one: every change goes to this
     /// one, whatever page SwiftUI thinks it is on as the pages change.
     let id: UUID?
-    @Published var name: String
-    @Published var icon: String
-    @Published var swatch: Swatch
-    @Published var custom: NSColor
-    @Published var transparency: Double
-    @Published var grain: Double
-    @Published var colors: [String]
+    var name: String
+    var icon: String
+    var swatch: Swatch
+    var custom: NSColor
+    var transparency: Double
+    var grain: Double
+    var colors: [String]
     /// What the look card adds: Shift with tabs, the site's color, drawings.
-    @Published var shift: Bool
-    @Published var site: Bool
-    @Published var drawings: String
-    @Published var strength: Double
+    var shift: Bool
+    var site: Bool
+    var drawings: String
+    var strength: Double
     /// The space's own light or dark, and glass past the wave's end.
-    @Published var mode: String
-    @Published var glass: Bool
-    @Published var profile: UUID?
-    @Published var search: String?
-    @Published var searchCustom: String?
-    @Published var downloadFolder: URL?
+    var mode: String
+    var glass: Bool
+    var profile: UUID?
+    var search: String?
+    var searchCustom: String?
+    var downloadFolder: URL?
     /// Picked by hand, so the name's guess leaves it alone.
-    var iconByHand = false
-    var swatchByHand = false
+    @ObservationIgnored var iconByHand = false
+    @ObservationIgnored var swatchByHand = false
     /// The first emoji no space wears yet, for a new one whose name
     /// suggests none.
-    var free = "🌱"
+    @ObservationIgnored var free = "🌱"
 
     init(_ space: Space, paint: SpacePaint) {
         id = space.id
@@ -447,13 +447,13 @@ private final class SpaceForm: ObservableObject {
 }
 
 private struct SpacePage: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var model: SettingsModel
+    var browser: Browser
+    @Bindable var prefs: Preferences
+    var model: SettingsModel
     /// Nil for a new one.
     let id: UUID?
 
-    @StateObject private var form: SpaceForm
+    @State private var form: SpaceForm
     @FocusState private var naming: Bool
     @State private var picking = false
     @Environment(\.colorScheme) private var scheme
@@ -464,7 +464,7 @@ private struct SpacePage: View {
         self.model = model
         self.id = id
         let space = id.flatMap { id in browser.spaces.first { $0.id == id } }
-        _form = StateObject(wrappedValue: space.map { SpaceForm($0, paint: $0.paint ?? SpacePaint(browser.prefs)) } ?? SpaceForm(new: browser))
+        _form = State(initialValue: space.map { SpaceForm($0, paint: $0.paint ?? SpacePaint(browser.prefs)) } ?? SpaceForm(new: browser))
     }
 
     private var space: Space? { form.id.flatMap { id in browser.spaces.first { $0.id == id } } }
@@ -770,10 +770,10 @@ extension SpaceDraft {
 /// one of its own the field searches with while it is on screen, as Arc's
 /// spaces can. Site aliases stay the same in every space.
 private struct SpaceSearchRows: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    @Bindable var prefs: Preferences
     let space: Space?
-    @ObservedObject var form: SpaceForm
+    @Bindable var form: SpaceForm
 
     static let usual = "default"
 

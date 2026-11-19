@@ -19,6 +19,7 @@ extension Space {
     /// Signed in where the first space is: a link from a mail opens as you.
     /// Its emoji and look are yours to change, kept apart from the list.
     static var mail: Space {
+        _ = MailSpaceLook.revision.count
         if let kept = MailSpaceLook.cached.withLock({ $0 }) { return kept }
         var space = Space(id: mailID, name: "Mail", icon: Store.settings.string(forKey: MailSpaceLook.iconKey) ?? "✉️", ownSignIns: false)
         space.paint = Store.settings.data(forKey: MailSpaceLook.paintKey).flatMap { try? JSONDecoder().decode(SpacePaint.self, from: $0) }
@@ -37,12 +38,21 @@ enum MailSpaceLook {
     /// How many of your spaces stand before Mail. Last until moved: ⌃1 to
     /// ⌃9 stay on the spaces they always were, and Mail takes the next.
     static var place: Int {
-        get { Store.settings.object(forKey: placeKey) == nil ? Int.max : Store.settings.integer(forKey: placeKey) }
+        get {
+            _ = revision.count
+            return Store.settings.object(forKey: placeKey) == nil ? Int.max : Store.settings.integer(forKey: placeKey)
+        }
         set { Store.settings.set(max(0, newValue), forKey: placeKey) }
     }
 
     /// Space.mail as last read, read again after its emoji or look change.
     static let cached = OSAllocatedUnfairLock<Space?>(initialState: nil)
+
+    /// Read with Mail's look and place, bumped by `changed`.
+    @Observable fileprivate final class Revision: @unchecked Sendable {
+        var count = 0
+    }
+    fileprivate static let revision = Revision()
 
     static func keep(_ paint: SpacePaint?) {
         if let paint, let data = try? JSONEncoder().encode(paint) { Store.settings.set(data, forKey: paintKey) }
@@ -58,9 +68,7 @@ enum MailSpaceLook {
     /// Every window draws Mail's place again: its emoji, its look, its place.
     static func changed() {
         cached.withLock { $0 = nil }
-        DispatchQueue.main.async {
-            MainActor.assumeIsolated { BrowserWindows.shared.browsers.forEach { $0.objectWillChange.send() } }
-        }
+        DispatchQueue.main.async { revision.count += 1 }
     }
 
     /// What each window wore as Mail came on screen there: leaving with
@@ -358,7 +366,7 @@ struct MailRule: Equatable, Hashable {
 /// the splits and their order (MailSplits), and Kept. Read from the stores
 /// on the main thread again whenever one changes.
 @MainActor
-final class MailList: ObservableObject {
+@Observable final class MailList {
     static let shared = MailList()
 
     /// What stays at hand until it is done: a thread kept with P, a draft
@@ -385,7 +393,7 @@ final class MailList: ObservableObject {
 
     /// What Claude said matters now in a list, and when, and over how many
     /// threads: said again when the list changes or half an hour has gone.
-    @Published private(set) var summaries: [String: (text: String, at: Date, count: Int)] = [:]
+    private(set) var summaries: [String: (text: String, at: Date, count: Int)] = [:]
 
     /// Icons a list may wear, for Claude to pick from.
     static let icons = ["doc.text", "creditcard", "airplane", "bag", "calendar", "person", "person.2", "suitcase", "building.2",
@@ -410,7 +418,7 @@ final class MailList: ObservableObject {
         return base.first { $0.id == split }?.name ?? "Mail"
     }
 
-    @Published var split = "needs" {
+    var split = "needs" {
         didSet {
             guard split != oldValue else { return }
             // The counts are the same whichever list is in front: only the
@@ -424,7 +432,7 @@ final class MailList: ObservableObject {
         }
     }
     /// "all", or one account's address.
-    @Published var account = Store.settings.string(forKey: "mail.column.account") ?? "all" {
+    var account = Store.settings.string(forKey: "mail.column.account") ?? "all" {
         didSet {
             guard account != oldValue else { return }
             Store.settings.set(account, forKey: "mail.column.account")
@@ -433,25 +441,25 @@ final class MailList: ObservableObject {
             MailDesk.shared.listChosen()
         }
     }
-    @Published private(set) var counts: [String: Int] = [:]
+    private(set) var counts: [String: Int] = [:]
     /// One of mail's space's tabs in front rather than the mail page
     /// (Browser.mailFollows): no list is chosen, the plate is on its row.
-    @Published var paging = false
+    var paging = false
     /// Needs you, per account, for the chooser's menu.
-    @Published private(set) var needs: [String: Int] = [:]
-    @Published private(set) var kept: [Kept] = []
+    private(set) var needs: [String: Int] = [:]
+    private(set) var kept: [Kept] = []
     /// Every split, the built-in ones among them, on or off (MailSplits).
-    @Published private(set) var splits: [Split] = MailSplits.load(Store.settings) {
+    private(set) var splits: [Split] = MailSplits.load(Store.settings) {
         didSet { sort = MailSplitSort(splits, order: order) }
     }
     /// The column's order: the inbox's lists and every split, as dragged.
-    @Published private(set) var order: [String] = [] {
+    private(set) var order: [String] = [] {
         didSet { sort = MailSplitSort(splits, order: order) }
     }
     /// The column's rows, in their order, empty splits hidden as asked.
-    @Published private(set) var column: [Entry] = []
+    private(set) var column: [Entry] = []
     /// Settings › Mail's Hide empty splits: on until turned off.
-    @Published var hideEmpty = Store.settings.object(forKey: MailSplits.hideKey) as? Bool ?? true {
+    var hideEmpty = Store.settings.object(forKey: MailSplits.hideKey) as? Bool ?? true {
         didSet {
             Store.settings.set(hideEmpty, forKey: MailSplits.hideKey)
             layColumn()
@@ -459,10 +467,10 @@ final class MailList: ObservableObject {
     }
     /// The splits on, as they sort threads (MailSplitSort), for the lists,
     /// Skip the inbox and the notifications alike.
-    private(set) var sort = MailSplitSort.none
+    @ObservationIgnored private(set) var sort = MailSplitSort.none
     /// How the inbox's own lists sort (Settings › Mail, MailSplit.Policy):
     /// what needs you, and how far back Needs you and Other look.
-    @Published var policy = MailSplit.Policy.current {
+    var policy = MailSplit.Policy.current {
         didSet {
             guard policy != oldValue else { return }
             MailSplit.Policy.current = policy
@@ -473,38 +481,38 @@ final class MailList: ObservableObject {
         }
     }
     /// The column's row being dragged (MailColumnDrop).
-    var dragging: String?
+    @ObservationIgnored var dragging: String?
     /// What Skip the inbox archived today on the accounts shown, by split:
     /// a split's head says so.
-    @Published private(set) var skippedToday: [String: Int] = [:]
+    private(set) var skippedToday: [String: Int] = [:]
     /// The thread the page shows, "account|id", told to whoever keeps it
     /// (`showing`: MailSearch's Recently opened). Not published, nor
     /// `view`: nothing the column draws reads them, and each letter opened
     /// drew the column and the page again for them, inside the key.
-    var shown: String? {
+    @ObservationIgnored var shown: String? {
         didSet { if shown != oldValue { showing.send(shown) } }
     }
     let showing = PassthroughSubject<String?, Never>()
     /// A search is over the list: none of the column's lists is on screen.
-    @Published var searched = false
+    var searched = false
     /// The account panel is up under the chooser.
-    @Published var choosing = false
+    var choosing = false
     /// What the page shows, "list", "thread", "ready" (a thread with a
     /// reply ready), "compose" or "draft", for the bench.
-    var view = "list"
+    @ObservationIgnored var view = "list"
     /// Threads handed to an agent (Do It), "account|thread" to its
     /// session, while it works.
-    @Published private(set) var working: [String: String] = [:]
+    private(set) var working: [String: String] = [:]
     /// Threads whose ready reply an agent wrote, having done what they asked.
-    @Published private(set) var did = Set(Store.settings.stringArray(forKey: "mail.did") ?? [])
+    private(set) var did = Set(Store.settings.stringArray(forKey: "mail.did") ?? [])
     /// A list that just took something: it answers with a pulse.
-    @Published private(set) var pulsed: (id: String, n: Int) = ("", 0)
+    private(set) var pulsed: (id: String, n: Int) = ("", 0)
     /// Rows whose ready reply an agent just wrote or changed, "account|thread"
     /// to how many times: each time, the row lights once.
-    @Published private(set) var flashed: [String: Int] = [:]
+    private(set) var flashed: [String: Int] = [:]
     /// What sorting did, said once over Needs you (MailInboxHead): from the
     /// first time it is drawn until a day has gone or you act on mail.
-    @Published private(set) var sorted: Sorted?
+    private(set) var sorted: Sorted?
     struct Sorted: Equatable {
         let needs: Int
         let older: Int
@@ -515,7 +523,7 @@ final class MailList: ObservableObject {
     /// The day's line over Needs you (docs/mail.md, Only what matters): what is
     /// dated in it and what you promised, soonest first, three at most;
     /// none on a quiet day.
-    @Published private(set) var today: [Dated] = []
+    private(set) var today: [Dated] = []
     struct Dated: Equatable {
         let account: String
         let thread: String
@@ -524,13 +532,13 @@ final class MailList: ObservableObject {
         let due: Date
     }
 
-    private var bag: AnyCancellable?
+    @ObservationIgnored private var bag: AnyCancellable?
 
     private init() {
         order = MailSplits.order(Store.settings.stringArray(forKey: MailSplits.orderKey), splits: splits)
         // Observers don't run in an initializer.
         sort = MailSplitSort(splits, order: order)
-        bag = MailCenter.shared.$changed.dropFirst()
+        bag = MailCenter.shared.observed(\.changed).dropFirst()
             .debounce(for: .milliseconds(120), scheduler: RunLoop.main)
             .sink { [weak self] _ in MainActor.assumeIsolated { self?.reload() } }
     }
@@ -621,8 +629,8 @@ final class MailList: ObservableObject {
     /// Offers from what you did (MailOffers), the first of each list over
     /// it: worked out off the main thread at most every five minutes, and
     /// again at once after one is taken or turned down.
-    @Published private(set) var offers: [MailOffer] = []
-    private var offered = Date.distantPast
+    private(set) var offers: [MailOffer] = []
+    @ObservationIgnored private var offered = Date.distantPast
 
     private func offerUp(force: Bool = false) {
         guard force || Date().timeIntervalSince(offered) > 300 else { return }
@@ -974,12 +982,12 @@ final class MailList: ObservableObject {
     /// A split being made, on screen as a list is, in the middle: its name
     /// in the head, its rules as chips, the threads they gather under them.
     /// Kept only on Keep Split; Discard, or esc, and it was never there.
-    @Published private(set) var draft: Split?
+    private(set) var draft: Split?
     /// Claude is making the draft of its words.
-    @Published private(set) var making = false
+    private(set) var making = false
     /// A new Describe request also focuses a draft that was already open.
-    @Published private(set) var draftTitleFocus = 0
-    private var beforeDraft = "needs"
+    private(set) var draftTitleFocus = 0
+    @ObservationIgnored private var beforeDraft = "needs"
 
     func focusDraftTitle() {
         guard split == "draft", draft != nil else { return }
@@ -1076,8 +1084,8 @@ final class MailList: ObservableObject {
             self?.summaries[id] = (line, Date(), count)
         }
     }
-    private var asking: Set<String> = []
-    private var tried: [String: (count: Int, at: Date)] = [:]
+    @ObservationIgnored private var asking: Set<String> = []
+    @ObservationIgnored private var tried: [String: (count: Int, at: Date)] = [:]
 
     /// One of your splits taken away; a built-in one is turned off instead.
     func dropList(_ id: String) {
@@ -1115,8 +1123,8 @@ struct MailColumn: View {
     var rise: CGFloat = 0
     /// A newer Yab's note over the foot: the lists go on under it too.
     var note: CGFloat = 0
-    @ObservedObject var list = MailList.shared
-    @ObservedObject var center = MailCenter.shared
+    var list = MailList.shared
+    var center = MailCenter.shared
     @Environment(\.tone) private var tone
     @MailStill private var still
     /// The lists, and the column under the foot too: while the lists fit,
@@ -1310,8 +1318,8 @@ struct MailColumn: View {
 /// words, with a cross to take it off; esc in the list does the same.
 private struct MailColumnSearch: View {
     @Environment(\.tabTitleSize) private var titleSize
-    @ObservedObject var desk: MailDesk
-    @ObservedObject private var search = MailSearch.shared
+    var desk: MailDesk
+    private var search = MailSearch.shared
     @Environment(\.tone) private var tone
     @State private var hovering = false
 
@@ -1489,7 +1497,7 @@ final class MailAccountFloat {
 /// choice comes up under it as ⌘K's list does in the field (MailAccountPanel).
 private struct MailAccountChooser: View {
     @Environment(\.tabTitleSize) private var titleSize
-    @ObservedObject var list: MailList
+    var list: MailList
     let accounts: [String]
     @Binding var open: Bool
     @Environment(\.tone) private var tone
@@ -1537,7 +1545,7 @@ private struct MailAccountChooser: View {
 /// can't be turned off.
 struct MailAllAccountsMenu: View {
     let account: String
-    @ObservedObject private var center = MailCenter.shared
+    private var center = MailCenter.shared
 
     var body: some View {
         if center.accounts.count > 1 {
@@ -1630,8 +1638,8 @@ extension MailPage {
 /// Escape puts it away, and so does a click anywhere else. Past five
 /// accounts a search of its own at its foot, which typing narrows.
 private struct MailAccountPanel: View {
-    @ObservedObject var list: MailList
-    @ObservedObject private var center = MailCenter.shared
+    var list: MailList
+    private var center = MailCenter.shared
     let accounts: [String]
     let close: () -> Void
     @State private var lit = 0
@@ -1962,9 +1970,9 @@ private struct MailColumnRow: View {
 /// in front on its own plate, as a list's row has it. Nothing while there
 /// are none.
 private struct MailTabRows: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var folders = Folders.shared
+    var browser: Browser
+    var prefs: Preferences
+    private var folders = Folders.shared
     @Environment(\.tone) private var tone
 
     var body: some View {
@@ -1992,7 +2000,7 @@ private struct MailTabRows: View {
 /// A tab of mail's space, the plate under it while it is the one in front.
 private struct MailTabRow: View {
     let browser: Browser
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     let tab: Tab
 
     var body: some View {
@@ -2006,9 +2014,9 @@ private struct MailTabRow: View {
 /// click opens or shuts it. Its tabs under it come up over the email as a
 /// peek, live (Browser.peekLive); ⌘-click, as the tab, Back to Mail over it.
 private struct MailTaskRows: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var folders: Folders
+    var browser: Browser
+    var prefs: Preferences
+    var folders: Folders
     let folder: Folders.Folder
 
     var body: some View {
@@ -2043,7 +2051,7 @@ private struct MailTaskRows: View {
 /// other spaces: a rounded square on glass, a pen
 /// in a square. C does the same.
 struct MailNewButton: View {
-    @ObservedObject private var shortcut = Keymap.shared.slot(.mailNew)
+    private var shortcut = Keymap.shared.slot(.mailNew)
     static let side = ButtonSize.regular.height
 
     var body: some View {
@@ -2061,9 +2069,9 @@ struct MailNewButton: View {
 /// The envelope at the column's foot: into mail and out, how many threads
 /// need you beside it.
 struct MailDoor: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var center = MailCenter.shared
-    @ObservedObject private var shortcut = Keymap.shared.slot(.mail)
+    var browser: Browser
+    var center = MailCenter.shared
+    private var shortcut = Keymap.shared.slot(.mail)
     @Environment(\.tone) private var tone
     @State private var hovering = false
 

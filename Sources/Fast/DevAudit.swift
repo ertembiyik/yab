@@ -3,7 +3,7 @@ import Foundation
 
 struct DevWorkbenchHost: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     let pane: DevPane
     var body: some View {
         VStack(spacing: 0) {
@@ -43,7 +43,7 @@ struct DevWorkbenchHost: View {
 
 struct DevAuditPane: View {
     let browser: Browser
-    @ObservedObject var model: DevWorkbench
+    var model: DevWorkbench
     @State private var mode = "Snapshot"
     @State private var mobile = false
     @State private var accessibility = true

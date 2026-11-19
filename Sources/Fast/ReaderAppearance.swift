@@ -13,10 +13,10 @@ extension ReaderColors {
 /// The one copy every view and the page read; each change is kept and sent
 /// to every page being read.
 @MainActor
-final class ReaderStyle: ObservableObject {
+@Observable final class ReaderStyle {
     static let shared = ReaderStyle()
 
-    @Published var prefs: ReaderPrefs {
+    var prefs: ReaderPrefs {
         didSet {
             guard prefs != oldValue else { return }
             prefs.save(to: Store.settings)
@@ -36,7 +36,7 @@ extension ReaderPrefs {
 /// the theme, which is where Custom's went. The card over a page being
 /// read has the rest.
 struct ReaderAppearanceSettings: View {
-    @ObservedObject private var style = ReaderStyle.shared
+    private var style = ReaderStyle.shared
 
     var body: some View {
         let prefs = style.prefs
@@ -94,7 +94,7 @@ struct ReaderAppearanceSettings: View {
 /// colors of your own in Settings.
 struct ReaderAppearanceMenu: View {
     let browser: Browser
-    @ObservedObject private var style = ReaderStyle.shared
+    private var style = ReaderStyle.shared
 
     var body: some View {
         Menu("Reading Appearance") {

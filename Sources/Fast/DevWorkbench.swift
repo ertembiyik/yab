@@ -283,14 +283,14 @@ struct DevHeapClass: Identifiable {
 }
 
 /// State belongs to the inspected tab, including debugger and recordings.
-@MainActor final class DevWorkbench: ObservableObject, DevWireListener {
+@MainActor @Observable final class DevWorkbench: DevWireListener {
     static let channel = "workbench"
-    @Published var root: DevDOMNode? { didSet { linesCache = nil; indexCache = nil } }
-    @Published var expanded: Set<Int> = [] { didSet { linesCache = nil } }
-    @Published var selectedNode = 0
+    var root: DevDOMNode? { didSet { linesCache = nil; indexCache = nil } }
+    var expanded: Set<Int> = [] { didSet { linesCache = nil } }
+    var selectedNode = 0
     /// The node's closing tag is the line selected, as Chromium selects it
     /// (a click on it, ↓ from its last child).
-    @Published var selectedClose = false
+    var selectedClose = false
     /// The lines shown, made once a change of the tree or of what is open:
     /// a hover, an answer of the sidebar, a find redraw the pane without
     /// walking the tree again (DevTree.swift).
@@ -309,173 +309,173 @@ struct DevHeapClass: Identifiable {
         indexCache = made
         return made
     }
-    private var linesCache: DevTreeLines?
-    private var indexCache: DevTreeIndex?
+    @ObservationIgnored private var linesCache: DevTreeLines?
+    @ObservationIgnored private var indexCache: DevTreeIndex?
     func node(_ id: Int) -> DevDOMNode? { treeIndex.nodes[id] }
     /// The tree's own view, for where it is in the window: keys are the
     /// tree's after a press in it, as in Chromium, where the tree has the focus.
-    weak var treeView: NSView?
+    @ObservationIgnored weak var treeView: NSView?
     /// The tree in its window, AppKit's points from the bottom left.
     var treeRect: CGRect? { treeView.flatMap { $0.window == nil ? nil : $0.convert($0.bounds, to: nil) } }
     /// Selected from the keyboard: shown with the least scroll, as
     /// Chrome's scrollIntoViewIfNeeded.
-    var keySelected = false
-    @Published var elementsKeyReveal = 0
+    @ObservationIgnored var keySelected = false
+    var elementsKeyReveal = 0
     /// The node last drawn on the page from Elements (0: none).
-    var hoverSent = 0
+    @ObservationIgnored var hoverSent = 0
     /// Enter and F2 on the tree: the node's attributes, or its HTML, edited.
-    @Published var editRequest = 0
-    @Published var htmlRequest = 0
-    var editNode = 0
+    var editRequest = 0
+    var htmlRequest = 0
+    @ObservationIgnored var editNode = 0
     /// Each pick, the same node picked again included.
-    @Published var pickSerial = 0
+    var pickSerial = 0
     /// A pick no pane has shown yet: it can arrive before Elements is on screen.
-    var pickUnseen = false
+    @ObservationIgnored var pickUnseen = false
     /// For the bench: the last tree's parse, the lines' making, a select.
-    var loadMs = 0.0
-    var linesMs = 0.0
-    var linesMade = 0
-    var selectMs = 0.0
+    @ObservationIgnored var loadMs = 0.0
+    @ObservationIgnored var linesMs = 0.0
+    @ObservationIgnored var linesMade = 0
+    @ObservationIgnored var selectMs = 0.0
     /// Elements' sidebar tab, kept while other panels are in front.
-    @Published var elementsTab = "Styles"
+    var elementsTab = "Styles"
     /// The panes' filter words (Styles, Computed, Properties, Sources'
     /// files), kept as the panes are made anew: another panel, another tab.
-    @Published var paneFilters: [String: String] = [:]
+    var paneFilters: [String: String] = [:]
     /// Elements' find bar, under the tree (⌘F with the card focused).
-    @Published var elementsFind = false
+    var elementsFind = false
     /// What Elements' find looks for, as typed; how many nodes WebKit
     /// found for the words it last looked for, and which one is shown.
-    @Published var elementsQuery = ""
-    @Published var elementsSearched = ""
-    @Published var elementsCount = 0
-    @Published var elementsMatch = 0
-    var elementsSearchSerial = 0
+    var elementsQuery = ""
+    var elementsSearched = ""
+    var elementsCount = 0
+    var elementsMatch = 0
+    @ObservationIgnored var elementsSearchSerial = 0
     /// The node the find shows now (its row alone is lit), and whether an
     /// answer is awaited (the count before it stands dimmed meanwhile).
-    @Published var elementsMatchNode = 0
-    @Published var elementsWaiting = false
+    var elementsMatchNode = 0
+    var elementsWaiting = false
     /// ⌘F again with the bar up: the field takes the keyboard, its words
     /// selected.
-    @Published var elementsFocus = 0
+    var elementsFocus = 0
     /// Said when the selected node should come into view in the tree.
-    @Published var elementsReveal = 0
+    var elementsReveal = 0
     /// The tree as it stood when its inspector was put away with another
     /// tab in front, shown meanwhile: the new inspector numbers nodes anew,
     /// so what was open, selected and at the top is found again in its
     /// tree by place (DevReturn.swift).
-    var keptTree: DevDOMNode?
+    @ObservationIgnored var keptTree: DevDOMNode?
     /// The tree's row at the top as last scrolled ("o12"), not published:
     /// only read back when the tree is shown again.
-    var elementsTop: String?
+    @ObservationIgnored var elementsTop: String?
     /// Said when the top row should be put back at the top.
-    @Published var elementsTopReveal = 0
+    var elementsTopReveal = 0
     /// The domRevision the tree in hand was fetched at, and whether a
     /// fetch is out (another asked meanwhile is made once it is back).
-    var treeRevision = -1
-    var treeFetching = false
-    var treeAgain = false
+    @ObservationIgnored var treeRevision = -1
+    @ObservationIgnored var treeFetching = false
+    @ObservationIgnored var treeAgain = false
     /// No plain tree fetch before this (CACurrentMediaTime), and whether one
     /// is waiting for it.
-    var treeNext: CFTimeInterval = 0
-    var treeLater = false
-    var treeAnswered: CFTimeInterval = 0
+    @ObservationIgnored var treeNext: CFTimeInterval = 0
+    @ObservationIgnored var treeLater = false
+    @ObservationIgnored var treeAnswered: CFTimeInterval = 0
     /// Trees fetched, for the bench; how long the last one and the last
     /// inspector's coming up took (ms), and whether that tree was a return.
-    var treeFetches = 0
-    var treeMs = 0.0
-    var connectMs = 0.0
-    var restoreMs = 0.0
-    @Published var computedFrom: [String: DevTrace] = [:]
+    @ObservationIgnored var treeFetches = 0
+    @ObservationIgnored var treeMs = 0.0
+    @ObservationIgnored var connectMs = 0.0
+    @ObservationIgnored var restoreMs = 0.0
+    var computedFrom: [String: DevTrace] = [:]
     /// Computed properties some rule sets, Computed's list without Show all.
-    @Published var computedSet: Set<String> = []
-    @Published var listenerRows: [DevListener] = []
-    @Published var domBreaks: [DevDOMBreak] = []
-    @Published var layoutBoxes: [DevLayoutBox] = []
-    @Published var overlays: Set<Int> = []
-    @Published var nodeProperties: [DevNodeProperty] = []
-    @Published var ax: [String: Any] = [:]
-    @Published var axTreeShown = false
-    @Published var axRoot: DevAXNode?
+    var computedSet: Set<String> = []
+    var listenerRows: [DevListener] = []
+    var domBreaks: [DevDOMBreak] = []
+    var layoutBoxes: [DevLayoutBox] = []
+    var overlays: Set<Int> = []
+    var nodeProperties: [DevNodeProperty] = []
+    var ax: [String: Any] = [:]
+    var axTreeShown = false
+    var axRoot: DevAXNode?
     /// States forced on the selected node (:hov), and classes turned off (.cls).
-    @Published var forced: Set<String> = []
-    @Published var offClasses: [String] = []
-    @Published var styles: [DevStyle] = []
-    @Published var computed: [DevProperty] = []
-    @Published var accessibility: [DevProperty] = []
-    @Published var listeners: [DevProperty] = []
-    @Published var properties: [DevProperty] = []
-    @Published var comments: [DevComment] = []
-    @Published var nodeObject: ConsoleValue?
-    @Published var domRevision = 0
-    @Published var navigationRevision = 0
-    @Published var layerRevision = 0
-    @Published var pickedNode = 0
-    @Published var picking = false
+    var forced: Set<String> = []
+    var offClasses: [String] = []
+    var styles: [DevStyle] = []
+    var computed: [DevProperty] = []
+    var accessibility: [DevProperty] = []
+    var listeners: [DevProperty] = []
+    var properties: [DevProperty] = []
+    var comments: [DevComment] = []
+    var nodeObject: ConsoleValue?
+    var domRevision = 0
+    var navigationRevision = 0
+    var layerRevision = 0
+    var pickedNode = 0
+    var picking = false
     /// A Styles name or value being edited where it stands: Escape is its
     /// own then (the edit put back), not the drawer's. Drawn by nothing.
-    var styleEditing = false
+    @ObservationIgnored var styleEditing = false
     /// What Styles offers for the words being typed, for the bench.
-    var styleCompletions: [String] = []
-    @Published var sources: [DevSource] = []
-    @Published var source: DevSource?
+    @ObservationIgnored var styleCompletions: [String] = []
+    var sources: [DevSource] = []
+    var source: DevSource?
     /// Sources' search through every file the page loaded (⌘F out of the
     /// editor, ⌥⌘F from any panel): the words, and how many times each
     /// file has them, by address, its frame to ask for the lines.
-    @Published var sourcesFind = false
-    @Published var sourcesQuery = ""
-    @Published var sourcesFound: [String: Int] = [:]
-    @Published var sourcesSearched = ""
-    @Published var sourcesFocus = 0
-    var sourcesFoundFrames: [String: String] = [:]
-    var sourcesSerial = 0
-    @Published var sourcesCase = false
-    @Published var sourcesRegex = false
-    @Published var sourcesResults: [DevSearchFile] = []
+    var sourcesFind = false
+    var sourcesQuery = ""
+    var sourcesFound: [String: Int] = [:]
+    var sourcesSearched = ""
+    var sourcesFocus = 0
+    @ObservationIgnored var sourcesFoundFrames: [String: String] = [:]
+    @ObservationIgnored var sourcesSerial = 0
+    var sourcesCase = false
+    var sourcesRegex = false
+    var sourcesResults: [DevSearchFile] = []
     /// The search's last line: how many it found, or why it found none.
-    @Published var sourcesNote = ""
-    @Published var sourcesShut: Set<String> = []
-    @Published var sourcesPicked = ""
-    weak var sourceEditor: WKWebView?
-    @Published var sourceText = ""
-    @Published var originalSourceText = ""
-    @Published var openSources: [DevSource] = []
-    var sourceBuffers: [String: (text: String, original: String)] = [:]
-    @Published var styleEdits: [String: String] = [:]
-    @Published var workspace: URL?
-    @Published var changes: [DevProperty] = []
-    @Published var sourceLine = 0
+    var sourcesNote = ""
+    var sourcesShut: Set<String> = []
+    var sourcesPicked = ""
+    @ObservationIgnored weak var sourceEditor: WKWebView?
+    var sourceText = ""
+    var originalSourceText = ""
+    var openSources: [DevSource] = []
+    @ObservationIgnored var sourceBuffers: [String: (text: String, original: String)] = [:]
+    var styleEdits: [String: String] = [:]
+    var workspace: URL?
+    var changes: [DevProperty] = []
+    var sourceLine = 0
     /// The column on `sourceLine` a paused frame is at: on a minified
     /// file's one long line, what says where it is once pretty printed.
-    @Published var sourceColumn = 0
+    var sourceColumn = 0
     /// Files shown pretty printed ({ }), by address.
-    @Published var pretty: [String: DevPretty] = [:]
-    @Published var breakpoints: [DevBreakpoint] = []
-    @Published var frames: [DevCallFrame] = []
-    @Published var frameID = ""
-    @Published var scopeProperties: [DevProperty] = []
-    @Published var pauseReason = ""
-    @Published var watch: [DevProperty] = []
-    @Published var recording = false
-    @Published var trace: [DevTraceEvent] = []
-    @Published var metrics: [DevProperty] = []
-    @Published var memorySamples: [DevMemorySample] = []
-    @Published var storage: [DevProperty] = []
-    @Published var cookies: [[String: Any]] = []
-    @Published var applicationInfo: [String: Any] = [:]
-    @Published var applicationSection = "Local storage"
+    var pretty: [String: DevPretty] = [:]
+    var breakpoints: [DevBreakpoint] = []
+    var frames: [DevCallFrame] = []
+    var frameID = ""
+    var scopeProperties: [DevProperty] = []
+    var pauseReason = ""
+    var watch: [DevProperty] = []
+    var recording = false
+    var trace: [DevTraceEvent] = []
+    var metrics: [DevProperty] = []
+    var memorySamples: [DevMemorySample] = []
+    var storage: [DevProperty] = []
+    var cookies: [[String: Any]] = []
+    var applicationInfo: [String: Any] = [:]
+    var applicationSection = "Local storage"
     let application = DevApplicationModel()
-    @Published var heap: [DevHeapClass] = []
-    @Published var heapSnapshots: [(name: String, classes: [DevHeapClass], total: Int, raw: String)] = []
-    @Published var audit: [DevProperty] = []
-    @Published var auditReport = ""
-    var auditPreviousDevice: DeviceMode?
-    var auditHasDeviceOverride = false
-    @Published var error = ""
-    @Published var busy = false
-    var traceRaw: [[String: Any]] = []
+    var heap: [DevHeapClass] = []
+    var heapSnapshots: [(name: String, classes: [DevHeapClass], total: Int, raw: String)] = []
+    var audit: [DevProperty] = []
+    var auditReport = ""
+    @ObservationIgnored var auditPreviousDevice: DeviceMode?
+    @ObservationIgnored var auditHasDeviceOverride = false
+    var error = ""
+    var busy = false
+    @ObservationIgnored var traceRaw: [[String: Any]] = []
     let heapEngine = DevHeapEngine()
-    var heapRaw = ""
-    var installedIgnorePatterns: [String] = []
+    @ObservationIgnored var heapRaw = ""
+    @ObservationIgnored var installedIgnorePatterns: [String] = []
     init() {}
 
     func hear(_ json: String) {

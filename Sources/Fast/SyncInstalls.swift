@@ -12,7 +12,7 @@ import SyncKit
 /// put in changes, or the next launch; a Store release with code waits for
 /// a catalog that lists it, and is tried when the next one comes.
 @MainActor
-final class SyncInstalls: ObservableObject {
+@Observable final class SyncInstalls {
     static let shared = SyncInstalls()
 
     enum State: Equatable {
@@ -47,13 +47,13 @@ final class SyncInstalls: ObservableObject {
         var id: String { collection + "/" + item }
     }
 
-    @Published private(set) var waiting: [String: Waiting] = [:]
+    private(set) var waiting: [String: Waiting] = [:]
     /// The one being put in now.
-    private var current: String?
-    private var network: MailNetwork?
-    private var timer: Timer?
-    private var bag = Set<AnyCancellable>()
-    private var generation = 0
+    @ObservationIgnored private var current: String?
+    @ObservationIgnored private var network: MailNetwork?
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var bag = Set<AnyCancellable>()
+    @ObservationIgnored private var generation = 0
     private let record: (SyncKit.Record.Key) -> SyncKit.Record?
     private let putIn: ((Waiting) async throws -> Void)?
 
@@ -62,7 +62,7 @@ final class SyncInstalls: ObservableObject {
         self.record = record ?? { SyncCenter.shared.journal?.record($0) }
         self.putIn = putIn
         // A catalog came: Store releases waiting on one are tried.
-        StoreCatalog.shared.$version.dropFirst()
+        StoreCatalog.shared.observed(\.version).dropFirst()
             .sink { [weak self] _ in DispatchQueue.main.async { MainActor.assumeIsolated { self?.again { $0.catalog } } } }
             .store(in: &bag)
     }

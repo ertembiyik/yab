@@ -45,39 +45,41 @@ struct NetCheckboxStyle: ToggleStyle {
 /// What the panel shows of the log: the filter, the request picked and
 /// its tab, the search, the drawer. One for the card, whichever tab it is
 /// over.
-final class NetPanel: ObservableObject {
-    @Published var filter = NetFilter()
-    @Published var filterBar = true
-    @Published var settingsOpen = false
-    @Published var selected: Int?
-    @Published var detail: NetDetailTab = .headers
-    @Published var searchOpen = false
-    @Published var query = ""
-    @Published var matchCase = false
-    @Published var regex = false
-    @Published var searching = false
-    @Published var drawer: NetDrawer?
-    @Published var sort: NetSort?
-    @Published var hover: Int?
-    @Published var shift = false
-    @Published var shot: Double?
+@Observable final class NetPanel {
+    var filter = NetFilter()
+    var filterBar = true
+    var settingsOpen = false
+    var selected: Int?
+    var detail: NetDetailTab = .headers
+    var searchOpen = false
+    var query = ""
+    var matchCase = false
+    var regex = false
+    var searching = false
+    var drawer: NetDrawer?
+    var sort: NetSort?
+    var hover: Int?
+    var shift = false
+    var shot: Double?
     /// The overrides on addresses, as yab made them: content, headers, both.
-    @Published var overridden: [String: String] = [:]
-    @Published var manageColumns = false
+    var overridden: [String: String] = [:]
+    var manageColumns = false
+    /// Override headers asked for: the Headers tab opens its rows to edit.
+    var editingHeaders = false
     /// Where the splits were dragged, as Chromium keeps them, apart for the
     /// card under the page and beside it: Search's width ("search.bottom"),
     /// the list's beside a request ("list.beside"), the drawer's height.
     /// None for the card's own.
-    @Published var splits: [String: CGFloat] = (Store.settings.dictionary(forKey: "net.splits") as? [String: Double] ?? [:])
+    var splits: [String: CGFloat] = (Store.settings.dictionary(forKey: "net.splits") as? [String: Double] ?? [:])
         .mapValues { CGFloat($0) }
-    var focusSearch = false
+    @ObservationIgnored var focusSearch = false
     /// How wide the pane laid itself out and how wide the card let it be,
     /// for the bench: the first past the second cuts the card's edges.
-    var laid: CGFloat = 0
-    var room: CGFloat = 0
+    @ObservationIgnored var laid: CGFloat = 0
+    @ObservationIgnored var room: CGFloat = 0
 
-    private var memo: (generation: Int, filter: NetFilter, sort: NetSort?, page: URL?, shown: [NetRow])?
-    private var foundMemo: (generation: Int, bodies: Int, query: String, matchCase: Bool, regex: Bool, ids: Set<Int>)?
+    @ObservationIgnored private var memo: (generation: Int, filter: NetFilter, sort: NetSort?, page: URL?, shown: [NetRow])?
+    @ObservationIgnored private var foundMemo: (generation: Int, bodies: Int, query: String, matchCase: Bool, regex: Bool, ids: Set<Int>)?
 
     /// The requests Search finds its words in, lit in the list while it
     /// is open.
@@ -166,10 +168,10 @@ extension Browser {
 
 struct DevNetPane: View {
     let browser: Browser
-    @ObservedObject var tab: Tab
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
-    @ObservedObject var prefs = NetPrefs.shared
+    var tab: Tab
+    var log: NetLog
+    @Bindable var panel: NetPanel
+    @Bindable var prefs = NetPrefs.shared
     let side: DevSide
     /// The pane's width, for how far a line may be dragged across.
     @State private var room: CGFloat = 800
@@ -456,9 +458,9 @@ struct NetSplitter: View {
 
 struct NetToolbar: View {
     let browser: Browser
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
-    @ObservedObject var prefs: NetPrefs
+    var log: NetLog
+    @Bindable var panel: NetPanel
+    @Bindable var prefs: NetPrefs
 
     var body: some View {
         HStack(spacing: 2) {
@@ -588,7 +590,7 @@ struct NetToolbar: View {
 
 /// The gear's row: Chrome's four settings, as checkboxes.
 struct NetSettingsRow: View {
-    @ObservedObject var prefs: NetPrefs
+    @Bindable var prefs: NetPrefs
 
     var body: some View {
         HStack(spacing: 16) {
@@ -616,8 +618,8 @@ struct NetSettingsRow: View {
 // MARK: - the filter row
 
 struct NetFilterBar: View {
-    @ObservedObject var panel: NetPanel
-    @ObservedObject var log: NetLog
+    @Bindable var panel: NetPanel
+    var log: NetLog
     let wide: Bool
     @FocusState private var typing: Bool
 
@@ -777,10 +779,10 @@ struct NetFlowRow: Layout {
 // MARK: - status and film
 
 struct NetStatusBar: View {
-    @ObservedObject var log: NetLog
+    var log: NetLog
     let shown: [NetRow]
     let all: [NetRow]
-    @ObservedObject var prefs: NetPrefs
+    @Bindable var prefs: NetPrefs
 
     var body: some View {
         let filtered = shown.count != all.count
@@ -821,8 +823,8 @@ struct NetStatusBar: View {
 /// Screenshots: the page as it loaded, its moment under each; over one,
 /// its moment on the overview, a click keeps the requests up to it.
 struct NetFilmstrip: View {
-    @ObservedObject var log: NetLog
-    @ObservedObject var panel: NetPanel
+    var log: NetLog
+    @Bindable var panel: NetPanel
     let scale: NetScale
 
     var body: some View {
@@ -855,7 +857,7 @@ struct NetFilmstrip: View {
 
 /// Manage Header Columns: the headers shown as columns, your own added.
 struct NetManageColumns: View {
-    @ObservedObject var prefs: NetPrefs
+    @Bindable var prefs: NetPrefs
     let done: () -> Void
     @State private var name = ""
 
@@ -1085,16 +1087,10 @@ extension Browser {
 
 // MARK: - what the panel does
 
-nonisolated(unsafe) private var editingKey: UInt8 = 0
-
 extension Browser {
-    /// Override headers asked for: the Headers tab opens its rows to edit.
     var netEditingHeaders: Bool {
-        get { objc_getAssociatedObject(self, &editingKey) as? Bool ?? false }
-        set {
-            objc_setAssociatedObject(self, &editingKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-            netPanel.objectWillChange.send()
-        }
+        get { netPanel.editingHeaders }
+        set { netPanel.editingHeaders = newValue }
     }
 
     func netClear() {

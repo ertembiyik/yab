@@ -56,8 +56,8 @@ struct MeetingNotice: View {
     var top: CGFloat
     /// In MeetingFloat's panel over the screen, not in the window's corner.
     var floating = false
-    @ObservedObject private var meetings = Meetings.shared
-    @ObservedObject private var place = MeetingFloat.shared
+    private var meetings = Meetings.shared
+    private var place = MeetingFloat.shared
     @State private var over = false
     @Environment(\.accessibilityReduceMotion) private var still
 
@@ -230,9 +230,9 @@ struct CornerNotices: View {
     let browser: Browser
     var tab: Tab?
     var top: CGFloat
-    @ObservedObject private var meetings = Meetings.shared
-    @ObservedObject private var place = MeetingFloat.shared
-    @ObservedObject private var room: AskRoom
+    private var meetings = Meetings.shared
+    private var place = MeetingFloat.shared
+    private var room: AskRoom
     /// The corner's own place, in the window's SwiftUI space.
     @State private var frame: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var still
@@ -241,7 +241,7 @@ struct CornerNotices: View {
         self.browser = browser
         self.tab = tab
         self.top = top
-        _room = ObservedObject(wrappedValue: browser.askRoom)
+        self.room = browser.askRoom
     }
 
     /// The width a notice takes at most, from the corner in.
@@ -280,30 +280,30 @@ struct CornerNotices: View {
 /// (1.7) on the screen you are at (1.17). It follows the pointer to
 /// another screen while up. Never both, so one card a meeting.
 @MainActor
-final class MeetingFloat: ObservableObject {
+@Observable final class MeetingFloat {
     static let shared = MeetingFloat()
 
     /// The window whose corner has the card; nil while it floats or is down.
-    @Published private(set) var holder: Browser?
+    private(set) var holder: Browser?
     /// The card is in the panel.
-    @Published private(set) var floating = false
-    private var panel: NSPanel?
-    private var host: MeetingFloatHost?
-    private weak var hosted: Browser?
-    private var screen: NSScreen?
+    private(set) var floating = false
+    @ObservationIgnored private var panel: NSPanel?
+    @ObservationIgnored private var host: MeetingFloatHost?
+    @ObservationIgnored private weak var hosted: Browser?
+    @ObservationIgnored private var screen: NSScreen?
     /// The pointer's screen, looked at twice a second while the card floats.
-    private var follow: Timer?
-    private var watches: [NSObjectProtocol] = []
-    private var up: AnyCancellable?
+    @ObservationIgnored private var follow: Timer?
+    @ObservationIgnored private var watches: [NSObjectProtocol] = []
+    @ObservationIgnored private var up: AnyCancellable?
     /// Each show and hide, so a hide's end finds out whether it is still the last word.
-    private var turn = 0
+    @ObservationIgnored private var turn = 0
     /// Room for the plate's shadow and the ✕ over its corner.
     private static let inset: CGFloat = 24
     /// From the screen's top and side to the card, as a notification sits.
     private static let margin: CGFloat = 4
 
     private init() {
-        up = Meetings.shared.$reminder.map { $0 != nil }.removeDuplicates().sink { _ in
+        up = Meetings.shared.observed(\.reminder).map { $0 != nil }.removeDuplicates().sink { _ in
             DispatchQueue.main.async { MeetingFloat.shared.place() }
         }
         let center = NotificationCenter.default

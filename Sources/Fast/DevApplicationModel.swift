@@ -74,27 +74,27 @@ struct ApplicationGridRow: Identifiable {
     var data: [String: Any] = [:]
 }
 
-@MainActor final class DevApplicationModel: NSObject, ObservableObject, WKScriptMessageHandler {
-    @Published var selection = ApplicationSelection()
-    @Published var selectionRevision = 0
-    @Published var origins: [[String: Any]] = []
-    @Published var frames: [[String: Any]] = []
-    @Published var expanded: Set<String> = ["application", "storage", "background", "frames", "section:Local storage", "section:Session storage", "section:Cookies", "section:IndexedDB", "section:Cache storage"]
-    @Published var schemas: [String: [[String: Any]]] = [:]
-    @Published var document: [String: Any] = [:]
-    @Published var rows: [ApplicationGridRow] = []
-    @Published var selectedRow = ""
-    @Published var filter = ""
-    @Published var preview = ""
-    @Published var previewDocument: [String: Any] = [:]
-    @Published var error = ""
-    @Published var busy = false
-    @Published var offset = 0
-    @Published var hasNext = false
-    @Published var startKey = ""
-    @Published var clearTypes: Set<String> = ["local", "session", "indexedDB", "cache", "workers", "cookies"]
-    @Published var events: [[String: Any]] = []
-    @Published var recordingEvents = false {
+@MainActor @Observable final class DevApplicationModel: NSObject, WKScriptMessageHandler {
+    var selection = ApplicationSelection()
+    var selectionRevision = 0
+    var origins: [[String: Any]] = []
+    var frames: [[String: Any]] = []
+    var expanded: Set<String> = ["application", "storage", "background", "frames", "section:Local storage", "section:Session storage", "section:Cookies", "section:IndexedDB", "section:Cache storage"]
+    var schemas: [String: [[String: Any]]] = [:]
+    var document: [String: Any] = [:]
+    var rows: [ApplicationGridRow] = []
+    var selectedRow = ""
+    var filter = ""
+    var preview = ""
+    var previewDocument: [String: Any] = [:]
+    var error = ""
+    var busy = false
+    var offset = 0
+    var hasNext = false
+    var startKey = ""
+    var clearTypes: Set<String> = ["local", "session", "indexedDB", "cache", "workers", "cookies"]
+    var events: [[String: Any]] = []
+    var recordingEvents = false {
         didSet {
             notificationTimer?.invalidate(); notificationTimer = nil
             if recordingEvents {
@@ -106,11 +106,11 @@ struct ApplicationGridRow: Identifiable {
             }
         }
     }
-    @Published var updateOnReload = false
-    @Published var backForwardStatus = ""
-    weak var web: WKWebView?
-    private var notificationTimer: Timer?
-    private var seenNotifications: Set<UInt64> = []
+    var updateOnReload = false
+    var backForwardStatus = ""
+    @ObservationIgnored weak var web: WKWebView?
+    @ObservationIgnored private var notificationTimer: Timer?
+    @ObservationIgnored private var seenNotifications: Set<UInt64> = []
     private func captureNotifications() {
         guard recordingEvents else { return }
         for note in SiteNotices.shown where !seenNotifications.contains(note.id) {
@@ -120,10 +120,10 @@ struct ApplicationGridRow: Identifiable {
         }
         if events.count > 2000 { events.removeFirst(events.count - 2000) }
     }
-    private var generation = 0
-    private var boundOrigin = ""
-    private var returningFromCacheTest = false
-    private var cacheTestURL = ""
+    @ObservationIgnored private var generation = 0
+    @ObservationIgnored private var boundOrigin = ""
+    @ObservationIgnored private var returningFromCacheTest = false
+    @ObservationIgnored private var cacheTestURL = ""
     var schemaKey: String { selection.origin + "\u{1f}" + selection.database }
     var originInfo: [String: Any] { origins.first { $0["origin"] as? String == selection.origin } ?? origins.first ?? [:] }
     var visibleRows: [ApplicationGridRow] { filter.isEmpty ? rows : rows.filter { $0.cells.contains { $0.localizedCaseInsensitiveContains(filter) } } }

@@ -21,18 +21,18 @@ import SwiftUI
 /// typed or moved for two minutes. Away is when a question goes to the
 /// iPhone too; back, it comes off it.
 @MainActor
-final class AskPresence: ObservableObject {
+@Observable final class AskPresence {
     static let shared = AskPresence()
     /// Untouched this long is away.
     static let idle: TimeInterval = 120
 
-    @Published private(set) var away = false
-    private var locked = false
-    private var asleep = false
-    private var timer: Timer?
-    private var watching: [NSObjectProtocol] = []
+    private(set) var away = false
+    @ObservationIgnored private var locked = false
+    @ObservationIgnored private var asleep = false
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var watching: [NSObjectProtocol] = []
     /// What a test world says instead of the Mac.
-    var testAway: Bool? { didSet { look() } }
+    @ObservationIgnored var testAway: Bool? { didSet { look() } }
 
     private init() {}
 
@@ -342,7 +342,7 @@ extension Agents {
 /// Undo toast for Mail's Undo send window, and a card's last words for a
 /// moment after it was answered elsewhere or its chat stopped.
 @MainActor
-final class AskStand: ObservableObject {
+@Observable final class AskStand {
     static let shared = AskStand()
 
     /// A mail on its way: what the card folded into.
@@ -368,11 +368,11 @@ final class AskStand: ObservableObject {
         let good: Bool
     }
 
-    @Published private(set) var toasts: [Toast] = []
-    @Published private(set) var ghosts: [Ghost] = []
+    private(set) var toasts: [Toast] = []
+    private(set) var ghosts: [Ghost] = []
     /// The windows whose stand is on screen now, by their browser, for a
     /// test world to ask (ask-stand).
-    var drawn: [ObjectIdentifier: Int] = [:]
+    @ObservationIgnored var drawn: [ObjectIdentifier: Int] = [:]
     struct Presented {
         var held: Agents.Cornered?
         var key: String?
@@ -380,13 +380,13 @@ final class AskStand: ObservableObject {
     }
     /// The actual card, also used to keep keyboard and fixture answers from
     /// reaching an unseen next head during the outgoing card's animation.
-    var presented: [ObjectIdentifier: Presented] = [:]
-    var frames: [ObjectIdentifier: CGRect] = [:]
-    var questionCards: [ObjectIdentifier: [String: String]] = [:]
+    @ObservationIgnored var presented: [ObjectIdentifier: Presented] = [:]
+    @ObservationIgnored var frames: [ObjectIdentifier: CGRect] = [:]
+    @ObservationIgnored var questionCards: [ObjectIdentifier: [String: String]] = [:]
 
     /// What each card shows, made once a question (ApprovalDetailBuilder
     /// reads the store).
-    private var made: [String: AskContent] = [:]
+    @ObservationIgnored private var made: [String: AskContent] = [:]
 
     func content(_ permit: AgentPermit, tab: Tab?) -> AskContent {
         if let hit = made[permit.key + "\u{1}" + permit.session] { return hit }
@@ -465,11 +465,11 @@ final class AskStand: ObservableObject {
 /// corner and never move while it is up: the card grows upward.
 struct AskStandView: View {
     let browser: Browser
-    @ObservedObject private var agents = Agents.shared
-    @ObservedObject private var stand = AskStand.shared
+    private var agents = Agents.shared
+    private var stand = AskStand.shared
     /// The column's chat: a tab's question it held comes to the corner
     /// once the column goes (AgentDock.askedInColumn), told on its own.
-    @ObservedObject private var columnChat = ColumnChat.shared
+    private var columnChat = ColumnChat.shared
     @Namespace private var fold
     @Environment(\.accessibilityReduceMotion) private var still
     @State private var shown: Item?
@@ -735,7 +735,7 @@ struct ChatAskCard: View {
     var count: String?
     var width: CGFloat = AgentAskCard.width
     var keysReach = true
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         if let root = agents.session(chat), let permit = root.permit {
@@ -749,12 +749,12 @@ struct ChatAskCard: View {
 /// A question asked on a tab as the card, through its yes: the ring and
 /// Sending while what it sends goes, the reason in red if it didn't.
 struct TabAskCard: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var count: String?
     var width: CGFloat = AgentAskCard.width
     var keysReach = true
     var fold: Namespace.ID?
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
 
     var body: some View {
         if let permit = tab.permit ?? tab.sending?.permit {
@@ -776,12 +776,12 @@ struct TabAskCard: View {
 /// its choices by number, Something else in your own words, and Skip or
 /// Stop. The digits pick from the page as they did at its foot.
 struct ChoiceAskCard: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     var count: String?
     var width: CGFloat = AgentAskCard.width
     var keysReach = true
     var surface = true
-    @ObservedObject private var agents = Agents.shared
+    private var agents = Agents.shared
     @State private var writing = false
     @State private var other = ""
     @FocusState private var typing: Bool

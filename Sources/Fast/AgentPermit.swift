@@ -403,7 +403,6 @@ extension Agents {
             Headless.show(.request)
             Links.showBrowser()
         }
-        objectWillChange.send()
         answer(waits)
         return true
     }
@@ -436,7 +435,6 @@ extension Agents {
             asker.state = asker.process != nil ? .running : asker.agent == .external ? .attached : .signingIn
             note(asker, "Back to \(asker.planName)")
         }
-        objectWillChange.send()
     }
 
     /// Yes, and from now on without asking, for this press on this site.

@@ -48,24 +48,24 @@ enum SwitchReach: String, CaseIterable, Identifiable {
 /// What the grid holds while ⌃ is down. Its own object, so walking it
 /// redraws the grid and not the window.
 @MainActor
-final class Switcher: ObservableObject {
+@Observable final class Switcher {
     /// The tabs, most recently looked at first, the one you are on leads.
     /// Taken once when ⌃Tab is first pressed: looking at a tab moves it to the
     /// front, and a list that reshuffled under the walk would be no list.
-    @Published private(set) var order: [Tab] = []
+    private(set) var order: [Tab] = []
     /// The space each tab of another space is in, by tab: going to one goes
     /// there first, and its tile wears that space's emoji.
-    private(set) var homes: [Tab.ID: Space] = [:]
+    @ObservationIgnored private(set) var homes: [Tab.ID: Space] = [:]
     /// Where the walk has got to.
-    @Published var at = 0
+    var at = 0
     /// False for the beat before the grid appears, so a tap never shows it.
-    @Published private(set) var showing = false
+    private(set) var showing = false
     /// The last picture of each page. Kept between openings, so a page that
     /// can't be drawn right now still shows what it looked like last time.
-    @Published private(set) var pictures: [Tab.ID: NSImage] = [:]
+    private(set) var pictures: [Tab.ID: NSImage] = [:]
     /// How many tiles go across, as the grid last laid itself out; the up and
     /// down arrows move by this much.
-    var across = Switcher.columns
+    @ObservationIgnored var across = Switcher.columns
 
     /// Five visible tiles; the keyboard walk includes every eligible tab.
     static let most = 5
@@ -93,16 +93,16 @@ final class Switcher: ObservableObject {
     /// waits: Arc's grid is up 0.15 s after Tab.
     static let beat: TimeInterval = 0.15
 
-    private var reveal: DispatchWorkItem?
+    @ObservationIgnored private var reveal: DispatchWorkItem?
     /// Where the pointer was when the walk began, and whether it has moved
     /// since: as in Arc and ⌘Tab, a tile the pointer is moved onto is the
     /// one picked, but a pointer resting where the grid happened to open
     /// picks nothing.
-    private var pointerAtOpen = NSPoint.zero
-    private var pointerMoved = false
+    @ObservationIgnored private var pointerAtOpen = NSPoint.zero
+    @ObservationIgnored private var pointerMoved = false
 
     /// True from the first ⌃Tab until ⌃ is let go of.
-    private(set) var open = false
+    @ObservationIgnored private(set) var open = false
     var picked: Tab? { order.indices.contains(at) ? order[at] : nil }
 
     var visibleIndices: Range<Int> {
@@ -177,9 +177,9 @@ final class Switcher: ObservableObject {
 
     /// The row over the page (SwitcherStrip) hides itself here, before the
     /// tab landed on is switched to, rather than when the view next updates.
-    var ending: (() -> Void)?
+    @ObservationIgnored var ending: (() -> Void)?
     /// The tabs `remember` has pictures of, oldest first.
-    private var remembered: [Tab.ID] = []
+    @ObservationIgnored private var remembered: [Tab.ID] = []
 
     /// The row over the page (SwitcherStrip): a picture of the page in
     /// front, taken while it is on screen, where it is quick, so the next
@@ -312,7 +312,7 @@ extension Browser {
 /// the one the walk is on lifted out of the rest.
 struct SwitcherPanel: View {
     let browser: Browser
-    @ObservedObject var switcher: Switcher
+    var switcher: Switcher
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var solid
     /// Settings › Experimental: the tabs in a row on the page itself.
@@ -405,7 +405,7 @@ struct SwitcherPanel: View {
     }
 
     private struct Tile: View {
-        @ObservedObject var tab: Tab
+        var tab: Tab
         /// Another space's emoji, for a tab of that space.
         let home: String?
         let picture: NSImage?

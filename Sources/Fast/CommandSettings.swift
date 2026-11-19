@@ -3,8 +3,8 @@ import UniformTypeIdentifiers
 
 struct CommandSettingsPage: View {
     static let benchEdit = Notification.Name("commands.bench-edit")
-    @ObservedObject var commands: SelectionCommands
-    @ObservedObject private var askKey = Keymap.shared.slot(.agentAsk)
+    var commands: SelectionCommands
+    private var askKey = Keymap.shared.slot(.agentAsk)
     @State private var editing: SelectionCommand?
     @State private var imported = ""
     @State private var editingAdvanced = false
@@ -269,7 +269,7 @@ private struct CommandEditor: View {
 /// they are; a click on the name opens the editor. Off is said by the row
 /// going pale, and switched under ···.
 private struct CommandRow: View {
-    @ObservedObject var commands: SelectionCommands
+    var commands: SelectionCommands
     let index: Int
     let command: SelectionCommand
     let edit: () -> Void

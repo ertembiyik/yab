@@ -7,13 +7,13 @@ import SwiftUI
 /// other way. The traffic lights are the column's own, in its top corner, so
 /// they go wherever it goes; the page takes the whole height beside it.
 struct SideBar: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject private var extensionsHere = ExtensionsHere.shared
+    var browser: Browser
+    var prefs: Preferences
+    private var extensionsHere = ExtensionsHere.shared
     /// An agent's task on many tabs: one row, a folder (AgentFolders).
     /// Watched: every window's folders tell the first window's
     /// (Folders.init(sharing:)); this window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser.folderBook }
     /// Out over the page in full screen rather than beside it: a card with
     /// its own corners and no hairline down its side.
@@ -3073,7 +3073,7 @@ struct SpaceName: View {
     var aimed = false
     /// Watched: every window's folders tell the first window's; this
     /// window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser?.folderBook ?? .shared }
     @Environment(\.tone) private var tone
     @Environment(\.tabTitleSize) private var titleSize
@@ -3239,7 +3239,7 @@ struct PinSquare: View {
     /// Out over the page in full screen rather than beside it: a card with
     /// its own corners and no hairline down its side.
     var floating = false
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let live: Bool
     var width: CGFloat = SideBar.square
     var height: CGFloat = SideBar.square
@@ -3373,8 +3373,8 @@ struct PinSquare: View {
 /// hairline between them, the half put down by its cross dimmed until the
 /// square is clicked again. The concept's variant A, drawn as picked.
 struct PinPairMarks: View {
-    @ObservedObject var first: Tab
-    @ObservedObject var second: Tab
+    var first: Tab
+    var second: Tab
     let glyph: Glyph
     let size: CGFloat
     /// The cell's full width: each mark is centered in its own half.
@@ -3432,10 +3432,10 @@ struct PinPairMarks: View {
 /// click on that tab: the pair comes up with that half in front, or, the
 /// pair already up, that half comes to the front.
 struct PairRow: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var first: Tab
-    @ObservedObject var second: Tab
+    var browser: Browser
+    var prefs: Preferences
+    var first: Tab
+    var second: Tab
     var lifted = false
     /// On screen or not, said by whoever draws it: a space not on screen
     /// yet (PagedSpace) has no stage of its own to ask.
@@ -3525,8 +3525,8 @@ struct PairRow: View {
 /// One tab of a pair, in its row down the column.
 private struct PairChip: View {
     let browser: Browser
-    @ObservedObject var prefs: Preferences
-    @ObservedObject var tab: Tab
+    var prefs: Preferences
+    var tab: Tab
     /// Concentric with the pair row's outer curve.
     static var corner: CGFloat { SideBar.radius - PairRow.inset }
     /// The pair is on screen.
@@ -3631,7 +3631,7 @@ private struct PairChip: View {
 /// out from under it, and once made the row reads as that folder's own
 /// row (NestRow), "New Folder" and the two it would hold.
 struct FolderToBe: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// How far it has turned, 0 to 1.
     let turn: CGFloat
     let made: Bool
@@ -3704,7 +3704,7 @@ struct SideRow: View {
     /// Out over the page in full screen rather than beside it: a card with
     /// its own corners and no hairline down its side.
     var floating = false
-    @ObservedObject var tab: Tab
+    var tab: Tab
     let live: Bool
     /// One of several picked with the open tab (see `Browser.gathered`).
     var picked = false
@@ -4003,7 +4003,7 @@ struct SideRow: View {
 /// waves fade into the slashed speaker seen in the supplied reference;
 /// sound back, the waves return one after the other, the near one first.
 struct SideSpeaker: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
 
     @State private var hovering = false
     @Environment(\.tone) private var tone
@@ -4385,7 +4385,7 @@ struct Door: View {
 /// and what lays itself out in it, never the column's own body.
 struct StretchedColumn: ViewModifier {
     let browser: Browser
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
 
     func body(content: Content) -> some View {
         content
@@ -4422,8 +4422,8 @@ extension Transaction {
 /// page. The page is a real view and would take the pointer from anything
 /// SwiftUI drew over it, so this is a real view too, laid on after it.
 struct SideEdge: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var prefs: Preferences
+    var browser: Browser
+    var prefs: Preferences
     /// The edge of the card the column put away comes out over the page
     /// as: it only makes the column wider or narrower, between its
     /// narrowest and its widest, as Arc's sidebar out over the page does
@@ -4711,24 +4711,24 @@ struct EdgeHandle: NSViewRepresentable {
 /// Where the stack is: the only thing that moves with the mouse, so the only
 /// thing that redraws for it.
 @MainActor
-private final class Hand: ObservableObject {
-    @Published var at: CGPoint = .zero
+@Observable private final class Hand {
+    var at: CGPoint = .zero
 }
 
 private struct Follow: ViewModifier {
-    @ObservedObject var hand: Hand
+    var hand: Hand
     func body(content: Content) -> some View { content.position(hand.at) }
 }
 
 /// Rows in the hand together: the one taken up on top, the rest as sheets
 /// showing under its lower edge, and how many there are in its corner.
 struct Stack: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// A pair row in the hand: the second half, and the row is drawn as
     /// the pair it is, not as a stack of two (#259).
     var mate: Tab? = nil
     var browser: Browser? = nil
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     let count: Int
     let width: CGFloat
     let landing: Bool
@@ -4780,11 +4780,11 @@ struct Stack: View {
 /// over the pins, one thing changing shape, its title giving way to its
 /// mark as it narrows, and back.
 struct Carried: View {
-    @ObservedObject var tab: Tab
+    var tab: Tab
     /// The other half, for a pair row carried up into the pins or a pinned
     /// pair's square: folded, both marks, as the square wears them.
     var mate: Tab? = nil
-    @ObservedObject var prefs: Preferences
+    var prefs: Preferences
     let folded: Bool
     let size: CGSize
     let landing: Bool

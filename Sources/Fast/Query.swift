@@ -11,49 +11,49 @@ import SwiftUI
 /// overlay to decide nothing had changed; held here, it redraws the field
 /// and its list.
 @MainActor
-final class Query: ObservableObject {
-    var pasteStyleTarget = PasteStyleTarget()
-    @Published var typed = "" {
+@Observable final class Query {
+    @ObservationIgnored var pasteStyleTarget = PasteStyleTarget()
+    var typed = "" {
         didSet { if typed != oldValue { unpick() } }
     }
     /// A selection command's answer is what the field shows (FieldAnswer),
     /// the field itself taking a follow-up.
-    @Published var answering = false
+    var answering = false
     /// ⌘K's list is the models to answer again on (⇧⌘R over an answer),
     /// not the answer's actions.
-    @Published var choosingModel = false
+    var choosingModel = false
     /// ⌘K's list is what a place's list is narrowed to, dropped from the
     /// field's end: Files' folders, kinds, sites (Browser.chooseFilter).
-    @Published var choosingFilter = false
+    var choosingFilter = false
     /// ⌘K's list is Yab's own About menu, risen from the button at the
     /// foot's left (⇧⌘K), not the row's actions.
-    @Published var choosingAbout = false
+    var choosingAbout = false
     /// Turned as the answer's state changes, so the foot says what Return
     /// does now (Stop, Replace Selection…): the foot watches the query, not
     /// the commands, whose every word would redraw the whole box.
-    @Published var answerTurn = 0
+    var answerTurn = 0
     /// The foot's pill's width while an answer shows: the field, moved
     /// down beside it to take a follow-up, keeps clear of it.
-    @Published var footPill: CGFloat = 0
+    var footPill: CGFloat = 0
     /// What the field is offering, best first.
-    @Published var offers: [Suggestion] = []
+    var offers: [Suggestion] = []
     /// The rest of the best match, drawn after the caret. Tab takes it.
-    @Published var ending: String?
+    var ending: String?
     /// Which row the arrow keys have walked to, if any. The field shows its
     /// address.
-    @Published var picked: Int?
+    var picked: Int?
     /// Which row the pointer moved onto, if any. Chosen as surely as a row
     /// walked to, but the field keeps what was typed: a hand passing over
     /// the list should not be rewriting the address.
-    @Published var pointed: Int?
+    var pointed: Int?
     /// Where the pointer was when the list last changed. A list that comes
     /// up under a resting pointer isn't a choice; the pointer has to move.
-    var restingAt: CGPoint?
+    @ObservationIgnored var restingAt: CGPoint?
     /// The question the list last answered: the words and where they were
     /// asked. The same question answered again, as suggestions, history or
     /// a reading of the words come in late, keeps the row walked to
     /// (Browser.answer).
-    var answered: Asked?
+    @ObservationIgnored var answered: Asked?
     struct Asked: Equatable {
         var typed: String
         var place: FieldPlace?
@@ -68,54 +68,54 @@ final class Query: ObservableObject {
     /// The row Return takes when none has been walked to: the place the
     /// ending finishes, a thing to do the words clearly name, or the search.
     /// Marked, so Return is never a guess.
-    @Published var lead: Int?
+    var lead: Int?
     /// Whether the list last grew, so it can grow at the pace things arrive
     /// and shrink at the quicker pace things leave.
-    var grew = true
+    @ObservationIgnored var grew = true
     /// Bumped whenever the cursor should go back into the field.
-    @Published var focusRequest = 0
+    var focusRequest = 0
     /// The page ⌘L raised the field over. While the field still says its
     /// address, untouched, the field is that page's and not a question:
     /// no list under it, its site's mark where the glass was.
-    var here: URL?
+    @ObservationIgnored var here: URL?
     /// The site the field is searching, after Tab took its name (see
     /// Scopes). Its words go to that site, not the engine.
-    @Published var scope: Scope?
+    var scope: Scope?
     /// The site Tab would search, for what is typed now: said on its row.
-    @Published var offering: Scope?
+    var offering: Scope?
     /// ⇥ put the search above the agent's row, for words read as this (Ask,
     /// the task): words read otherwise have their own row on top again.
-    var searchOver: Suggestion.Kind?
+    @ObservationIgnored var searchOver: Suggestion.Kind?
     /// What was typed when Tab made the field a site's, given back by ⌫.
-    var before = ""
+    @ObservationIgnored var before = ""
     /// The last site's color, light and dark, worked out once on Tab
     /// rather than on every key, and kept after it so the box's tint
     /// fades out in it.
-    var tints: (light: Color, dark: Color) = (.clear, .clear)
+    @ObservationIgnored var tints: (light: Color, dark: Color) = (.clear, .clear)
 
     func lastTint(dark: Bool) -> Color { dark ? tints.dark : tints.light }
 
     /// The field's own place it is in, after Tab took its name: Clipboard
     /// History or Emoji. What is typed then looks only there.
-    @Published var place: FieldPlace? {
+    var place: FieldPlace? {
         didSet { if place != oldValue { placeFromField = false; unpick() } }
     }
     /// Only a destination entered in the new-tab field belongs to its next
     /// opening. A place's own key, menu or link starts a separate request.
-    var placeFromField = false
+    @ObservationIgnored var placeFromField = false
     /// Destination and category only: never keep a page target, secret,
     /// search, selection or in-progress edit after the field closes.
-    var returnPlace: (place: FieldPlace, filter: Int)?
+    @ObservationIgnored var returnPlace: (place: FieldPlace, filter: Int)?
 
     /// The empty field's "Set up Yab" row taken: getting started's rows in
     /// its place, until Escape or the field goes.
-    var settingUp = false
+    @ObservationIgnored var settingUp = false
     /// Tab in the compact card's empty field, as in Arc's: what can be done
     /// here, found by name, its keys on its row. Escape, or ⌫ in its empty
     /// field, goes back.
-    @Published var actionsPage = false
+    var actionsPage = false
     /// Which row of the place is chosen: a clip, or an emoji in the grid.
-    @Published var spot = 0 {
+    var spot = 0 {
         didSet {
             guard spot != oldValue else { return }
             if revealed != nil { revealed = nil }
@@ -125,9 +125,9 @@ final class Query: ObservableObject {
     /// Rows of a place picked together, by their ids, for one act on all of
     /// them (PlacePicks.swift): ⌘-click, ⇧-click, ⇧↑ and ⇧↓. Empty, or
     /// one, is the plain list with its one chosen row.
-    @Published var picks: Set<String> = []
+    var picks: Set<String> = []
     /// Where ⇧-click and ⇧↑/⇧↓ stretch the picks from.
-    var pickAnchor: Int?
+    @ObservationIgnored var pickAnchor: Int?
 
     func unpick() {
         if !picks.isEmpty { picks = [] }
@@ -135,11 +135,11 @@ final class Query: ObservableObject {
     }
 
     /// Which kinds of clip the history shows.
-    @Published var clipFilter: Clips.Filter = .all
+    var clipFilter: Clips.Filter = .all
     /// ⌘K's list of what can be done to the chosen row, and which of its
     /// rows is chosen; nil while it is down. The keyboard is in the list's
     /// own search while it is up (FieldActionsPanel).
-    @Published var acting: Int? {
+    var acting: Int? {
         didSet {
             // Up, a click anywhere but on it or its button puts it away.
             if (acting == nil) != (oldValue == nil) { away.watch(acting != nil) }
@@ -161,25 +161,25 @@ final class Query: ObservableObject {
         }
     }
     /// ⌘K's list and the buttons that raise it, where a click leaves it up.
-    lazy var away = ClickAway { [weak self] in self?.acting = nil }
+    @ObservationIgnored lazy var away = ClickAway { [weak self] in self?.acting = nil }
     /// Which of a place's filters its list is narrowed to (FieldPlace.filters).
-    @Published var placeFilter = 0 {
+    var placeFilter = 0 {
         didSet { if placeFilter != oldValue { unpick() } }
     }
     /// What a place read as it opened (Places.swift).
-    @Published var stock = PlaceStock()
+    var stock = PlaceStock()
     /// Only the latest History search needs to run while keys arrive.
-    var historySearchWork: DispatchWorkItem?
+    @ObservationIgnored var historySearchWork: DispatchWorkItem?
     /// A password or a card number shown, after Touch ID, in the chosen
     /// row's preview only; gone when the row or the place changes.
-    @Published var revealed: (id: String, text: String)?
+    var revealed: (id: String, text: String)?
     /// Secrets copied after Touch ID, by what they are ("number.<card>",
     /// "code.<card>", "password.<login>"): they stay in view, to be read
     /// out, while the row stays chosen.
-    @Published var shown: [String: String] = [:]
+    var shown: [String: String] = [:]
     /// The chosen row being written, its lines fields in the preview
     /// (PlaceEdit.swift); nil while nothing is.
-    @Published var edit: PlaceEdit? {
+    var edit: PlaceEdit? {
         didSet {
             if oldValue?.passwordEditor !== edit?.passwordEditor {
                 oldValue?.passwordEditor?.cancel(nil)
@@ -187,12 +187,12 @@ final class Query: ObservableObject {
         }
     }
     /// The box on the page the caret was in as the field came up.
-    var form: PageForm?
+    @ObservationIgnored var form: PageForm?
     /// What is typed in ⌘K's list's own search: the actions it keeps.
-    @Published var actionWords = ""
+    var actionWords = ""
     /// Whether the caret was in a box on the page as the field came up:
     /// what the field puts in goes there.
-    var pageTyping = false
+    @ObservationIgnored var pageTyping = false
 }
 
 /// The things the app can do, found by name in the field, so "private",

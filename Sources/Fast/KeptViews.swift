@@ -11,7 +11,7 @@ import SwiftUI
 /// (SideBar.line). Its words fade in while the pointer is anywhere over
 /// the column; their places stay reserved when only the line is showing.
 struct KeptLine: View {
-    @ObservedObject var browser: Browser
+    var browser: Browser
     /// The column's own line, not one coming in under a drag or drawn in a
     /// space on its way: it says where it is, for Clear's dust.
     var reports = false
@@ -186,8 +186,8 @@ struct KeptDivider: View {
 /// A folder of yours in the column: its mark and its name.
 /// A click opens or shuts it; a double-click, or Rename…, names it.
 struct NestRow: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var nest: Nest
+    var browser: Browser
+    var nest: Nest
     let count: Int
     /// A tab held over it, to go in when let go.
     var aimed = false
@@ -198,7 +198,7 @@ struct NestRow: View {
     var over: FacePose? = nil
     /// Watched: every window's folders tell the first window's
     /// (Folders.init(sharing:)); this window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser.folderBook }
     @Environment(\.tabTitleSize) private var titleSize
     @Environment(\.tone) private var tone
@@ -396,8 +396,8 @@ private struct FolderUnpeek: View {
 /// A folder of yours on top: the mark and the name, as a task's is. Open,
 /// its tabs come out to its right in a wash.
 struct NestPill: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var nest: Nest
+    var browser: Browser
+    var nest: Nest
     let count: Int
     let width: CGFloat
     var aimed = false
@@ -409,7 +409,7 @@ struct NestPill: View {
     var still = false
     /// Watched: every window's folders tell the first window's
     /// (Folders.init(sharing:)); this window's are read.
-    @ObservedObject private var watched = Folders.shared
+    private var watched = Folders.shared
     private var folders: Folders { browser.folderBook }
     @Environment(\.tone) private var tone
     @Environment(\.colorScheme) private var colorScheme
@@ -494,9 +494,9 @@ struct NestPill: View {
 /// A routine's folder's face: it reads while its routine looks
 /// (LiveFolders.checking). Only these watch LiveFolders, not every folder.
 private struct RoutineFolderFace: View {
-    @ObservedObject var nest: Nest
+    var nest: Nest
     let tint: Color
-    @ObservedObject private var live = LiveFolders.shared
+    private var live = LiveFolders.shared
 
     var body: some View {
         Face(pose: live.checking(nest) ? .read : .seen, size: SideBar.folder, tint: tint, folder: true, unfolded: nest.open, weight: SideBar.folderWeight,
@@ -507,7 +507,7 @@ private struct RoutineFolderFace: View {
 /// What a right-click on a folder of yours offers.
 struct NestMenu: View {
     let browser: Browser
-    @ObservedObject var nest: Nest
+    var nest: Nest
 
     var body: some View {
         // Every tab under it, its folders' too.
@@ -606,7 +606,7 @@ struct NestMenu: View {
 /// one it is in.
 struct NestMove: View {
     let browser: Browser
-    @ObservedObject var nest: Nest
+    var nest: Nest
     var title = "Move to Folder"
 
     /// Any folder to go in, or one to step out of: else no submenu at all.
@@ -641,8 +641,8 @@ struct NestMove: View {
 /// (Browser.moveFolder). Picked, the rows close up on Arc's clock, a beat
 /// after the menu has gone. Only when there are spaces.
 struct NestSpaceSend: View {
-    @ObservedObject var browser: Browser
-    @ObservedObject var nest: Nest
+    var browser: Browser
+    var nest: Nest
     var title = "Move to Space"
     /// The only group of its Move to: the row says Move to, not just Space.
     var alone = false
@@ -672,7 +672,7 @@ struct NestSpaceSend: View {
 /// The folder's name, typed in place. Return or a click elsewhere keeps
 /// what was typed, Escape what it was; empty keeps what it was.
 struct NestNameField: NSViewRepresentable {
-    @ObservedObject var nest: Nest
+    var nest: Nest
     /// The window's folders (Browser.folderBook).
     var folders: Folders = .shared
 

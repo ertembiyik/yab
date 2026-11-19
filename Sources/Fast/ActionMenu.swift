@@ -46,7 +46,7 @@ enum ActionMenuAim {
 }
 
 @MainActor
-final class ActionMenuList: ObservableObject {
+@Observable final class ActionMenuList {
     struct Line: Identifiable {
         let id: Int
         let title: String
@@ -114,19 +114,19 @@ final class ActionMenuList: ObservableObject {
     enum Boundary: Equatable { case space, line }
 
     private let root: NSMenu
-    private var contentWatch: AnyCancellable?
+    @ObservationIgnored private var contentWatch: AnyCancellable?
     var placeholder: String { (root as? ActionMenuContent)?.menuPlaceholder ?? (compact ? "Search more actions\u{2026}" : "Search\u{2026}") }
     let compact: Bool
-    @Published private(set) var option = false
-    @Published var searching = false
+    private(set) var option = false
+    var searching = false
     var searchVisible: Bool { !nested || root is ActionMenuContent }
     /// A submenu uses the shared row treatment and each item's own mark.
     /// Search belongs to the root panel nearest the opening point, unless the
     /// menu is one of its own content (bookmarks): each of its folders has one.
     let nested: Bool
     private let mark: NSImage?
-    @Published private(set) var lines: [Line] = []
-    @Published var query = "" {
+    private(set) var lines: [Line] = []
+    var query = "" {
         didSet {
             searching = !query.isEmpty
             cancelPendingHover()
@@ -137,40 +137,40 @@ final class ActionMenuList: ObservableObject {
         }
     }
     /// The submenu open beside a line, and which line.
-    private(set) var child: ActionMenuList?
-    private(set) var childLine: Int?
-    weak var parent: ActionMenuList?
+    @ObservationIgnored private(set) var child: ActionMenuList?
+    @ObservationIgnored private(set) var childLine: Int?
+    @ObservationIgnored weak var parent: ActionMenuList?
     /// Whether the keys are this panel's: a submenu has them once it is
     /// opened with → or Return, or the pointer is in it.
-    var focused = true
+    @ObservationIgnored var focused = true
     /// Told to put a submenu's panel up beside a line, or nil to take the
     /// one up away (ActionMenu).
-    var showChild: (ActionMenuList?, Int) -> Void = { _, _ in }
+    @ObservationIgnored var showChild: (ActionMenuList?, Int) -> Void = { _, _ in }
     /// Where the lines that open a submenu are in the panel's window,
     /// top-left, for the submenu to hang beside.
-    var frames: [Int: CGRect] = [:]
-    var wordFrames: [Int: CGRect] = [:]
-    var keyFrames: [Int: CGRect] = [:]
-    @Published var spot = -1
-    @Published private(set) var hovered: Int?
-    private var keyboardChoice = false
+    @ObservationIgnored var frames: [Int: CGRect] = [:]
+    @ObservationIgnored var wordFrames: [Int: CGRect] = [:]
+    @ObservationIgnored var keyFrames: [Int: CGRect] = [:]
+    var spot = -1
+    private(set) var hovered: Int?
+    @ObservationIgnored private var keyboardChoice = false
     var highlighted: Int? { hovered ?? (keyboardChoice && lines.indices.contains(spot) ? spot : nil) }
-    var childFrame: CGRect?
-    var screenPoint: (CGPoint) -> CGPoint = { $0 }
-    private var lastPointer: CGPoint?
-    private var hoverGeneration = 0
-    private var hoverWork: DispatchWorkItem?
+    @ObservationIgnored var childFrame: CGRect?
+    @ObservationIgnored var screenPoint: (CGPoint) -> CGPoint = { $0 }
+    @ObservationIgnored private var lastPointer: CGPoint?
+    @ObservationIgnored private var hoverGeneration = 0
+    @ObservationIgnored private var hoverWork: DispatchWorkItem?
     /// Set by the keys, so the list scrolls to them; never by the pointer.
-    @Published var scrollTo: Int?
+    var scrollTo: Int?
     /// Whether the panel hangs down from the pointer: then its search is on top.
     let falls: Bool
-    var changed: () -> Void = {}
-    var close: () -> Void = {}
-    var dispatch: (() -> Void) -> Void = { $0() }
+    @ObservationIgnored var changed: () -> Void = {}
+    @ObservationIgnored var close: () -> Void = {}
+    @ObservationIgnored var dispatch: (() -> Void) -> Void = { $0() }
 
     /// Fits the visible commands, expanding for longer search results. Option
     /// alternates resize only while shown, as opposed to widening every menu.
-    @Published private(set) var width: CGFloat
+    private(set) var width: CGFloat
 
     init(menu: NSMenu, falls: Bool, nested: Bool = false, mark: NSImage? = nil, compact: Bool? = nil) {
         root = menu
@@ -601,7 +601,7 @@ final class ActionMenuList: ObservableObject {
 }
 
 struct ActionMenuView: View {
-    @ObservedObject var list: ActionMenuList
+    @Bindable var list: ActionMenuList
 
     // The Mac's own menu's rhythm on yab's scale (MenuMetrics).
     static let row = MenuMetrics.row
@@ -793,7 +793,7 @@ struct ActionMenuGlass: ViewModifier {
 /// each submenu beside the line it opens from, all in one window, so the
 /// window that has the keys draws every one, its glass live.
 @MainActor
-final class ActionMenuLayout: ObservableObject {
+@Observable final class ActionMenuLayout {
     struct Plate: Identifiable {
         let id: Int
         let list: ActionMenuList
@@ -801,8 +801,8 @@ final class ActionMenuLayout: ObservableObject {
         let at: CGPoint
     }
 
-    @Published var plates: [Plate] = []
-    @Published var size: CGSize = .zero
+    var plates: [Plate] = []
+    var size: CGSize = .zero
 
     func place(_ lists: [ActionMenuList], frames: [CGRect], in window: NSWindow, room: CGFloat) {
         guard let first = frames.first else { return }
@@ -819,7 +819,7 @@ final class ActionMenuLayout: ObservableObject {
 }
 
 struct ActionMenuStack: View {
-    @ObservedObject var layout: ActionMenuLayout
+    var layout: ActionMenuLayout
 
     var body: some View {
         ZStack(alignment: .topLeading) {

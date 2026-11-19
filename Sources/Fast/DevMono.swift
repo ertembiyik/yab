@@ -7,14 +7,14 @@ import SwiftUI
 /// browser's Fixed-width font (Settings > Appearance > Customize fonts):
 /// Yab's Fixed-width font (Appearance > Fonts > Customize…) is DevTools'
 /// too. Left at Default, DevTools keeps SF Mono.
-@MainActor final class DevMono: ObservableObject {
+@MainActor @Observable final class DevMono {
     static let shared = DevMono()
     /// The family chosen and installed here, empty for SF Mono. DevSheet
     /// lays its panes out again when it changes.
-    @Published private(set) var family: String
+    private(set) var family: String
     /// The same, for fonts made outside a view's body (table cells).
     nonisolated(unsafe) private static var resolved = installed(PageFonts.read().fixed)
-    private var watch: AnyCancellable?
+    @ObservationIgnored private var watch: AnyCancellable?
 
     private init() {
         family = Self.resolved

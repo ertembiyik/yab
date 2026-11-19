@@ -11,27 +11,27 @@ import SwiftUI
 
 /// The chat's width, told to its own hosting view.
 @MainActor
-final class ChatPaneLook: ObservableObject {
-    @Published var width: CGFloat
+@Observable final class ChatPaneLook {
+    var width: CGFloat
     init(width: CGFloat) { self.width = width }
 }
 
 /// The words in flight between a card and a chat's head are hidden in both
 /// places while they fly, so the title is only ever in one place.
 @MainActor
-final class ChatZoomVeil: ObservableObject {
+@Observable final class ChatZoomVeil {
     static let shared = ChatZoomVeil()
     /// The card (a chat's id, or ChatCards.newChat) whose title is away.
-    @Published var card: String?
+    var card: String?
     /// The head's name is away.
-    @Published var head = false
+    var head = false
 }
 
 /// A title the flight stands in for while it flies: the card's (`card`
 /// its id) or, with none, the chat head's.
 struct ChatZoomVeiled: ViewModifier {
     let card: String?
-    @ObservedObject private var veil = ChatZoomVeil.shared
+    private var veil = ChatZoomVeil.shared
 
     func body(content: Content) -> some View {
         let away = card.map { veil.card == $0 } ?? veil.head
@@ -92,31 +92,31 @@ enum ChatSpring {
 /// The list and the chat trading places in the column: which is up, and a
 /// chat on its way out of its card or back.
 @MainActor
-final class ChatZoom: ObservableObject {
+@Observable final class ChatZoom {
     /// The chats kept are up, at rest or under a chat on its way.
-    @Published private(set) var listShown: Bool
+    private(set) var listShown: Bool
     /// The chat is up, at rest or on its way.
-    @Published private(set) var paneShown: Bool
+    private(set) var paneShown: Bool
     /// A file or a link over the chat, which takes the drop itself.
-    @Published var dropping = false
+    var dropping = false
     let look: ChatPaneLook
     let browser: Browser
     let feed: ChatFeed
-    weak var stage: ChatZoomStage?
+    @ObservationIgnored weak var stage: ChatZoomStage?
 
     /// Where the flight is: 0 the card, 1 the whole column.
-    private(set) var progress: CGFloat
-    private(set) var target: CGFloat
+    @ObservationIgnored private(set) var progress: CGFloat
+    @ObservationIgnored private(set) var target: CGFloat
     /// The run under way, sampled (ChatSpring), and which run it is.
-    private var samples: [CGFloat] = []
-    private var run = 0
+    @ObservationIgnored private var samples: [CGFloat] = []
+    @ObservationIgnored private var run = 0
     /// A flight asked for before the stage could take it.
-    private var waiting = false
-    private var source = Source(id: ChatCards.newChat, card: nil, title: nil, words: "", headWords: "")
+    @ObservationIgnored private var waiting = false
+    @ObservationIgnored private var source = Source(id: ChatCards.newChat, card: nil, title: nil, words: "", headWords: "")
     /// The chat built under a held press, before the click lands.
-    private(set) var warm: String?
+    @ObservationIgnored private(set) var warm: String?
     /// Let go of after a drag: where the chat was and how fast it went.
-    private var released: (rect: CGRect, speed: CGFloat, dim: CGFloat)?
+    @ObservationIgnored private var released: (rect: CGRect, speed: CGFloat, dim: CGFloat)?
 
     struct Source {
         let id: String

@@ -50,16 +50,16 @@ final class LinkCard {
         return card
     }
 
-    final class Model: ObservableObject {
-        @Published var page = LinkSummary.Page()
-        @Published var preview = LinkSummary.Preview()
-        @Published var image: NSImage?
-        @Published var phase = "idle"
-        @Published var up = false
-        @Published var below = true
-        var url: URL?
+    @Observable final class Model {
+        var page = LinkSummary.Page()
+        var preview = LinkSummary.Preview()
+        var image: NSImage?
+        var phase = "idle"
+        var up = false
+        var below = true
+        @ObservationIgnored var url: URL?
         /// The Share button in the card's host, top-left based (LinkCardHost).
-        var shareRect = CGRect.zero
+        @ObservationIgnored var shareRect = CGRect.zero
     }
 
     private struct Pointed {
@@ -577,7 +577,7 @@ private final class LinkCardHost: NSHostingView<LinkCardContents> {
 }
 
 private struct LinkCardContents: View {
-    @ObservedObject var model: LinkCard.Model
+    var model: LinkCard.Model
     let share: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduced
 

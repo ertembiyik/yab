@@ -45,7 +45,7 @@ private struct ModelPicker: View {
     let request: ModelPickerRequest
     /// The window's width: what the list and its details card must fit in.
     let room: CGFloat
-    @ObservedObject private var accounts = PlanAccounts.shared
+    private var accounts = PlanAccounts.shared
     @State private var query = ""
     @State private var spot = 0
     @State private var effort: String?
@@ -324,7 +324,7 @@ struct ModelPlanHead: View {
     let cli: String?
     /// Its words' size: the picker's 12, Settings' smaller list 11.
     var size: CGFloat = 12
-    @ObservedObject private var accounts = PlanAccounts.shared
+    private var accounts = PlanAccounts.shared
 
     /// Its accounts: those signed in, and the CLI's usual one always.
     private var every: [PlanAccount] {
@@ -392,7 +392,7 @@ struct ModelPlanHead: View {
 /// window on a click.
 private struct PlanRoom: View {
     let account: PlanAccount
-    @ObservedObject private var accounts = PlanAccounts.shared
+    private var accounts = PlanAccounts.shared
     @State private var open = false
 
     var body: some View {
@@ -491,7 +491,7 @@ private struct ModelPickerRow: View {
 /// its agent's words and a few marks, and how much of its plan is used.
 private struct ModelInfo: View {
     let model: AgentModel
-    @ObservedObject private var accounts = PlanAccounts.shared
+    private var accounts = PlanAccounts.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

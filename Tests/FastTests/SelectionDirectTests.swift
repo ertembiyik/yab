@@ -33,7 +33,7 @@ struct SelectionDirectTests {
         let (tab, commands) = try await fixture()
         defer { commands.close(); tab.close() }
         var previewSeen = false
-        let observer = commands.objectWillChange.sink { if commands.showsDockResult { previewSeen = true } }
+        let observer = ObservedWrites({ _ = commands.showsDockResult }, told: { if commands.showsDockResult { previewSeen = true } })
         defer { observer.cancel() }
         #expect(commands.showsDock)
         #expect(!commands.showsDockResult)

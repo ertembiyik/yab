@@ -9,7 +9,7 @@ import WebKit
 /// with its menu commands, and takes updates quietly unless they ask for
 /// more, which waits for Update in its row.
 @MainActor
-final class Userscripts: ObservableObject {
+@Observable final class Userscripts {
     static let shared = Userscripts()
 
     struct Record: Codable, Identifiable, Equatable {
@@ -56,29 +56,29 @@ final class Userscripts: ObservableObject {
         let caption: String
     }
 
-    @Published private(set) var records: [Record] = []
-    @Published private(set) var offers: [UUID: Offer] = [:]
+    private(set) var records: [Record] = []
+    private(set) var offers: [UUID: Offer] = [:]
     /// By tab, by script: what the page registered with GM_registerMenuCommand.
-    @Published private(set) var commands: [UUID: [String: [Command]]] = [:]
-    @Published private(set) var trouble: String?
+    private(set) var commands: [UUID: [String: [Command]]] = [:]
+    private(set) var trouble: String?
     /// Scripts' uncaught errors, newest last, for the bench and Fix.
-    private(set) var errors: [String: [String]] = [:]
+    @ObservationIgnored private(set) var errors: [String: [String]] = [:]
     /// Requests refused for going to a host not on the card.
-    private(set) var refused: [String: [String]] = [:]
-    private(set) var scripts: [String: Userscript] = [:]
+    @ObservationIgnored private(set) var refused: [String: [String]] = [:]
+    @ObservationIgnored private(set) var scripts: [String: Userscript] = [:]
     let root: URL
     /// Addresses let through to load as they are, once (Use Tampermonkey).
-    private var passing: Set<URL> = []
+    @ObservationIgnored private var passing: Set<URL> = []
     /// One per launch: the page world's handler is reachable by the page,
     /// so its calls carry this.
     private let token = UUID().uuidString
-    private var made: [String: (key: String, script: WKUserScript)] = [:]
-    private var everMade: Set<ObjectIdentifier> = []
-    private var everMadeScripts: [WKUserScript] = []
-    private var handlers = NSMapTable<WKUserContentController, NSMutableSet>.weakToStrongObjects()
-    private var values: [String: [String: Any]] = [:]
-    private var valueTurns: [String: Int] = [:]
-    private var notices: [String: Date] = [:]
+    @ObservationIgnored private var made: [String: (key: String, script: WKUserScript)] = [:]
+    @ObservationIgnored private var everMade: Set<ObjectIdentifier> = []
+    @ObservationIgnored private var everMadeScripts: [WKUserScript] = []
+    @ObservationIgnored private var handlers = NSMapTable<WKUserContentController, NSMutableSet>.weakToStrongObjects()
+    @ObservationIgnored private var values: [String: [String: Any]] = [:]
+    @ObservationIgnored private var valueTurns: [String: Int] = [:]
+    @ObservationIgnored private var notices: [String: Date] = [:]
 
     init(root: URL = Store.file("userscripts")) {
         self.root = root

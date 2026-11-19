@@ -17,7 +17,7 @@ import Security
 // friend the site also keeps one bit, whether each of you has Yab open, and
 // only while "Let them see when I'm in Yab" is on.
 @MainActor
-final class Invites: ObservableObject {
+@Observable final class Invites {
     static let shared = Invites()
 
     /// What a friend's join unlocks, in order: the icon and how many friends it takes.
@@ -54,29 +54,31 @@ final class Invites: ObservableObject {
         var color: String?
     }
 
-    @Published var message: String { didSet { save(message, "invite.message") } }
-    @Published var bestMessage: String { didSet { save(bestMessage, "invite.bestMessage") } }
+    var message: String { didSet { save(message, "invite.message") } }
+    var bestMessage: String { didSet { save(bestMessage, "invite.bestMessage") } }
     /// The color of your half, in your Dock and theirs.
-    @Published var myColor: String { didSet { save(myColor, "invite.myColor"); charmChanged(); pushColor() } }
+    var myColor: String { didSet { save(myColor, "invite.myColor"); charmChanged(); pushColor() } }
     /// Whether your best friend may see that your Yab is open.
-    @Published var shares: Bool { didSet { save(shares, "invite.shares"); beat() } }
+    var shares: Bool { didSet { save(shares, "invite.shares"); beat() } }
     /// Whether the charm parts a little while one of you is away.
-    @Published var showsAway: Bool { didSet { save(showsAway, "invite.showsAway"); charmChanged() } }
-    @Published private(set) var friends: [Friend] = []
-    @Published private(set) var joined = 0
-    @Published private(set) var left = Invites.perWeek
-    @Published private(set) var best: Best?
-    @Published private(set) var received: Received?
+    var showsAway: Bool { didSet { save(showsAway, "invite.showsAway"); charmChanged() } }
+    private(set) var friends: [Friend] = []
+    private(set) var joined = 0
+    private(set) var left = Invites.perWeek
+    private(set) var best: Best?
+    private(set) var received: Received?
     /// Your best friend has Yab open, as the site said a moment ago.
-    @Published private(set) var bestHere = false
+    private(set) var bestHere = false
     /// The links, once the site made them.
-    @Published private(set) var friendLink: URL?
-    @Published private(set) var bestLink: URL?
+    private(set) var friendLink: URL?
+    private(set) var bestLink: URL?
     /// What went wrong the last time the site was asked, in words for the page.
-    @Published private(set) var problem: String?
+    private(set) var problem: String?
 
     private var started = false
-    private var clock: Timer?
+    @ObservationIgnored private var clock: Timer?
+    /// Bumped when synced settings change what is unlocked; AppIconStyle.unlocked reads it.
+    var revision = 0
     private var identityUnavailable = false
     private static var cachedInstallation: String?
 
@@ -249,7 +251,6 @@ final class Invites: ObservableObject {
             AppIconStyle.charm.apply()
             AppIconStyle.announce()
         }
-        objectWillChange.send()
     }
 
     // MARK: copying a link

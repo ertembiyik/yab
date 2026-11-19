@@ -141,12 +141,10 @@ struct AgentDockWidthTests {
                 #expect(session.now == command)
             }
             session.now = "Reading"
-            Agents.shared.objectWillChange.send()
             try await settle(window)
             let short = try controls(in: host, window: window, width: 1000)
             #expect(short.width < 700)
             session.now = command
-            Agents.shared.objectWillChange.send()
             try await settle(window)
             let long = try controls(in: host, window: window, width: 1000)
             #expect(long.width > short.width)
@@ -168,7 +166,6 @@ struct AgentDockWidthTests {
                 #expect(host.frame.height < 80)
             }
             session.now = "Reading"
-            Agents.shared.objectWillChange.send()
             try await settle(window)
             let short = try controls(in: host, window: window, width: 1000)
             #expect(host.frame.width < holder.bounds.width - 100)

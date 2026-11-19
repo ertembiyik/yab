@@ -5,7 +5,7 @@ import Translation
 
 /// Only this tiny view is invalidated when a translation starts or changes state.
 struct PageTranslationHost: View {
-    @ObservedObject var translation: PageTranslation
+    var translation: PageTranslation
 
     var body: some View {
         Color.clear.translationTask(translation.configuration) { session in
@@ -17,13 +17,13 @@ struct PageTranslationHost: View {
 /// Translates the text of one page with the system's on-device language models.
 /// The page adapter lives in yab's isolated content world, never in the site's JS world.
 @MainActor
-final class PageTranslation: ObservableObject {
+@Observable final class PageTranslation {
     enum Phase: Equatable {
         case original, preparing, translating, translated, failed(String)
     }
 
-    @Published private(set) var phases: [Tab.ID: Phase] = [:]
-    @Published var configuration: TranslationSession.Configuration?
+    private(set) var phases: [Tab.ID: Phase] = [:]
+    var configuration: TranslationSession.Configuration?
 
     /// A model dependency for deterministic DOM/lifecycle checks. Ordinary
     /// instances use the observed Apple TranslationSession host above.
@@ -63,16 +63,16 @@ final class PageTranslation: ObservableObject {
         let text: String
     }
 
-    private var pending: Pending?
-    private var documents: [Tab.ID: Document] = [:]
-    private var preparing: [Tab.ID: UUID] = [:]
-    private var queued: [Pending] = []
-    private var controlledWork: Task<Void, Never>?
+    @ObservationIgnored private var pending: Pending?
+    @ObservationIgnored private var documents: [Tab.ID: Document] = [:]
+    @ObservationIgnored private var preparing: [Tab.ID: UUID] = [:]
+    @ObservationIgnored private var queued: [Pending] = []
+    @ObservationIgnored private var controlledWork: Task<Void, Never>?
     /// Told when a page asked for couldn't be translated, and why.
-    var failed: ((Tab, String) -> Void)?
+    @ObservationIgnored var failed: ((Tab, String) -> Void)?
     /// The language each page is going to or is in, where Translate To
     /// picked one other than the Mac's first.
-    private var targets: [Tab.ID: Locale.Language] = [:]
+    @ObservationIgnored private var targets: [Tab.ID: Locale.Language] = [:]
 
     var targetName: String {
         let code = Self.targetCode
@@ -765,7 +765,7 @@ final class PageTranslation: ObservableObject {
 /// Shortcuts and Settings › Shortcuts can give it a key.
 struct TranslatePageMenu: View {
     let browser: Browser
-    @ObservedObject var translation: PageTranslation
+    var translation: PageTranslation
 
     var body: some View {
         let tab = browser.active

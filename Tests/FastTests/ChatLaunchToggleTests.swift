@@ -18,7 +18,7 @@ struct ChatLaunchToggleTests {
     }
 
     private struct Room: View {
-        @ObservedObject var browser: Browser
+        var browser: Browser
         let page: NSView
         var body: some View {
             ChatRoom(open: browser.chatOpen, rim: .init(card: true), width: 380, leading: browser.chatLeads) {

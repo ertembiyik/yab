@@ -344,7 +344,7 @@ final class HeroView: NSView {
         }
         // A friend's link: their stamp in the mark's place, numbered once
         // the site says (Stamp); Wax Seal unlocks quietly at the end.
-        gift = Invites.shared.$received.combineLatest(MemberStamp.shared.$info).receive(on: RunLoop.main).sink { [weak self] received, info in
+        gift = Invites.shared.observed(\.received).combineLatest(MemberStamp.shared.observed(\.info)).receive(on: RunLoop.main).sink { [weak self] received, info in
             guard let received, let picture = MemberStamp.welcomePicture(from: received, info: info) ?? Invites.giftPicture(received) else { return }
             self?.glasses.show(picture)
         }

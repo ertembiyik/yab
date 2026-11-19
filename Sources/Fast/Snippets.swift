@@ -78,7 +78,7 @@ extension MailSnippets {
 // MARK: - ";" in a page's box
 
 @MainActor
-final class PageSnippets: ObservableObject {
+@Observable final class PageSnippets {
     static let shared = PageSnippets()
 
     struct Call: Equatable {
@@ -93,12 +93,12 @@ final class PageSnippets: ObservableObject {
         var lit = 0
     }
 
-    @Published private(set) var call: Call?
+    private(set) var call: Call?
     /// What the page said last, and why no list came of it: for the bench.
-    private(set) var heardLast = ""
+    @ObservationIgnored private(set) var heardLast = ""
     /// The ";" esc put away, by its tab and where it stands: no list for it
     /// again until it is gone.
-    private var dismissed: (tab: Tab.ID, at: Int)?
+    @ObservationIgnored private var dismissed: (tab: Tab.ID, at: Int)?
 
     /// What the page said: ";" and a name at the caret, or nothing now.
     func heard(_ body: [String: Any], in tab: Tab) {
@@ -226,7 +226,7 @@ final class PageSnippets: ObservableObject {
 /// The snippets by the name typed after ";", under the caret in a page's
 /// box: the name, what was typed of it bolder, its first words under it.
 struct PageSnippetList: View {
-    @ObservedObject var snippets: PageSnippets
+    var snippets: PageSnippets
     let call: PageSnippets.Call
 
     var body: some View {
@@ -254,7 +254,7 @@ struct PageSnippetList: View {
 /// under 12 letters, a one-time code. Not Now (or a click beside the card)
 /// keeps those words from being offered again for 30 days.
 @MainActor
-final class SnippetOffers: ObservableObject {
+@Observable final class SnippetOffers {
     static let shared = SnippetOffers()
 
     struct Offer: Equatable, Identifiable {
@@ -278,10 +278,10 @@ final class SnippetOffers: ObservableObject {
     static let quietFor: TimeInterval = 30 * 86_400
     static let shortest = 12
 
-    @Published private(set) var offer: Offer?
+    private(set) var offer: Offer?
     /// The name as written over in the card, for a ↩ from the page.
-    var written: String?
-    var log: Log
+    @ObservationIgnored var written: String?
+    @ObservationIgnored var log: Log
     let file: URL?
 
     init(file: URL? = Store.file("snippet-pastes.json")) {
@@ -410,7 +410,7 @@ final class SnippetOffers: ObservableObject {
 /// (KeepCard): the words in a quiet well, how often they were pasted and
 /// the name to type next time, Not Now and Save.
 struct SnippetOfferCard: View {
-    @ObservedObject var offers: SnippetOffers
+    var offers: SnippetOffers
     let offer: SnippetOffers.Offer
     /// The command, ready and written over at will: what follows ";".
     @State private var name: String
@@ -524,7 +524,7 @@ struct SnippetOfferCard: View {
 /// The card's place over the page: the page dimmed behind it, a click there
 /// is Not Now (AskLayer).
 struct SnippetOfferLayer: View {
-    @ObservedObject var offers = SnippetOffers.shared
+    var offers = SnippetOffers.shared
     let tab: Tab.ID
     let page: CGRect
 

@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The command list and result card live in the page's own coordinates.
 struct SelectionLayer: View {
-    @ObservedObject var commands: SelectionCommands
-    @ObservedObject private var macModel = AppleModelControl.shared
+    var commands: SelectionCommands
+    private var macModel = AppleModelControl.shared
     let tab: Tab
     @State private var keeping = false
     @State private var commandName = ""

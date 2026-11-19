@@ -20,7 +20,7 @@ import YabCoreClient
 /// neither the column closes. A panel switched away from is kept, its page
 /// alive, as Chromium caches the view, until the column is closed.
 @MainActor
-final class ChromiumSidePanel: ObservableObject {
+@Observable final class ChromiumSidePanel {
     static let shared = ChromiumSidePanel()
 
     final class Panel: Identifiable {
@@ -142,9 +142,9 @@ final class ChromiumSidePanel: ObservableObject {
         return options.tabPath.isEmpty ? .window(options.globalPath) : .tab(options.tabPath)
     }
 
-    @Published private(set) var panels: [Panel] = []
-    private var following: [ObjectIdentifier: AnyCancellable] = [:]
-    private var switching: [ObjectIdentifier: Task<Void, Never>] = [:]
+    private(set) var panels: [Panel] = []
+    @ObservationIgnored private var following: [ObjectIdentifier: AnyCancellable] = [:]
+    @ObservationIgnored private var switching: [ObjectIdentifier: Task<Void, Never>] = [:]
 
     func panels(in browser: Browser) -> [Panel] { panels.filter { $0.browser === browser } }
 

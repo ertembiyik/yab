@@ -21,16 +21,16 @@ struct GeminiChoice: Identifiable, Equatable {
 }
 
 @MainActor
-final class GeminiChoices: ObservableObject {
+@Observable final class GeminiChoices {
     static let shared = GeminiChoices()
-    @Published private(set) var rows: [GeminiChoice] = [.another]
-    @Published var chosen: String?
-    @Published var showing = false
+    private(set) var rows: [GeminiChoice] = [.another]
+    var chosen: String?
+    var showing = false
     /// Shared Settings route for Models, initial Connect and Switch Account.
     func inSettings(_ page: SettingsPage) -> Bool { showing && page.top == .ai }
 
-    var switching = false
-    @Published private(set) var looking = false
+    @ObservationIgnored var switching = false
+    private(set) var looking = false
     var pick: GeminiChoice { rows.first { $0.id == chosen } ?? rows.first ?? .another }
 
     func look(_ browser: Browser, switching: Bool, refreshIdentity: Bool = true) async {
