@@ -31,4 +31,18 @@ struct ExtensionNativeFoldersTests {
         #expect { try ExtensionNative.host(name, for: id, in: [other]) } throws: { $0.localizedDescription.contains("forbidden") }
         #expect { try ExtensionNative.host(name, for: id, in: []) } throws: { $0.localizedDescription.contains("not found") }
     }
+
+    @Test func theOnePasswordHelperNeverOverridesAFileThatRefused() throws {
+        let host = ExtensionNative.onePasswordHost
+        let ours = try #require(ExtensionNative.onePasswordExtensions.first)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let manifest: [String: Any] = ["name": host, "path": "/bin/cat", "type": "stdio",
+                                       "allowed_origins": ["chrome-extension://zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz/"]]
+        try JSONSerialization.data(withJSONObject: manifest).write(to: url.appendingPathComponent(host + ".json"))
+        let helper = URL(fileURLWithPath: "/bin/cat")
+        #expect { try ExtensionNative.host(host, for: ours, in: [url], helper: helper) } throws: { $0.localizedDescription.contains("forbidden") }
+        #expect(try ExtensionNative.host(host, for: ours, in: [], helper: helper) == helper)
+    }
 }

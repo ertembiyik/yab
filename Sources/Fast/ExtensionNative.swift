@@ -62,7 +62,8 @@ enum ExtensionNative {
     /// The program for `name`, if one is registered and lets this extension in.
     /// Every folder is looked in: another browser's file may name other
     /// extensions, or a program since removed, where a later one is right.
-    static func host(_ name: String, for extensionID: String, in folders: [URL] = folders) throws -> URL {
+    static func host(_ name: String, for extensionID: String, in folders: [URL] = folders,
+                     helper: URL = onePasswordHelper) throws -> URL {
         guard name.range(of: #"^[a-z0-9_]+(\.[a-z0-9_]+)*$"#, options: .regularExpression) != nil else {
             throw Refused(why: "Invalid native messaging host name")
         }
@@ -84,10 +85,11 @@ enum ExtensionNative {
         }
         // 1Password's app is there but left no file Yab reads (no other
         // Chromium on this Mac): its helper, which lets in its own
-        // extensions, is where every copy of the app keeps it.
-        if name == onePasswordHost, onePasswordExtensions.contains(extensionID),
-           FileManager.default.isExecutableFile(atPath: onePasswordHelper.path) {
-            return onePasswordHelper
+        // extensions, is where every copy of the app keeps it. Never in
+        // place of a file that refused this extension.
+        if !forbidden, name == onePasswordHost, onePasswordExtensions.contains(extensionID),
+           FileManager.default.isExecutableFile(atPath: helper.path) {
+            return helper
         }
         throw Refused(why: forbidden ? "Access to the specified native messaging host is forbidden."
                                      : "Specified native messaging host not found.")
