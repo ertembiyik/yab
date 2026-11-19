@@ -765,9 +765,11 @@ enum Mcp {
     static func within<T>(_ args: [String], _ body: () -> T) -> T {
         socket = Wire.socket(args)
         client = "yab"
-        defer { if let session { _ = wire(["do": "agent-detach", "session": session]) } }
+        defer { if !keepSession, let session { _ = wire(["do": "agent-detach", "session": session]) } }
         return body()
     }
+    /// Set by a call that leaves its session for later (a change still waiting for the person).
+    static var keepSession = false
 
     static func snap(_ tab: String?) -> [String: Any] {
         let got = ask(["do": "snapshot", "id": tab ?? "", "interactive": true])
