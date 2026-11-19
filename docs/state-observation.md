@@ -144,7 +144,7 @@ from `browser.chatOpen` to `browser.chat.chatOpen` and nothing else.
 
 ## Rules
 
-For new state and for views touched from now on:
+For all state, checked by `./design-check` on every added line:
 
 1. New shared state is a `@MainActor @Observable final class`, never an
    `ObservableObject`.

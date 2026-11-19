@@ -28,6 +28,10 @@ The rules, all from Sources/YabDesign (Design.swift, Buttons.swift):
 - A tooltip is yab's own, on the corner's glass (KeyTip): `.keyTip` for a
   button, `.pointerTip` for a row or a line, `view.keyTip(_:)` in AppKit.
   Never `.help` or `toolTip`, which the system draws its own way.
+- State is observed (docs/state-observation.md): no `ObservableObject`,
+  `@Published`, `@ObservedObject`, `@StateObject`, `@EnvironmentObject` or
+  `objectWillChange`. A model is `@Observable`; a view holds it as a `let`,
+  `@Bindable` or `@State`.
 - Keys at the end of a plate of its own (a tip, a pill, a face with a
   background and side padding) are set as a button's: the plate hands
   them a KeyPlate, so the last key's plate is as far in from the trailing
@@ -66,6 +70,8 @@ PLATE_FACE = re.compile(r"HUD\.plate\(|FieldGlass\(|glassEffect\(|Capsule\(\)\.f
 PLATE_SET = re.compile(r"KeyPlate\(|\\\.keyPlate|\.yab\(|FieldActionsPanel\.row|KeyTipView\.plate")
 # `.help(` as a modifier, not a function of that name (Self.help(…)).
 SYSTEM_TIP = re.compile(r"(?<!\w)\.help\(|\.toolTip\s*=")
+COMBINE_STATE = re.compile(r"\bObservableObject\b(?!Publisher)|@(?:Published|ObservedObject|StateObject|EnvironmentObject)\b|"
+                           r"\.environmentObject\(|\bobjectWillChange\b")
 
 
 def number(text):
@@ -123,6 +129,9 @@ def judge(path, lines):
             say(at, "a shadow of its own: cards take .cardFrame(); anything else, add the shadow to Design.swift")
         if SYSTEM_TIP.search(code):
             say(at, "a system tooltip: .keyTip for a button, .pointerTip for a row or a line, view.keyTip(_:) in AppKit")
+        if COMBINE_STATE.search(code):
+            say(at, "Combine's observation: make the model @Observable, and hold it as a let, @Bindable or @State "
+                    "(docs/state-observation.md)")
         if HANDMADE.search(code):
             say(at, "a hand-made card (ground, hairline): use .cardFrame()")
         if KEYS.search(code) and whole and at <= len(whole):
@@ -222,7 +231,7 @@ def main(argv):
             problems += judge(path, lines)
     if not problems:
         return 0
-    print("Design system: these added lines drift from Design.swift.", file=sys.stderr)
+    print("Design system: these added lines drift from Design.swift or docs/state-observation.md.", file=sys.stderr)
     for problem in problems:
         print("  " + problem, file=sys.stderr)
     if "--all" not in argv:

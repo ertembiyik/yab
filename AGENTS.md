@@ -46,6 +46,17 @@ A new or renamed row in `SettingsIndex.swift` must be classified in
 undo; the person's own decisions (privacy, passwords, AI consent,
 permissions) go in `NativeActions.controlled`.
 
+## State is observed, not published
+
+Models are `@MainActor @Observable final class`; there is no
+`ObservableObject`, `@Published`, `@ObservedObject`, `@StateObject`,
+`@EnvironmentObject` or `objectWillChange` in `Sources`, and
+`./design-check` refuses a line that adds one. A view takes a model as a
+plain `let`, `@Bindable var` when it binds, `@State` when it owns it.
+State a view draws but the model can't see (a file, a cache, UserDefaults)
+is read through a tracked value the writer bumps. How and why:
+`docs/state-observation.md`.
+
 ## Writing
 
 - American English in the app, docs and commits. No em dashes: use a comma,
