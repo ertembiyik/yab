@@ -31,14 +31,93 @@ struct ThreadTextEditor: View {
     }
 }
 
-/// Grouped settings forms create their own native scroll view.
+/// A grouped settings page laid out the way a grouped Form lays one out,
+/// a row at a time in a lazy stack, so only the rows in view are built.
 struct ThreadForm<Content: View>: View {
     private let content: Content
 
     init(@ViewBuilder content: () -> Content) { self.content = content() }
 
     var body: some View {
-        Form { content }.background(ColumnThread())
+        ThreadScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                Group(sections: content) { sections in
+                    let all = Array(sections)
+                    ForEach(Array(all.enumerated()), id: \.element.id) { at, section in
+                        FormGroup(section: section, after: at == 0 ? nil : !all[at - 1].content.isEmpty)
+                    }
+                }
+            }
+            .padding(FormGroupRow<EmptyView>.margin)
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// A section: its header, its rows edge to edge, its footer.
+private struct FormGroup: View {
+    let section: SectionConfiguration
+    /// Whether the section before had rows; nil for the first.
+    let after: Bool?
+
+    var body: some View {
+        if !section.header.isEmpty {
+            HStack(spacing: 0) { section.header }
+                .font(.system(size: 13, weight: FormGroupRow<EmptyView>.headWeight))
+                .padding(.horizontal, 10)
+                // The Form's: 19 more after rows, 17 less right under a page's head.
+                .padding(.top, after == nil ? 0 : after == true ? 19 : -17)
+                .padding(.bottom, 10)
+        }
+        ForEach(section.content) { row in
+            FormGroupRow(first: row.id == section.content.first?.id, last: row.id == section.content.last?.id, form: true) { row }
+        }
+        if !section.footer.isEmpty {
+            HStack(spacing: 0) { section.footer }
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .padding(.top, 6)
+        }
+        Color.clear.frame(height: section.footer.isEmpty ? 10 : 30)
+    }
+}
+
+/// A row of a group, the way a grouped Form draws one: the group is its
+/// rows' backgrounds laid edge to edge, so it can be built a row at a time.
+struct FormGroupRow<Content: View>: View {
+    /// The Form's own measures on each design.
+    static var radius: CGFloat { if #available(macOS 26.0, *) { 12 } else { 10 } }
+    static var pad: CGFloat { if #available(macOS 26.0, *) { 10.5 } else { 8 } }
+    static var headWeight: Font.Weight { if #available(macOS 26.0, *) { .regular } else { .semibold } }
+    static var margin: CGFloat { 20 }
+
+    let first: Bool
+    let last: Bool
+    /// Laid out as ThreadForm's rows: the Form's row height, separator and last-row inset.
+    var form = false
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        let top = first ? Self.radius : 0
+        let foot = last ? Self.radius : 0
+        content
+            .frame(maxWidth: .infinity, minHeight: form ? 0 : 22, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.top, Self.pad)
+            // The Form's last row is a point shorter, a lone row half a point taller.
+            .padding(.bottom, Self.pad + (form && last ? (first ? 0.5 : -1) : 0))
+            .background {
+                UnevenRoundedRectangle(topLeadingRadius: top, bottomLeadingRadius: foot, bottomTrailingRadius: foot,
+                                       topTrailingRadius: top, style: .continuous)
+                    .fill(Color(nsColor: .quaternarySystemFill))
+            }
+            .overlay(alignment: .bottom) {
+                if !last {
+                    Rectangle().fill(form ? AnyShapeStyle(.primary.opacity(0.045)) : AnyShapeStyle(Color(nsColor: .separatorColor)))
+                        .frame(height: 1).padding(.horizontal, 10)
+                }
+            }
     }
 }
 
