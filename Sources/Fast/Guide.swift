@@ -135,7 +135,7 @@ enum Guide {
 
     /// Goes up when what the skill file says changes, so an older one on
     /// disk can be told to set up again.
-    static let skillVersion = 4
+    static let skillVersion = 3
 
     static var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
@@ -259,6 +259,20 @@ enum Guide {
     Tasks wake a closed Yab without bringing a window forward. It normally quits after 30 idle
     minutes; serve keeps it running. `serve --no-person` refuses requests that need someone at Yab.
     `serve --stop` stops Yab, including active tasks. Use it only when that is intended.
+
+    10. Read and change Yab's own settings:
+
+    ```bash
+    \(command) settings show theme
+    \(command) settings actions engine
+    \(command) settings apply site.set_engine '{"site":"github.com","value":"webKit"}'
+    \(command) settings undo
+    ```
+
+    These are the MCP native tools, with the same permissions. A change that needs the user's yes
+    waits for it, then exits 3 while still unanswered; `settings operation ID --session SESSION`
+    asks again within \(Int(Mcp.keptFor / 60)) minutes. In `exec`, `native_context`, `native_actions` and `native_apply`
+    are functions. See `\(command) settings --help`.
 
     ## When Yab needs the user
 

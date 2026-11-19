@@ -51,3 +51,30 @@ struct CliSettingsTests {
         #expect(try CliSettings.parse(["show"]).session == nil)
     }
 }
+
+/// A session `yab settings` left waiting for the person had no end.
+@MainActor
+struct LeftSessionTests {
+    @Test func aLeftSessionEndsOnceUnusedAndACallStartsItsTimeAgain() {
+        let agents = Agents.shared
+        let session = agents.attach(name: "Left session " + UUID().uuidString)
+        defer { agents.detach(session.id) }
+        let start = Date()
+        agents.leave(session.id, for: 60, now: start)
+        agents.used(session.id, now: start.addingTimeInterval(50))
+        agents.expireLeft(now: start.addingTimeInterval(70))
+        #expect(session.state == .attached)
+        agents.expireLeft(now: start.addingTimeInterval(50 + Mcp.keptFor))
+        #expect(session.state != .attached)
+        #expect(agents.leftUntil[session.id] == nil)
+    }
+
+    @Test func aSessionNobodyLeftIsNotEndedByTheClock() {
+        let agents = Agents.shared
+        let session = agents.attach(name: "Kept session " + UUID().uuidString)
+        defer { agents.detach(session.id) }
+        agents.used(session.id)
+        agents.expireLeft(now: .distantFuture)
+        #expect(session.state == .attached)
+    }
+}
