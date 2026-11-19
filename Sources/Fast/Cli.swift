@@ -260,6 +260,8 @@ enum Cli {
         let nobody = args.contains("--no-person")
         var got = Wire.ask(socket, ["do": "app-serve", "nobody": nobody])
         if got["error"] != nil, !Wire.running {
+            // Only the default world can be started from here, as Wire.wake does.
+            guard socket == Wire.socket([]) else { fail("Nothing answers at \(socket). Start that Yab first.") }
             guard Wire.launch(socket, ["--headless", "--serve"] + (nobody ? ["--no-person"] : [])) else { fail("Yab didn't start.") }
             got = Wire.ask(socket, ["do": "app-status"])
         }
