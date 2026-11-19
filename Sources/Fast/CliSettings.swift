@@ -119,7 +119,21 @@ enum CliSettings {
             FileHandle.standardError.write(Data((error.localizedDescription + "\n" + usage + "\n").utf8))
             exit(2)
         }
-        let result = Mcp.once(call.tool, call.input, args: args)
+        let result = Mcp.within(args) { () -> [String: Any] in
+            var result = Mcp.call(call.tool, call.input)
+            guard call.tool == "native_apply" else { return result }
+            // The yes is asked in this session, so it waits here: leaving would take the card away.
+            let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 600 : 15)
+            var told = false
+            while ["needs_user", "running", "prepared"].contains(status(of: result) ?? ""), let id = operation(of: result), Date() < limit {
+                if !told, status(of: result) == "needs_user" {
+                    told = true
+                    FileHandle.standardError.write(Data("Waiting for your yes in Yab…\n".utf8))
+                }
+                result = Mcp.call("native_operation", ["operationId": id, "seconds": 10])
+            }
+            return result
+        }
         let failed = result["isError"] as? Bool == true
         let text: String
         if call.json, let data = try? JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]), let encoded = String(data: data, encoding: .utf8) {
@@ -130,7 +144,26 @@ enum CliSettings {
             text = words + (elsewhere ? "\nUndo reaches only this session's changes: apply and undo in one exec script, or apply the change's before value." : "")
         }
         try? (call.json || !failed ? FileHandle.standardOutput : FileHandle.standardError).write(contentsOf: Data((text + "\n").utf8))
-        exit(CliExec.status(result))
+        exit(exitCode(result))
+    }
+
+    /// The native result's own status says whether it is done: an apply still waiting for the person is 3.
+    static func exitCode(_ result: [String: Any]) -> Int32 {
+        guard result["isError"] as? Bool != true else { return CliExec.status(result) }
+        switch status(of: result) {
+        case "needs_user", "running", "prepared": return 3
+        case "unknown_outcome": return 1
+        default: return 0
+        }
+    }
+
+    static func status(of result: [String: Any]) -> String? { native(result)?["status"] as? String }
+
+    private static func operation(of result: [String: Any]) -> String? { native(result)?["operationId"] as? String }
+
+    private static func native(_ result: [String: Any]) -> [String: Any]? {
+        guard let data = CliExec.words(result).data(using: .utf8) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
     }
 
     static var usage: String {
@@ -141,7 +174,7 @@ enum CliSettings {
                \(c) settings apply ACTION ['{"key":value}'] [--target KIND:ID] [--expect VERSION] [--request-id ID] [--json]
                \(c) settings undo [CHANGE_ID] [--json]
                \(c) settings operation OPERATION_ID [--seconds N] [--cancel] [--json]
-        The target defaults to the app (application:app). Reuse --request-id when retrying an apply.
+        The target defaults to the app (application:app). An apply that needs your yes waits for it in Yab.
         Undo reaches changes made in the same session, such as one exec script or an agent's shell.
         exit: 0 done · 1 refused or failed · 2 usage · 3 needs you in Yab
         """
