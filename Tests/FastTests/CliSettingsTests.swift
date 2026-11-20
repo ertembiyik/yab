@@ -50,6 +50,14 @@ struct CliSettingsTests {
         #expect(call.input["operationId"] as? String == "OP1")
         #expect(try CliSettings.parse(["show"]).session == nil)
     }
+
+    @Test func anOperationReadGivenItsOwnWaitReturnsAfterIt() throws {
+        #expect(try CliSettings.parse(["apply", "a"]).waits)
+        #expect(try CliSettings.parse(["operation", "OP1", "--session", "S1"]).waits)
+        #expect(try !CliSettings.parse(["operation", "OP1", "--seconds", "0"]).waits)
+        #expect(try !CliSettings.parse(["operation", "OP1", "--cancel"]).waits)
+        #expect(try !CliSettings.parse(["show"]).waits)
+    }
 }
 
 /// A session `yab settings` left waiting for the person had no end.

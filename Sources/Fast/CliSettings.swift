@@ -24,6 +24,10 @@ enum CliSettings {
         var json: Bool
         /// A session an earlier apply left waiting for the person (`--session`).
         var session: String? = nil
+        /// Waits here for the person's yes: an apply, or an operation read that asked for no wait of its own.
+        var waits: Bool {
+            tool == "native_apply" || (tool == "native_operation" && input["seconds"] == nil && input["cancel"] == nil)
+        }
     }
 
     /// The tool and its input, from the words after `settings`. `newID`
@@ -134,7 +138,7 @@ enum CliSettings {
         Mcp.session = call.session
         let result = Mcp.within(args) { () -> [String: Any] in
             var result = Mcp.call(call.tool, call.input)
-            guard ["native_apply", "native_operation"].contains(call.tool) else { return result }
+            guard call.waits else { return result }
             // The yes is asked in this session, so it waits here: leaving would take the card away.
             let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 600 : 15)
             var told = false
@@ -192,7 +196,7 @@ enum CliSettings {
                \(c) settings apply ACTION ['{"key":value}'] [--target KIND:ID] [--expect VERSION] [--request-id ID] [--json]
                \(c) settings undo [CHANGE_ID] [--json]
                \(c) settings operation OPERATION_ID [--session ID] [--seconds N] [--cancel] [--json]
-        The target defaults to the app (application:app). An apply that needs your yes waits for it in Yab.
+        The target defaults to the app (application:app). An apply that needs your yes waits for it in Yab; so does operation, unless given --seconds or --cancel.
         Undo reaches changes made in the same session, such as one exec script or an agent's shell.
         exit: 0 done · 1 refused or failed · 2 usage · 3 needs you in Yab
         """
