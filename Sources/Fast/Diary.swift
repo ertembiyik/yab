@@ -104,35 +104,19 @@ final class Diary: @unchecked Sendable {
     /// `source` and `feature` can be the page's own. Otherwise untouched,
     /// fragment and encoding as they were.
     static func shareable(_ url: URL) -> URL {
-        guard var parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let items = parts.percentEncodedQueryItems else { return url }
-        let decoded = parts.queryItems ?? []
-        let kept = zip(items, decoded).filter { !Diary.sharing($0.1.name) }.map(\.0)
-        guard kept.count < items.count else { return url }
-        parts.percentEncodedQueryItems = kept.isEmpty ? nil : kept
-        return parts.url ?? url
+        Filters.removing(url) { name, _ in Filters.tracking(name) } ?? url
     }
 
     /// Names removed by the sharing cleaner, once each and in address order.
     static func sharingParameters(_ url: URL) -> [String] {
         var seen = Set<String>()
         return (URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []).compactMap {
-            sharing($0.name) && seen.insert($0.name.lowercased()).inserted ? $0.name : nil
+            Filters.tracking($0.name) && seen.insert($0.name.lowercased()).inserted ? $0.name : nil
         }
     }
 
-    private static func sharing(_ name: String) -> Bool {
-        let lower = name.lowercased()
-        if lower.hasPrefix("utm_") { return true }
-        return ["fbclid", "gclid", "dclid", "yclid", "msclkid", "igshid", "mc_cid", "mc_eid", "_ga", "_gl",
-                "ref_src", "ref_url", "si"].contains(lower)
-    }
-
     private static func tracking(_ name: String) -> Bool {
-        let lower = name.lowercased()
-        if lower.hasPrefix("utm_") { return true }
-        return ["fbclid", "gclid", "dclid", "yclid", "msclkid", "igshid", "mc_cid", "mc_eid", "_ga", "_gl",
-                "ref", "ref_src", "ref_url", "si", "feature", "share_id", "source", "campaign"].contains(lower)
+        Filters.tracking(name) || ["ref", "feature", "share_id", "source", "campaign"].contains(name.lowercased())
     }
 
     /// The title without the unread count some sites hang on the front,

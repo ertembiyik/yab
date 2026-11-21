@@ -70,6 +70,7 @@ targets:
       - path: ../Sources/Fast/Filters+Network.swift
       - path: ../Sources/Fast/Filters+Cosmetic.swift
       - path: ../Sources/Fast/Filters+Skip.swift
+      - path: ../Sources/Fast/Filters+Removeparam.swift
       - path: ../Sources/Fast/ShieldLists.swift
       # A wide table in an answer read as cards, as the Mac's chat reads it
       # (Chats/ChatMarkdown).

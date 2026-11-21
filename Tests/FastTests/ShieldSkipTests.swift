@@ -195,12 +195,12 @@ import Testing
         shield.skipper = Self.skipper
         shield.enabled = true
         shield.pause(host, false)
-        #expect(shield.skip(url, persistent: nil)?.absoluteString == "https://example.com/a")
-        #expect(shield.skip(url, persistent: true)?.absoluteString == "https://example.com/a")
+        #expect(shield.redirect(url, persistent: nil, cleaning: true)?.absoluteString == "https://example.com/a")
+        #expect(shield.redirect(url, persistent: true, cleaning: true)?.absoluteString == "https://example.com/a")
         shield.pause(host, true)
-        #expect(shield.skip(url, persistent: nil) == nil)
+        #expect(shield.redirect(url, persistent: nil, cleaning: true) == nil)
         shield.pause(host, false)
         shield.enabled = false
-        #expect(shield.skip(url, persistent: nil) == nil)
+        #expect(shield.redirect(url, persistent: nil, cleaning: true) == nil)
     }
 }

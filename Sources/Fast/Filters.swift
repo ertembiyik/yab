@@ -4,8 +4,8 @@ import Foundation
 // enforces itself (see Shield). Only what a WebKit rule says exactly is
 // kept; everything else is left out rather than stretched to fit, because
 // a rule that blocks a little more than its list meant is how a blocker
-// breaks a checkout. Left out: scriptlets, redirects, $csp, $removeparam,
-// regular expressions, procedural cosmetics, rules that name both sites to
+// breaks a checkout. Left out: scriptlets, redirects, $csp, regular
+// expressions, procedural cosmetics, rules that name both sites to
 // act on and sites to spare.
 //
 // WebKit is strict about what it reads. One url-filter it cannot parse (a
@@ -108,6 +108,8 @@ enum Filters {
         /// out of it. Not WebKit's to enforce; Shield applies them to a
         /// tab's top document before it loads (Skip).
         var skips: [Skip] = []
+        /// From every list, unlike skips: a removal can only drop parameters.
+        var removals: [Removal] = []
 
         var count: Int { blocks.count + exceptions.count + important.count + generic.count + unhide.count }
     }
@@ -137,11 +139,13 @@ enum Filters {
         // text, and walking it character by character was most of the time.
         var lines: [String] = []
         var skipLines: [String] = []
+        var removeLines: [String] = []
         for (index, text) in texts.enumerated() {
             for line in text.utf8.split(separator: UInt8(ascii: "\n")) {
                 guard let trimmed = trim(Substring(line)) else { continue }
                 lines.append(trimmed)
                 if trusted.contains(index), trimmed.contains("urlskip=") { skipLines.append(trimmed) }
+                if trimmed.contains("removeparam") { removeLines.append(trimmed) }
             }
         }
 
@@ -159,7 +163,11 @@ enum Filters {
         for line in lines {
             if line.hasPrefix("!") || line.hasPrefix("[") { continue }
             // A $urlskip line is a skip (above), never a block of its own.
-            if line.contains("urlskip="), skipParts(line) != nil {
+            if line.contains("urlskip="), optionParts(line, with: "urlskip") != nil {
+                rules.skipped += 1
+                continue
+            }
+            if line.contains("removeparam"), optionParts(line, with: "removeparam") != nil {
                 rules.skipped += 1
                 continue
             }
@@ -210,6 +218,10 @@ enum Filters {
         var skipSeen = Set<Skip>()
         for line in skipLines where !taken.contains(line) && !line.contains("badfilter") {
             if let skip = skipRule(line), skipSeen.insert(skip).inserted { rules.skips.append(skip) }
+        }
+        var removalSeen = Set<Removal>()
+        for line in removeLines where !taken.contains(line) && !line.contains("badfilter") {
+            if let removal = removalRule(line), removalSeen.insert(removal).inserted { rules.removals.append(removal) }
         }
         let (generic, own, dropped, sites) = hides.rules()
         rules.hidingSites = sites

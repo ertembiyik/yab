@@ -75,10 +75,8 @@ extension ChromiumPage {
             answered = true
             switch policy {
             case .allow:
-                if let skipped = self.skip(request) {
-                    // A click tracker with its destination inside: the
-                    // helper sends the request there instead (Shield.skip),
-                    // and that address is asked about in turn.
+                if let skipped = self.skip(request, cleaning: kind != .backForward && kind != .reload) {
+                    // The helper sends the request there instead, and that address is asked about in turn.
                     self.acceptNavigation(URLRequest(url: skipped))
                     self.answerAction(token, remote: remote, allow: true, armed: false, to: skipped)
                     return
@@ -118,13 +116,13 @@ extension ChromiumPage {
     /// this page's commands run. Never for long: DevTools holds what it is sent
     /// while a page changes renderers, so a command waiting on it waits for the
     /// very navigation being held here. Whatever is late reaches the next agent.
-    /// Where a top document goes instead (Shield.skip), counting skips in
-    /// a row: rules that send a tab round in a circle end after a few, and
-    /// the address loads as it is. Chromium's own limit of redirects would
-    /// end one too, as a failure.
-    private func skip(_ request: URLRequest) -> URL? {
+    /// Where a top document goes instead (Shield.redirect), counting skips
+    /// in a row: rules that send a tab round in a circle end after a few,
+    /// and the address loads as it is. Chromium's own limit of redirects
+    /// would end one too, as a failure.
+    private func skip(_ request: URLRequest, cleaning: Bool) -> URL? {
         guard let url = request.url, (request.httpMethod ?? "GET").uppercased() == "GET", skips < 4,
-              let skipped = Shield.shared.skip(url, persistent: nil) else {
+              let skipped = Shield.shared.redirect(url, persistent: nil, cleaning: cleaning) else {
             skips = 0
             return nil
         }

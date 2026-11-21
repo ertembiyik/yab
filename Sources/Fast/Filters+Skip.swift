@@ -44,10 +44,11 @@ extension Filters {
         "xmlhttprequest",
     ]
 
-    /// A line with $urlskip among its options: whether it is an exception,
-    /// its pattern, and its options as uBlock Origin splits them, a comma
-    /// inside a value ("[mst]{0,2}") staying in it. Nil for anything else.
-    static func skipParts(_ line: String) -> (exception: Bool, pattern: Substring, options: [(name: String, value: Substring?)])? {
+    /// A line with `option` ($urlskip, $removeparam) among its options:
+    /// whether it is an exception, its pattern, and its options as uBlock
+    /// Origin splits them, a comma inside a value ("[mst]{0,2}") staying in
+    /// it. Nil for anything else.
+    static func optionParts(_ line: String, with option: String) -> (exception: Bool, pattern: Substring, options: [(name: String, value: Substring?)])? {
         var body = Substring(line)
         let exception = body.hasPrefix("@@")
         if exception { body = body.dropFirst(2) }
@@ -78,7 +79,7 @@ extension Filters {
                 at = stop < text.endIndex ? text.index(after: stop) : stop
             }
         }
-        guard options.contains(where: { $0.name == "urlskip" }) else { return nil }
+        guard options.contains(where: { $0.name == option }) else { return nil }
         return (exception, body[..<anchor], options)
     }
 
@@ -106,7 +107,7 @@ extension Filters {
     /// is on ($domain), $to written with an entity or a regular expression,
     /// a step uBlock Origin doesn't know.
     static func skipRule(_ line: String) -> Skip? {
-        guard let parts = skipParts(line) else { return nil }
+        guard let parts = optionParts(line, with: "urlskip") else { return nil }
         var skip = Skip(pattern: "", steps: "", exception: parts.exception)
         for (name, value) in parts.options {
             switch name {

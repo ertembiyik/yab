@@ -133,10 +133,8 @@ final class WebKitPageEvents: NSObject, WKNavigationDelegate, WKUIDelegate {
             listener.page(page, decide: PageAction(action)) { policy in
                 guard !answered else { return }
                 answered = true
-                if policy == .allow, action.targetFrame?.isMainFrame == true, let skipped = self.skip(action.request, in: page) {
-                    // A click tracker with its destination inside: never
-                    // asked, the tab goes there (Shield.skip). Before the
-                    // content rule list, which would stop the tracker.
+                if policy == .allow, action.targetFrame?.isMainFrame == true, let skipped = self.skip(action, in: page) {
+                    // Before the content rules, which would stop a tracker; the first address is never asked.
                     decide(.cancel)
                     page.load(URLRequest(url: skipped))
                     return
@@ -182,9 +180,12 @@ final class WebKitPageEvents: NSObject, WKNavigationDelegate, WKUIDelegate {
     /// a circle end after a few, and the address loads as it is.
     private var skips = 0
 
-    private func skip(_ request: URLRequest, in page: PageView) -> URL? {
+    private func skip(_ action: WKNavigationAction, in page: PageView) -> URL? {
+        let request = action.request
+        // Back, forward and reload return to an entry; a new load would add one.
+        let cleaning = action.navigationType != .backForward && action.navigationType != .reload
         guard let url = request.url, (request.httpMethod ?? "GET").uppercased() == "GET", skips < 4,
-              let skipped = Shield.shared.skip(url, persistent: page.configuration.websiteDataStore.isPersistent) else {
+              let skipped = Shield.shared.redirect(url, persistent: page.configuration.websiteDataStore.isPersistent, cleaning: cleaning) else {
             skips = 0
             return nil
         }

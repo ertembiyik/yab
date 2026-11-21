@@ -458,32 +458,48 @@ final class Shield: ObservableObject {
 
     var skipper: Filters.Skipper?
 
-    nonisolated static func writeSkips(_ skips: [Filters.Skip]) {
+    /// The lists' $removeparam rules from the last build (Filters.Removal).
+    private nonisolated static var removalsFile: URL {
+        Store.folder.appendingPathComponent("Shield/removals.json")
+    }
+
+    /// Nil until a build or the file gives the lists' removals.
+    var remover: Filters.Remover?
+    private static let ownNames = Filters.Remover([])
+
+    nonisolated static func writeSkips(_ skips: [Filters.Skip], removals: [Filters.Removal]) {
         try? FileManager.default.createDirectory(at: skipsFile.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? JSONEncoder().encode(skips).write(to: skipsFile, options: .atomic)
+        try? JSONEncoder().encode(removals).write(to: removalsFile, options: .atomic)
         let skipper = Filters.Skipper(skips)
-        Task { @MainActor in Shield.shared.skipper = skipper }
+        let remover = Filters.Remover(removals)
+        Task { @MainActor in
+            Shield.shared.skipper = skipper
+            Shield.shared.remover = remover
+        }
     }
 
     private func readSkips() {
         Task.detached(priority: .userInitiated) {
-            guard let data = try? Data(contentsOf: Shield.skipsFile),
-                  let skips = try? JSONDecoder().decode([Filters.Skip].self, from: data) else { return }
-            let skipper = Filters.Skipper(skips)
-            await MainActor.run { if Shield.shared.skipper == nil { Shield.shared.skipper = skipper } }
+            let skips = (try? Data(contentsOf: Shield.skipsFile)).flatMap { try? JSONDecoder().decode([Filters.Skip].self, from: $0) }
+            let removals = (try? Data(contentsOf: Shield.removalsFile)).flatMap { try? JSONDecoder().decode([Filters.Removal].self, from: $0) }
+            let skipper = skips.map(Filters.Skipper.init)
+            let remover = removals.map(Filters.Remover.init)
+            await MainActor.run {
+                if Shield.shared.skipper == nil { Shield.shared.skipper = skipper }
+                if Shield.shared.remover == nil { Shield.shared.remover = remover }
+            }
         }
     }
 
-    /// Where a tab's top document goes instead of `url`, a click tracker
-    /// with its destination inside (Filters.Skip), while Shield blocks on
-    /// the tracker's site. `persistent`: a WebKit tab's kind, whose blocking
-    /// an extension may have; nil for a Chromium tab, which Shield always
-    /// blocks for.
-    func skip(_ url: URL, persistent: Bool?) -> URL? {
-        guard enabled, let skipper, let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http" else { return nil }
+    /// A click tracker's destination, else (when `cleaning`) `url` without tracking parameters.
+    /// `persistent`: a WebKit tab's kind, whose blocking an extension may have; nil for Chromium.
+    func redirect(_ url: URL, persistent: Bool?, cleaning: Bool) -> URL? {
+        guard enabled, let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http" else { return nil }
         if let persistent, blocker(persistent: persistent) != nil { return nil }
-        guard !isOff(on: PageScripts.host(of: url)), let out = skipper.destination(url.absoluteString) else { return nil }
-        return URL(string: out)
+        guard !isOff(on: PageScripts.host(of: url)) else { return nil }
+        if let out = skipper?.destination(url.absoluteString) { return URL(string: out) }
+        return cleaning ? (remover ?? Shield.ownNames).clean(url) : nil
     }
 
     private func readHidingSites() {
@@ -581,6 +597,7 @@ final class Shield: ObservableObject {
         }
         out["hiding_sites"] = hidingSites.count
         out["skips"] = skipper?.count ?? 0
+        out["removals"] = remover?.count ?? 0
         out["hiding_lists"] = hiding
         out["chosen"] = chosen ?? ""
         if case .extension(let id) = source { out["source"] = id } else { out["source"] = "builtIn" }
@@ -609,7 +626,8 @@ final class Shield: ObservableObject {
     /// iPhone too, which keeps it in ShieldLists beside `base`.
     /// +2: the build writes the lists' $urlskip rules (skips.json).
     /// +3: YouTube's #player-ads bait is spared (YouTube.filters).
-    static let schema = ShieldLists.schema + 3
+    /// +4: the build writes the lists' $removeparam rules (removals.json).
+    static let schema = ShieldLists.schema + 4
     private struct Made: Codable {
         var schema: Int
         var build: Int
@@ -846,7 +864,7 @@ final class Shield: ObservableObject {
         let split = Filters.lists(rules)
         attempt.convert = Int((CFAbsoluteTimeGetCurrent() - t0) * 1000)
         ShieldChromium.write(rules)
-        writeSkips(rules.skips)
+        writeSkips(rules.skips, removals: rules.removals)
         attempt.rules = rules.count - (split?.left ?? 0)
         attempt.exceptions = rules.exceptions.count
         attempt.skipped = rules.skipped + (split?.left ?? 0)
