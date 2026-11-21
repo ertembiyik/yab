@@ -138,18 +138,19 @@ enum CliSettings {
         Mcp.session = call.session
         let result = Mcp.within(args) { () -> [String: Any] in
             var result = Mcp.call(call.tool, call.input)
-            guard call.waits else { return result }
-            // The yes is asked in this session, so it waits here: leaving would take the card away.
-            let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 600 : 15)
-            var told = false
-            while ["needs_user", "running", "prepared"].contains(status(of: result) ?? ""), let id = operation(of: result), Date() < limit {
-                if !told, status(of: result) == "needs_user" {
-                    told = true
-                    FileHandle.standardError.write(Data("Waiting for your yes in Yab…\n".utf8))
+            if call.waits {
+                // The yes is asked in this session, so it waits here: leaving would take the card away.
+                let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 600 : 15)
+                var told = false
+                while ["needs_user", "running", "prepared"].contains(status(of: result) ?? ""), let id = operation(of: result), Date() < limit {
+                    if !told, status(of: result) == "needs_user" {
+                        told = true
+                        FileHandle.standardError.write(Data("Waiting for your yes in Yab…\n".utf8))
+                    }
+                    result = Mcp.call("native_operation", ["operationId": id, "seconds": 10])
                 }
-                result = Mcp.call("native_operation", ["operationId": id, "seconds": 10])
             }
-            // Still unanswered: the card stays with its session, for a later `settings operation`.
+            // Still unanswered, after a wait or a read that asked for none: the card stays with its session.
             if status(of: result) == "needs_user", let id = operation(of: result), let session = Mcp.session {
                 Mcp.keepSession = true
                 FileHandle.standardError.write(Data("Still waiting for your yes in Yab. Ask again within \(Int(Mcp.keptFor / 60)) minutes: \(AgentSetup.command) settings operation \(id) --session \(session)\n".utf8))
