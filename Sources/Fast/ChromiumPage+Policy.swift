@@ -40,12 +40,14 @@ extension ChromiumPage {
                                 modifierFlags: kind == .linkActivated ? press?.flags ?? [] : [],
                                 buttonNumber: kind == .linkActivated ? press?.button ?? 0 : 0,
                                 shouldPerformDownload: false, userInitiated: gesture)
+        let cleaning = kind != .backForward && kind != .reload
         if let popupSource, let tab = navigationTab, popupSource.peek === tab {
             // Already placed from the native creation receipt, even when
             // this is a script or redirect navigation. Do not route it again
             // through the source tab's ordinary link policy.
-            acceptNavigation(request)
-            answerAction(token, remote: remote, allow: true, armed: true)
+            let instead = skip(request, cleaning: cleaning)
+            acceptNavigation(instead.map { URLRequest(url: $0) } ?? request)
+            answerAction(token, remote: remote, allow: true, armed: true, to: instead)
             return
         }
         if kind == .linkActivated, requestedForeground != false, let popupSource, let tab = navigationTab,
@@ -54,8 +56,10 @@ extension ChromiumPage {
             // Keep the original native destination and let its held load
             // continue inside Peek. Reopening the URL loses its opener.
             popupForegroundFrom = nil
-            acceptNavigation(request)
-            answerAction(token, remote: remote, allow: true, armed: true)
+            // The rewrite keeps the held load, and with it the opener.
+            let instead = skip(request, cleaning: cleaning)
+            acceptNavigation(instead.map { URLRequest(url: $0) } ?? request)
+            answerAction(token, remote: remote, allow: true, armed: true, to: instead)
             return
         }
         resolvePopupForeground()
@@ -75,7 +79,7 @@ extension ChromiumPage {
             answered = true
             switch policy {
             case .allow:
-                if let skipped = self.skip(request, cleaning: kind != .backForward && kind != .reload) {
+                if let skipped = self.skip(request, cleaning: cleaning) {
                     // The helper sends the request there instead, and that address is asked about in turn.
                     self.acceptNavigation(URLRequest(url: skipped))
                     self.answerAction(token, remote: remote, allow: true, armed: false, to: skipped)

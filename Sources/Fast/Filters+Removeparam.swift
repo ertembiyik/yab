@@ -90,17 +90,21 @@ extension Filters {
         }
         if others, !document { return nil }
         let pattern = parts.pattern
+        var narrowed = !removal.hosts.isEmpty
         if pattern.hasPrefix("/"), pattern.hasSuffix("/"), pattern.count > 2 {
             let source = String(pattern.dropFirst().dropLast())
             guard (try? NSRegularExpression(pattern: source)) != nil else { return nil }
             removal.pattern = source
-        } else if !(pattern.isEmpty || pattern == "*" || everywhere(pattern)) {
+            narrowed = true
+        } else if !(pattern.isEmpty || pattern == "*") {
             guard let filter = urlFilter(pattern) else { return nil }
             removal.pattern = filter
             removal.host = anchorHost(pattern)
+            // "|http://" keeps its scheme but narrows nothing else.
+            narrowed = narrowed || !everywhere(pattern)
         }
         // Every parameter of every page would break pages.
-        if removal.parameter == .all, !removal.exception, removal.pattern == nil, removal.hosts.isEmpty { return nil }
+        if removal.parameter == .all, !removal.exception, !narrowed { return nil }
         return removal
     }
 

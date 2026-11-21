@@ -87,6 +87,11 @@ import Testing
         #expect(Filters.removalRule("$removeparam=/[/") == nil)
         #expect(Filters.removalRule("||example.com^$removeparam=a,redirect=noop.js") == nil)
         #expect(Filters.removalRule("||example.com^$urlskip=?u") == nil)
+        // A scheme alone keeps its scheme, and narrows nothing for "every parameter".
+        #expect(Filters.removalRule("|http://$removeparam") == nil)
+        let http = Filters.Remover(Filters.convert(["|http://$removeparam=ref"]).removals)
+        #expect(clean("http://example.com/a?ref=x&b=1", http) == "http://example.com/a?b=1")
+        #expect(clean("https://example.com/a?ref=x&b=1", http) == nil)
     }
 
     @Test func neverABlockAndBadfilterTakesItBack() {

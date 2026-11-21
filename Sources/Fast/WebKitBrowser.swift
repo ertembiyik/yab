@@ -136,7 +136,9 @@ final class WebKitPageEvents: NSObject, WKNavigationDelegate, WKUIDelegate {
                 if policy == .allow, action.targetFrame?.isMainFrame == true, let skipped = self.skip(action, in: page) {
                     // Before the content rules, which would stop a tracker; the first address is never asked.
                     decide(.cancel)
-                    page.load(URLRequest(url: skipped))
+                    var instead = action.request
+                    instead.url = skipped
+                    page.load(instead)
                     return
                 }
                 if policy == .allow, action.targetFrame?.isMainFrame == true,
