@@ -55,7 +55,7 @@ def run_cases(run):
         where = ask({"do": "scroll", "where": True})
         after = ask({"do": "ui", "pick": "return"})
         shown = anchor in after.get("anchors", [])
-        ok = state.get("spot") == title and after.get("page") == page and shown
+        ok = not before and state.get("spot") == title and after.get("page") == page and shown
         missed += not ok
         yab_socket.shot(SOCK, os.path.join(OUT, f"{run}-{case}.png"), settings=True)
         print(f"run {run} {case}: {'ok' if ok else 'MISSED'}  built before {before}, after {shown}  "
