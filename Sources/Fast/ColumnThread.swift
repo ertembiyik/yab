@@ -42,10 +42,7 @@ struct ThreadForm<Content: View>: View {
         ThreadScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 Group(sections: content) { sections in
-                    let all = Array(sections)
-                    ForEach(Array(all.enumerated()), id: \.element.id) { at, section in
-                        FormGroup(section: section, after: at == 0 ? nil : !all[at - 1].content.isEmpty)
-                    }
+                    ForEach(FormPiece.all(Array(sections))) { $0 }
                 }
             }
             .padding(FormGroupRow<EmptyView>.margin)
@@ -54,33 +51,81 @@ struct ThreadForm<Content: View>: View {
     }
 }
 
-/// A section: its header, its rows edge to edge, its footer.
-private struct FormGroup: View {
-    let section: SectionConfiguration
-    /// Whether the section before had rows; nil for the first.
-    let after: Bool?
+/// A header, row or footer as one lazy item; rows are keyed by search anchor so scrollTo finds them unbuilt.
+private struct FormPiece: View, Identifiable {
+    enum Kind {
+        case header(SectionConfiguration)
+        case row(Subview, first: Bool, last: Bool)
+        case footer(SectionConfiguration)
+        /// A section with nothing to show still keeps its room.
+        case gap
+    }
+    enum Part: Hashable {
+        case header(SectionConfiguration.ID), footer(SectionConfiguration.ID), gap(SectionConfiguration.ID)
+    }
+
+    let id: AnyHashable
+    let kind: Kind
+    var top: CGFloat = 0
+    /// The room after a section, on its last piece.
+    var bottom: CGFloat = 0
+
+    static func all(_ sections: [SectionConfiguration]) -> [FormPiece] {
+        var pieces: [FormPiece] = []
+        for (at, section) in sections.enumerated() {
+            let start = pieces.count
+            if !section.header.isEmpty {
+                // The Form's: 19 more after rows, 17 less right under a page's head.
+                let top: CGFloat = at == 0 ? 0 : sections[at - 1].content.isEmpty ? -17 : 19
+                pieces.append(FormPiece(id: Part.header(section.id), kind: .header(section), top: top))
+            }
+            for row in section.content {
+                let key = row.containerValues.settingsAnchor.map(AnyHashable.init) ?? AnyHashable(row.id)
+                pieces.append(FormPiece(id: key, kind: .row(row, first: row.id == section.content.first?.id,
+                                                            last: row.id == section.content.last?.id)))
+            }
+            if !section.footer.isEmpty {
+                pieces.append(FormPiece(id: Part.footer(section.id), kind: .footer(section)))
+            }
+            let room: CGFloat = section.footer.isEmpty ? 10 : 30
+            if pieces.count > start {
+                pieces[pieces.count - 1].bottom = room
+            } else {
+                pieces.append(FormPiece(id: Part.gap(section.id), kind: .gap, bottom: room))
+            }
+        }
+        return pieces
+    }
 
     var body: some View {
-        if !section.header.isEmpty {
+        piece.padding(.bottom, bottom)
+    }
+
+    @ViewBuilder private var piece: some View {
+        switch kind {
+        case .header(let section):
             HStack(spacing: 0) { section.header }
                 .font(.system(size: 13, weight: FormGroupRow<EmptyView>.headWeight))
                 .padding(.horizontal, 10)
-                // The Form's: 19 more after rows, 17 less right under a page's head.
-                .padding(.top, after == nil ? 0 : after == true ? 19 : -17)
+                .padding(.top, top)
                 .padding(.bottom, 10)
-        }
-        ForEach(section.content) { row in
-            FormGroupRow(first: row.id == section.content.first?.id, last: row.id == section.content.last?.id, form: true) { row }
-        }
-        if !section.footer.isEmpty {
+        case .row(let row, let first, let last):
+            FormGroupRow(first: first, last: last, form: true) { row }
+        case .footer(let section):
             HStack(spacing: 0) { section.footer }
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 10)
                 .padding(.top, 6)
+        case .gap:
+            Color.clear.frame(height: 0)
         }
-        Color.clear.frame(height: section.footer.isEmpty ? 10 : 30)
     }
+}
+
+extension ContainerValues {
+    /// A Settings row's search anchor, which ThreadForm keys the row by.
+    @Entry var settingsAnchor: String? = nil
 }
 
 /// A row of a group, the way a grouped Form draws one: the group is its
