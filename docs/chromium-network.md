@@ -45,9 +45,10 @@ behave:
 | `profile.cookie_controls_mode` | 1, block third party | Third-party cookies being set or read by scripts |
 
 Turning Shield off for a site lets third-party cookies back in on it: YabCore
-derives a `*,[*.]site` allow exception in `profile.content_settings.exceptions.cookies`
-from Shield's list each time Yab sends it (`ShieldCookieExceptions`). Yab owns every
-`*,` entry there.
+derives `*,host` and `*,www.host` allow exceptions in
+`profile.content_settings.exceptions.cookies` from Shield's list each time Yab sends
+it (`ShieldCookieExceptions`), the same hosts Shield is off on. Yab owns every `*,`
+entry there.
 
 Chromium 156 has already retired Topics, Protected Audience, Shared Storage and
 Attribution Reporting: `document.browsingTopics()` throws, `joinAdInterestGroup`

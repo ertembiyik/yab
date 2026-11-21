@@ -310,8 +310,8 @@ static bool ShieldStoppedTop(CefRefPtr<CefBrowser> browser) {
   found->second.topStopped = false;
   return true;
 }
-// Third-party cookies stay blocked but on a top-level site whose Shield is off,
-// derived from Shield's list. Yab owns every "*,<site>" entry; others are kept.
+// Third-party cookies stay blocked but on a top-level host whose Shield is off,
+// derived from Shield's list. Yab owns every "*,<host>" entry; others are kept.
 static void ShieldCookieExceptions(CefRefPtr<CefRequestContext> context) {
   auto config = ShieldNow();
   if (!context || !config) return;
@@ -325,11 +325,14 @@ static void ShieldCookieExceptions(CefRefPtr<CefRequestContext> context) {
     for (const auto& key : keys)
       if (key.ToString().rfind("*,", 0) != 0) next->SetValue(key, held->GetValue(key)->Copy());
   }
+  // The host and its www, as ShieldOff matches: not the site's other subdomains.
   for (const auto& site : config->off) {
-    auto allow = CefDictionaryValue::Create();
-    allow->SetInt("setting", CEF_CONTENT_SETTING_VALUE_ALLOW);
     const bool address = site.find_first_not_of("0123456789.") == std::string::npos || site.find(':') != std::string::npos;
-    next->SetDictionary((address ? "*," : "*,[*.]") + site, allow);
+    for (const std::string& host : address ? std::vector<std::string>{site} : std::vector<std::string>{site, "www." + site}) {
+      auto allow = CefDictionaryValue::Create();
+      allow->SetInt("setting", CEF_CONTENT_SETTING_VALUE_ALLOW);
+      next->SetDictionary("*," + host, allow);
+    }
   }
   auto value = CefValue::Create();
   value->SetDictionary(next);
