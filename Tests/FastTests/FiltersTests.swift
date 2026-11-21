@@ -10,7 +10,7 @@ import XCTest
 final class FiltersTests: XCTestCase {
     func testBuiltInSelectionPreservesDefaultsOrderAndUnknownNames() {
         let all = Shield.sources
-        XCTAssertEqual(all.count, 8)
+        XCTAssertEqual(all.count, 9)
         XCTAssertEqual(Shield.selectedSources(disabling: []).map(\.name), all.map(\.name))
         XCTAssertEqual(Shield.selectedSources(disabling: ["unknown-list"]).map(\.name), all.map(\.name))
         let selected = Shield.selectedSources(disabling: ["easyprivacy", "ublock-privacy"])

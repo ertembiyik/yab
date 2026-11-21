@@ -131,6 +131,7 @@ struct ShieldListWordsTests {
             "easylist": "EasyList", "easyprivacy": "EasyPrivacy", "ublock-filters": "uBlock filters",
             "ublock-badware": "Malware and scams", "ublock-privacy": "uBlock privacy", "ublock-unbreak": "Site fixes",
             "ublock-quick-fixes": "Quick fixes", "peter-lowe": "Peter Lowe’s list",
+            "adguard-url-tracking": "AdGuard URL tracking",
         ])
         for source in Shield.sources {
             let detail = ShieldListWords.detail(source)

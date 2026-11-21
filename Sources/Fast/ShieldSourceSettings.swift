@@ -333,6 +333,7 @@ enum ShieldListWords {
         "ublock-unbreak": ("Site fixes", "Fixes sites affected by blocking"),
         "ublock-quick-fixes": ("Quick fixes", "Same-day fixes from uBlock"),
         "peter-lowe": ("Peter Lowe’s list", "Ad and tracker servers"),
+        "adguard-url-tracking": ("AdGuard URL tracking", "Tracking parameters in links"),
     ]
 
     /// A built-in list's name; your own by its "! Title:", else its host.

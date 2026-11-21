@@ -1007,12 +1007,16 @@ final class Shield: ObservableObject {
     /// The lists, where they come from and the one built in live in
     /// ShieldLists, which the iPhone compiles too.
     typealias Source = ShieldLists.Source
-    nonisolated static var sources: [Source] { ShieldLists.sources }
+    nonisolated static var sources: [Source] { ShieldLists.sources + [ShieldLists.urlTracking] }
     nonisolated static let week = ShieldLists.week
     nonisolated static let most = ShieldLists.most
 
     private nonisolated static var folder: URL {
         Store.folder.appendingPathComponent("Shield/lists", isDirectory: true)
+    }
+
+    private nonisolated static func has(_ name: String) -> Bool {
+        FileManager.default.fileExists(atPath: folder.appendingPathComponent(name + ".txt").path)
     }
 
     private nonisolated static func cached(_ name: String) -> String? {
@@ -1075,7 +1079,8 @@ final class Shield: ObservableObject {
         guard !refreshing else { return }
         if !now {
             if !enabled || Store.testing { return }
-            if let fetched = made?.fetched, Date().timeIntervalSince(fetched) < Shield.week { return }
+            let missing = Self.selectedSources(disabling: disabledSources, custom: customSources).contains { !Self.has($0.name) }
+            if let fetched = made?.fetched, Date().timeIntervalSince(fetched) < Shield.week, !missing { return }
         }
         needsRefresh = false
         refreshFailed = false

@@ -32,6 +32,9 @@ enum ShieldLists {
         Source(name: "peter-lowe", url: URL(string: "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext")!, least: 10_000),
     ]
 
+    /// Mac only: its rules are $removeparam, which the iPhone doesn't apply.
+    static let urlTracking = Source(name: "adguard-url-tracking", url: URL(string: "https://filters.adtidy.org/extension/ublock/filters/17.txt")!, least: 20_000)
+
     /// What a list says of itself: how many rules it has (its lines that
     /// Filters reads as rules, comments and headers left out), the title
     /// its header gives it, and when its makers last changed it.
