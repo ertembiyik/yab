@@ -276,7 +276,7 @@ struct AppIconPage: View {
                     .font(.system(size: 17, weight: .semibold))
                     .padding(.top, 2)
                 // One line kept for the note, so the dots don't jump.
-                FadingText(note)
+                FadingText(note, wraps: true)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.top, 4)
@@ -525,16 +525,22 @@ struct AppIconPage: View {
 /// Changing words cross-faded as two views: Text's own content transition is redrawn on the CPU every frame.
 private struct FadingText: View {
     let words: String
+    let wraps: Bool
 
-    init(_ words: String) { self.words = words }
+    init(_ words: String, wraps: Bool = false) {
+        self.words = words
+        self.wraps = wraps
+    }
 
     var body: some View {
         // The hidden copy sizes it, so a button still widens with its words.
+        // Wrapping words lay out at the full width, so the outgoing copy keeps its lines.
         Text(words)
             .hidden()
+            .frame(maxWidth: wraps ? .infinity : nil)
             .overlay {
                 Text(words)
-                    .fixedSize()
+                    .fixedSize(horizontal: !wraps, vertical: true)
                     .id(words)
                     .transition(.opacity)
             }
