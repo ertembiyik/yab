@@ -27,7 +27,8 @@ struct CliSettingsTests {
 
     @Test func refusesWhatItCannotSendAsIs() {
         for args in [["apply"], ["apply", "a", "not json"], ["apply", "a", "[1]"], ["apply", "a", "{}", "extra"], ["undo", "a", "b"],
-                     ["operation"], ["operation", "o", "--seconds", "11"], ["show", "--target", "space"], ["show", "--bogus"], ["delete"]] {
+                     ["operation"], ["operation", "o", "--seconds", "11"], ["show", "--target", "space"], ["show", "--bogus"], ["delete"],
+                     ["apply", "a", "--session", "S1"], ["show", "--session", "S1"]] {
             #expect(throws: CliSettings.Failure.self) { try CliSettings.parse(args) }
         }
     }
@@ -41,6 +42,17 @@ struct CliSettingsTests {
         #expect(CliSettings.exitCode(result(#"{"status":"unknown_outcome"}"#)) == 1)
         #expect(CliSettings.exitCode(result("Refused", error: true)) == 1)
         #expect(CliSettings.exitCode(result(#"{"settings":[]}"#)) == 0)
+    }
+
+    /// A Gmail connect is `running` while the person signs in to Google, and its session must outlive the terminal's wait.
+    @Test func aChangeStillWaitingOrRunningKeepsItsSession() {
+        func result(_ status: String) -> [String: Any] {
+            ["content": [["type": "text", "text": #"{"status":"\#(status)","operationId":"A"}"#]], "isError": false]
+        }
+        #expect(CliSettings.keeps(result("needs_user")))
+        #expect(CliSettings.keeps(result("running")))
+        #expect(!CliSettings.keeps(result("verified")))
+        #expect(!CliSettings.keeps(["content": [["type": "text", "text": #"{"status":"running"}"#]], "isError": true]))
     }
 
     @Test func aLaterOperationRejoinsTheSessionTheApplyLeftWaiting() throws {
@@ -84,5 +96,17 @@ struct LeftSessionTests {
         agents.used(session.id)
         agents.expireLeft(now: .distantFuture)
         #expect(session.state == .attached)
+    }
+
+    @Test func aDetachWithAfterLeavesTheSessionInsteadOfEndingIt() {
+        let agents = Agents.shared
+        let session = agents.attach(name: "Detached session " + UUID().uuidString)
+        defer { agents.detach(session.id) }
+        var said: [String: Any] = [:]
+        Bench().handleAgentDetach(AgentCall(bench: Bench(), verb: "agent-detach", request: ["session": session.id, "after": Mcp.keptFor],
+                                            browser: Browser(windowID: UUID())) { said = $0 })
+        #expect(said["ok"] as? Bool == true)
+        #expect(session.state == .attached)
+        #expect(agents.leftUntil[session.id] != nil)
     }
 }

@@ -107,4 +107,29 @@ extension McpToolsTests {
         #expect(calls[2].1["requestId"] as? String == "r1")
         #expect(calls[3].1["changeId"] as? String == "c1")
     }
+
+    @Test func nativeApplyFollowsItsOperationUntilTheYes() {
+        var calls: [String] = []
+        let result = McpRun.run("return native_apply({ action: 'a', requestId: 'r' }).status") { name, input in
+            calls.append(name)
+            let status = calls.count < 3 ? "needs_user" : "verified"
+            return ["content": [["type": "text", "text": #"{"status":"\#(status)","operationId":"OP1"}"#]], "isError": false]
+        }
+        #expect(Self.words(result).hasPrefix("verified"))
+        #expect(calls == ["native_apply", "native_operation", "native_operation"])
+        #expect((result["structuredContent"] as? [String: Any])?["waitingOperation"] == nil)
+    }
+
+    /// `yab exec` exited 0 on a change still waiting, and the yes that came later did nothing.
+    @Test func nativeApplyStillWaitingIsANeedsUserErrorThatKeepsItsOperation() {
+        var operations: [[String: Any]] = []
+        let result = McpRun.run("native_apply({ action: 'mail.connect', requestId: 'r' })") { name, input in
+            if name == "native_operation" { operations.append(input) }
+            return ["content": [["type": "text", "text": #"{"status":"running","operationId":"OP1"}"#]], "isError": false]
+        }
+        #expect(CliExec.status(result) == 3)
+        #expect(Self.words(result).contains("operationId: OP1"))
+        #expect(operations.count == 3 && operations.allSatisfy { $0["operationId"] as? String == "OP1" && $0["seconds"] as? Int == 10 })
+        #expect((result["structuredContent"] as? [String: Any])?["waitingOperation"] as? String == "OP1")
+    }
 }

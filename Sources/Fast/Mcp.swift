@@ -772,6 +772,13 @@ enum Mcp {
     }
     /// Set by a call that leaves its session for later (a change still waiting for the person).
     static var keepSession = false
+
+    /// A terminal's change still waiting in Yab keeps its session, and the person is told how to ask again.
+    static func leaveWaiting(_ operation: String) {
+        guard client == "yab", let session else { return }
+        keepSession = true
+        FileHandle.standardError.write(Data("Still waiting for you in Yab. Ask again within \(Int(keptFor / 60)) minutes: \(AgentSetup.command) settings operation \(operation) --session \(session)\n".utf8))
+    }
     /// How long a session left for later lasts without a call before Yab ends it.
     static let keptFor: TimeInterval = 5 * 60
 

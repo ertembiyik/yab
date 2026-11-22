@@ -239,6 +239,7 @@ extension Mcp {
             var result = McpRun.run(input["code"] as? String ?? "", outputLimit: input["outputLimit"] as? Int ?? 8000) { name, input in
                 name == "run" ? text("run can't call run", error: true) : call(name, input)
             }
+            if let waiting = (result["structuredContent"] as? [String: Any])?["waitingOperation"] as? String { leaveWaiting(waiting) }
             // A client that finds structuredContent gives the model that in
             // place of the text: Claude Code's saw the step count, never
             // what the script printed.

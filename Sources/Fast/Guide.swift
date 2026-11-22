@@ -266,13 +266,13 @@ enum Guide {
     \(command) settings show theme
     \(command) settings actions engine
     \(command) settings apply site.set_engine '{"site":"github.com","value":"webKit"}'
-    \(command) settings undo
     ```
 
     These are the MCP native tools, with the same permissions. A change that needs the user's yes
     waits for it, then exits 3 while still unanswered; `settings operation ID --session SESSION`
-    asks again within \(Int(Mcp.keptFor / 60)) minutes. In `exec`, `native_context`, `native_actions` and `native_apply`
-    are functions. See `\(command) settings --help`.
+    asks again within \(Int(Mcp.keptFor / 60)) minutes. In `exec`, `native_context`, `native_actions`, `native_apply`,
+    `native_operation` and `native_undo` are functions. Undo works only inside one `exec` script,
+    after `native_apply` in that script. See `\(command) settings --help`.
 
     ## When Yab needs the user
 

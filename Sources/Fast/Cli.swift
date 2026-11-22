@@ -211,7 +211,7 @@ enum Cli {
           \(c) session stop ID               stop a task
           \(c) exec -f FILE.js [--json]       run browser steps; exec --help for all options
           \(c) mcp                           local stdio MCP server for an assistant
-          \(c) settings [show] [WORDS]       Yab's settings, spaces and tabs; settings --help for changes
+          \(c) settings [show [WORDS]]       Yab's settings, spaces and tabs; settings --help for changes
           \(c) memory search WORDS           search relevant remembered facts
           \(c) memory list                   list memory pages
           \(c) memory show FILE              read a page; memory path prints its folder

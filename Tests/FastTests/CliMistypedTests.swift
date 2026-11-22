@@ -39,4 +39,11 @@ struct CliMistypedTests {
     @Test func agentWordsAreATask() {
         #expect(Cli.command(["agent", "tabs"]) == "agent")
     }
+
+    /// `yab settings` is the command only before a verb, a flag or nothing: the rest is a task.
+    @Test func settingsIsACommandOnlyBeforeAVerb() {
+        #expect(Cli.command(["settings", "make", "it", "dark"]) == "")
+        #expect(Cli.command(["settings", "--socket", "s", "show"]) == "settings")
+        #expect(Cli.command(["settings"]) == "settings")
+    }
 }

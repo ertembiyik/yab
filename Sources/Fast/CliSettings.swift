@@ -1,14 +1,6 @@
 import Foundation
 
-// `yab settings`: Yab's own settings, spaces and tabs from a terminal, for a
-// script or an agent's shell that has no MCP connection. Each verb is the
-// native_* MCP tool of the same name called once (Mcp.once), so its checks,
-// its refusals and the person's yes are the tool's.
-//
-//     yab settings show theme
-//     yab settings actions engine
-//     yab settings apply site.set_engine '{"site":"github.com","value":"webKit"}'
-//     yab settings undo
+// `yab settings`: each verb is the native_* MCP tool of the same name, so its checks and the person's yes are the tool's.
 
 enum CliSettings {
     static let verbs: Set<String> = ["show", "actions", "apply", "undo", "operation"]
@@ -69,6 +61,7 @@ enum CliSettings {
         }
         var call = try call(plain, json: json, target: target, expected: expected, requestID: requestID,
                             seconds: seconds, cancel: cancel, newID: newID)
+        guard session == nil || call.tool == "native_operation" else { throw Failure(message: "--session goes only with settings operation.") }
         call.session = session
         return call
     }
@@ -139,10 +132,11 @@ enum CliSettings {
         let result = Mcp.within(args) { () -> [String: Any] in
             var result = Mcp.call(call.tool, call.input)
             if call.waits {
-                // The yes is asked in this session, so it waits here: leaving would take the card away.
-                let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 600 : 15)
+                // The yes is asked in this session, and a yes to a card whose session ended is refused.
+                // A terminal waits as long as the confirmation lasts (NativeControl.decide).
+                let limit = Date().addingTimeInterval(isatty(STDIN_FILENO) == 1 ? 300 : 15)
                 var told = false
-                while ["needs_user", "running", "prepared"].contains(status(of: result) ?? ""), let id = operation(of: result), Date() < limit {
+                while keeps(result), let id = operation(of: result), Date() < limit {
                     if !told, status(of: result) == "needs_user" {
                         told = true
                         FileHandle.standardError.write(Data("Waiting for your yes in Yab…\n".utf8))
@@ -151,10 +145,7 @@ enum CliSettings {
                 }
             }
             // Still unanswered, after a wait or a read that asked for none: the card stays with its session.
-            if status(of: result) == "needs_user", let id = operation(of: result), let session = Mcp.session {
-                Mcp.keepSession = true
-                FileHandle.standardError.write(Data("Still waiting for your yes in Yab. Ask again within \(Int(Mcp.keptFor / 60)) minutes: \(AgentSetup.command) settings operation \(id) --session \(session)\n".utf8))
-            }
+            if keeps(result), let id = operation(of: result) { Mcp.leaveWaiting(id) }
             return result
         }
         let failed = result["isError"] as? Bool == true
@@ -173,11 +164,13 @@ enum CliSettings {
     /// The native result's own status says whether it is done: an apply still waiting for the person is 3.
     static func exitCode(_ result: [String: Any]) -> Int32 {
         guard result["isError"] as? Bool != true else { return CliExec.status(result) }
-        switch status(of: result) {
-        case "needs_user", "running", "prepared": return 3
-        case "unknown_outcome": return 1
-        default: return 0
-        }
+        if keeps(result) { return 3 }
+        return status(of: result) == "unknown_outcome" ? 1 : 0
+    }
+
+    /// Not done yet, waiting for the person's yes or for them to finish (a Gmail sign-in): its session must stay.
+    static func keeps(_ result: [String: Any]) -> Bool {
+        result["isError"] as? Bool != true && ["needs_user", "running", "prepared"].contains(status(of: result) ?? "")
     }
 
     static func status(of result: [String: Any]) -> String? { native(result)?["status"] as? String }
@@ -192,13 +185,13 @@ enum CliSettings {
     static var usage: String {
         let c = AgentSetup.command
         return """
-        usage: \(c) settings [show] [WORDS] [--target KIND:ID] [--json]   current settings, spaces and tabs
+        usage: \(c) settings [show [WORDS]] [--target KIND:ID] [--json]   current settings, spaces and tabs
                \(c) settings actions [WORDS] [--json]                    what can be changed, with argument schemas
                \(c) settings apply ACTION ['{"key":value}'] [--target KIND:ID] [--expect VERSION] [--request-id ID] [--json]
                \(c) settings undo [CHANGE_ID] [--json]
                \(c) settings operation OPERATION_ID [--session ID] [--seconds N] [--cancel] [--json]
         The target defaults to the app (application:app). An apply that needs your yes waits for it in Yab; so does operation, unless given --seconds or --cancel.
-        Undo reaches changes made in the same session, such as one exec script or an agent's shell.
+        Undo reaches changes made in the same session: apply and undo inside one exec script.
         exit: 0 done · 1 refused or failed · 2 usage · 3 needs you in Yab
         """
     }
