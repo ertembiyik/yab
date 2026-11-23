@@ -522,15 +522,23 @@ struct AppIconPage: View {
     }
 }
 
-/// Changing words cross-faded as two views: Text's own content transition is redrawn on the CPU every frame.
+/// Changing words cross-faded between two fixed slots: Text's own content transition is redrawn
+/// on the CPU every frame, and a view per string would pile up while a key is held.
 private struct FadingText: View {
     let words: String
     let wraps: Bool
+    @State private var slots: [String]
+    @State private var front = 0
+    @State private var change = Change()
 
     init(_ words: String, wraps: Bool = false) {
         self.words = words
         self.wraps = wraps
+        _slots = State(initialValue: [words, ""])
     }
+
+    /// The transaction the words last changed in: onChange runs outside it.
+    private final class Change { var transaction = Transaction() }
 
     var body: some View {
         // The hidden copy sizes it, so a button still widens with its words.
@@ -538,11 +546,27 @@ private struct FadingText: View {
         Text(words)
             .hidden()
             .frame(maxWidth: wraps ? .infinity : nil)
+            .transaction { [change] in change.transaction = $0 }
             .overlay {
-                Text(words)
-                    .fixedSize(horizontal: !wraps, vertical: true)
-                    .id(words)
-                    .transition(.opacity)
+                ZStack {
+                    ForEach(slots.indices, id: \.self) { slot in
+                        Text(slots[slot])
+                            .fixedSize(horizontal: !wraps, vertical: true)
+                            .contentTransition(.identity)
+                            // New words take their place at once: only the opacity animates.
+                            .animation(nil, value: slots[slot])
+                            .opacity(slot == front ? 1 : 0)
+                    }
+                }
+            }
+            .onChange(of: words) { _, new in
+                // The capture doesn't run for a change made without one, so an old one isn't replayed.
+                let transaction = change.transaction
+                change.transaction = Transaction()
+                withTransaction(transaction) {
+                    front = 1 - front
+                    slots[front] = new
+                }
             }
     }
 }
