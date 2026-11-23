@@ -3,7 +3,8 @@
 
 A changed test file brings its own suites. A changed source file `Foo.swift`
 (or `Foo+Bar.swift`) brings the suite named `FooTests` when one exists.
-Prints nothing when no suite matches, and `all` when the package itself changed.
+Prints nothing when no suite matches, and `.*` (every test) when the package itself
+changed.
 
   swift test --filter "$(scripts/runs/tests_for.py)"
   scripts/runs/tests_for.py --since BASE_SHA
@@ -51,7 +52,7 @@ def main():
     parser.add_argument('--since', help='revision to compare with (default: where HEAD left main)')
     files = changed(parser.parse_args().since or base())
     if PACKAGE.intersection(files):
-        print('all')
+        print('.*')
         return
     tests = sorted(ROOT.glob('Tests/**/*.swift'))
     known = {name for path in tests for name in suites_in(path)}
