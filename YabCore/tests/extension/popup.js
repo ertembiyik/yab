@@ -1,5 +1,6 @@
 // Saves as a clipper's popup does: a blob link clicked, then revoked at once.
-document.addEventListener('click', () => {
+document.addEventListener('click', event => {
+  if (event.target instanceof HTMLAnchorElement) return;
   const url = URL.createObjectURL(new Blob(['# Popup save\n'], {type: 'text/markdown'}));
   const link = document.createElement('a');
   link.href = url;
