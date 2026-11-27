@@ -606,6 +606,18 @@ final class ColumnPages: NSView {
         CATransaction.commit()
     }
 
+    /// Held at `x` where it is drawn, its landing springs stopped: fingers caught it.
+    func catchRow(at x: CGFloat) {
+        guard let layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for key in layer.animationKeys() ?? [] where key.hasPrefix("pager.") { layer.removeAnimation(forKey: key) }
+        layer.sublayerTransform = CATransform3DMakeTranslation(x, 0, 0)
+        for page in pages.values { page.stopPins() }
+        stillPins(x, from: nil, velocity: 0)
+        CATransaction.commit()
+    }
+
     /// The pins standing still over the row: the home page's head carried
     /// back as far as the row goes, the others' hidden.
     private func stillPins(_ x: CGFloat, from: CGFloat?, velocity: CGFloat) {

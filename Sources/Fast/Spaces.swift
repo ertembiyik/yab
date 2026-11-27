@@ -2057,7 +2057,8 @@ struct SpaceSwipe: NSViewRepresentable {
                     if mine, paging {
                         paging = false
                         let speed = SpacePaging.speed(recent.map { ($0.0, Double($0.1)) }, liftedAt: event.timestamp)
-                        MainActor.assumeIsolated { SpacePager.shared.release(speed: CGFloat(speed)) }
+                        let cancelled = event.phase == .cancelled
+                        MainActor.assumeIsolated { SpacePager.shared.release(speed: CGFloat(speed), cancelled: cancelled) }
                         return nil
                     }
                     // Gone quiet before lifting is no flick.

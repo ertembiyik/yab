@@ -1196,6 +1196,14 @@ final class ColumnPage: NSView {
     /// The pins hidden, or carried `offset` across: standing still while
     /// the row of spaces moves the page under them. `from`: where the row
     /// was, to land the pins against it on the same spring.
+    /// The pins' landing springs stopped where they are drawn.
+    func stopPins() {
+        guard let layer = pinsView.layer else { return }
+        let drawn = layer.presentation()?.transform ?? layer.transform
+        for key in layer.animationKeys() ?? [] where key.hasPrefix("pager.") { layer.removeAnimation(forKey: key) }
+        layer.transform = drawn
+    }
+
     func headPins(hidden: Bool, offset: CGFloat, from: CGFloat?, velocity: CGFloat) {
         guard let layer = pinsView.layer else { return }
         if pinsView.isHidden != hidden { pinsView.isHidden = hidden }

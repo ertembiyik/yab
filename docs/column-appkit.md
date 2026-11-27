@@ -91,8 +91,8 @@ cells, only as many as are in sight.
 - **The pager** (`SpacePager`): with ColumnKit on, a change of space no
   longer pictures the band or makes `PagedSpace` hosts: the pages are the
   live `ColumnPage`s themselves. Keys, menu, the tray and the dots slide
-  the clip on the same spring (`SpacePaging`, stiffness 987, damping
-  62.8); two fingers set its transform each move, half the fingers' way,
+  the clip on the same spring (`SpacePaging`, stiffness 632, damping
+  50.3); two fingers set its transform each move, half the fingers' way,
   Arc's give past the ends; the landing spring starts at the fingers'
   speed. `SpacePaging`'s rules, `SpacePager.grab(_:by:)` and `parting`
   (59d83e5d) are kept as they are: only what is moved changes.

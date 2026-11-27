@@ -64,21 +64,36 @@ struct SpacePagingTests {
         #expect(SpacePaging.speed([], liftedAt: 1) == 0)
     }
 
-    @Test func springLandsLikeArcs() {
-        // Measured: half the way in about 50 ms, nine tenths by 120, all of
-        // it (99 percent) by about 200, and never past.
+    @Test func springLandsCriticallyDampedInAQuarterSecond() {
+        // Response 0.25 s, damping 1: half the way in 67 ms, nine tenths by
+        // 155, all of it (99 percent) by about 265, and never past.
         func done(_ share: Double) -> Double {
             var t = 0.0
             while SpacePaging.spring(t) > 1 - share { t += 0.001 }
             return t
         }
-        #expect(abs(done(0.5) - 0.054) < 0.01)
-        #expect(abs(done(0.9) - 0.124) < 0.012)
-        #expect(abs(done(0.99) - 0.212) < 0.02)
+        #expect(abs(done(0.5) - 0.067) < 0.005)
+        #expect(abs(done(0.9) - 0.155) < 0.005)
+        #expect(abs(done(0.99) - 0.264) < 0.01)
         let lowest = stride(from: 0.0, through: 1.5, by: 0.001).map { SpacePaging.spring($0) }.min() ?? 0
         #expect(lowest >= -1e-6)
-        #expect(abs(SpacePaging.stiffness - 986.96) < 0.1)
-        #expect(abs(SpacePaging.friction - 62.83) < 0.01)
+        #expect(abs(SpacePaging.stiffness - 631.65) < 0.1)
+        #expect(abs(SpacePaging.friction - 50.27) < 0.01)
+    }
+
+    @Test func caughtFingersHoldTheRowWhereItIs() {
+        for (offset, back, forward) in [(-100.0, true, true), (60.0, true, true), (-12.0, true, false), (9.0, false, true), (-226.0, true, true)] {
+            let travel = SpacePaging.travel(for: offset, page: Self.page, back: back, forward: forward)
+            #expect(abs(SpacePaging.offset(travel: travel, page: Self.page, back: back, forward: forward) - offset) < 0.01)
+        }
+    }
+
+    @Test func theSpringTakesTheFingersSpeedOnlyTowardWhereItLands() {
+        #expect(SpacePaging.handOff(-800, from: -50, to: -226) == -800)
+        #expect(SpacePaging.handOff(800, from: -50, to: 0) == 800)
+        // Flung past the last space, it comes back still rather than further out first.
+        #expect(SpacePaging.handOff(-800, from: -14, to: 0) == 0)
+        #expect(SpacePaging.handOff(300, from: -150, to: -226) == 0)
     }
 
     @Test func slidesOverTheCardToo() {
@@ -111,6 +126,71 @@ struct SpacePagingTests {
         #expect(SpacePager.parting(scroll: true, phase: .changed, momentum: [], at: held + 0.5, heldSince: held) == .no)
         #expect(SpacePager.parting(scroll: true, phase: .ended, momentum: [], at: held + 0.5, heldSince: held) == .afterSwipe)
         #expect(SpacePager.parting(scroll: true, phase: [], momentum: .began, at: held + 0.5, heldSince: held) == .afterSwipe)
+    }
+
+    /// Plays `events` from idle, failing on any the phase refuses.
+    static func play(_ events: [SpacePaging.Event], from start: SpacePaging.Phase = .idle) -> SpacePaging.Phase? {
+        events.reduce(Optional(start)) { phase, event in phase.flatMap { SpacePaging.next($0, event) } }
+    }
+
+    @Test func aKeyLandsAndComesToRest() {
+        #expect(Self.play([.turn(target: 2), .send]) == .landing(springs: 1))
+        #expect(Self.play([.turn(target: 2), .send, .landed]) == .idle)
+    }
+
+    @Test func aSecondKeyWaitsForItsOwnSpring() {
+        // The first spring landing while the second key's switch runs must not take the pages down.
+        let turned = Self.play([.turn(target: 1), .send, .turn(target: 2)])
+        #expect(turned == .turning(target: 2, springs: 1))
+        #expect(Self.play([.landed], from: turned!) == .turning(target: 2, springs: 0))
+        #expect(Self.play([.landed, .send, .landed], from: turned!) == .idle)
+        #expect(Self.play([.send, .landed], from: turned!) == .landing(springs: 1))
+    }
+
+    @Test func aLetGoBackLandsWhereItBegan() {
+        #expect(Self.play([.grab(at: 1), .lift(switching: false), .send, .landed]) == .idle)
+    }
+
+    @Test func aLetGoOnwardIgnoresTheSwitchItMakes() {
+        let releasing = Self.play([.grab(at: 1), .lift(switching: true), .send])
+        #expect(releasing == .releasing(springs: 1))
+        // The switch's own turn and a grab inside it change nothing.
+        #expect(SpacePaging.next(releasing!, .turn(target: 3)) == nil)
+        #expect(SpacePaging.next(releasing!, .grab(at: 2)) == nil)
+        #expect(Self.play([.switched, .landed], from: releasing!) == .idle)
+        // A spring that landed before the switch was done still ends it.
+        #expect(Self.play([.landed, .switched], from: releasing!) == .idle)
+    }
+
+    @Test func fingersOrAKeyInterruptALanding() {
+        let landing = Self.play([.turn(target: 1), .send])!
+        #expect(SpacePaging.next(landing, .grab(at: 5)) == .held(since: 5))
+        #expect(SpacePaging.next(landing, .turn(target: 0)) == .turning(target: 0, springs: 1))
+        // A key while fingers hold starts a turn of its own.
+        #expect(SpacePaging.next(.held(since: 1), .turn(target: 2)) == .turning(target: 2, springs: 0))
+    }
+
+    @Test func staleEventsChangeNothing() {
+        #expect(SpacePaging.next(.idle, .landed) == nil)
+        #expect(SpacePaging.next(.idle, .send) == nil)
+        #expect(SpacePaging.next(.idle, .lift(switching: true)) == nil)
+        #expect(SpacePaging.next(.held(since: 1), .landed) == nil)
+        #expect(SpacePaging.next(.held(since: 1), .send) == nil)
+        #expect(SpacePaging.next(.landing(springs: 1), .lift(switching: false)) == nil)
+        for phase: SpacePaging.Phase in [.idle, .held(since: 1), .turning(target: 1, springs: 2), .releasing(springs: 1), .landing(springs: 3)] {
+            #expect(SpacePaging.next(phase, .finish) == .idle)
+        }
+    }
+
+    // A lift lost with nothing else happening left the row held halfway while the pointer moved on.
+    @Test func thePointerMovingAfterTheFingersLetsTheRowGo() {
+        #expect(SpacePaging.liftedUnseen(sincePointer: 0.1, sinceScroll: 0.8, heldFor: 2))
+        // Still scrolling: a Magic Mouse nudged mid-swipe keeps the row.
+        #expect(!SpacePaging.liftedUnseen(sincePointer: 0.05, sinceScroll: 0.1, heldFor: 2))
+        // The pointer last moved before the grab: fingers resting still.
+        #expect(!SpacePaging.liftedUnseen(sincePointer: 5, sinceScroll: 3, heldFor: 2))
+        // Moved before the last scroll.
+        #expect(!SpacePaging.liftedUnseen(sincePointer: 1, sinceScroll: 0.5, heldFor: 2))
     }
 
     // Who paints the column's ground while its spaces slide: one ground
