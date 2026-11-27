@@ -182,6 +182,8 @@ final class SpacePager {
         let restX = -CGFloat(to - home) * page
         let x = drawn
         guard abs(x - restX) <= page else { return false }
+        // The new space's neighbors may need the plate carried, which live or plateless pages can't.
+        if live != nil || !plate, Self.movesPlate(browser, toward: nil) != false { return false }
         // The caught springs' completions turn stale.
         generation += 1
         live?.catchRow(at: x)
@@ -208,6 +210,7 @@ final class SpacePager {
         if x != 0 { hold(!order.indices.contains(toward) || same(min(rest, toward)...max(rest, toward))) }
         if x != 0 { doors(toward: [rest, toward]) }
         set(x - CGFloat(rest - home) * page)
+        refreshKept()
         // The window takes on that space's color as far as the row has gone,
         // and a card's ground with it (SpaceWash's grounds).
         let share = Swift.Float(min(1, abs(x) / max(page, 1)))
@@ -601,6 +604,16 @@ final class SpacePager {
         if browser.glance.shown != nil { browser.glance.drop() }
         SwitchMeter.mark("pictured")
         return true
+    }
+
+    /// The floats' openings as they stand now: the island opened or closed, a download landed.
+    private func refreshKept() {
+        guard let stage, let column = browser?.column else { return }
+        let now = column.floats(over: band).rects
+        guard now != kept else { return }
+        kept = now
+        stage.keepClear(now)
+        mask()
     }
 
     /// The column's own drawing of the band hidden while the row is up: a
@@ -1479,7 +1492,8 @@ final class PagerStage: NSView {
 
     /// Nothing of the row drawn over `rects`: the foot's floats show through, live.
     func keepClear(_ rects: [CGRect]) {
-        guard let layer, !rects.isEmpty else { return }
+        guard let layer else { return }
+        guard !rects.isEmpty else { return layer.mask = nil }
         let mask = CAShapeLayer()
         mask.frame = layer.bounds
         mask.path = rects.reduce(CGPath(rect: layer.bounds, transform: nil)) { $0.subtracting(CGPath(rect: $1, transform: nil)) }
