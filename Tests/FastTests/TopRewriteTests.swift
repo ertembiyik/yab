@@ -42,10 +42,16 @@ import Testing
                                              kind: .linkActivated, shown: shown, source: shown)))
     }
 
-    @Test func aCrossSiteLinkKeepsItsAddressWhenItCarriesThePagesParameters() {
+    @Test func aCrossSiteLinkKeepsItsAddressInWebKit() {
         let other = Self.url("https://news.example/story")
         #expect(!TopRewrite.cleans(Navigation(url: Self.url("https://bank.example/act?x=1&utm_source=a"), kind: .linkActivated, source: other)))
-        #expect(TopRewrite.cleans(Navigation(url: Self.url("https://bank.example/?utm_source=a"), kind: .linkActivated, source: other)))
+        // Every parameter a tracking name: still another site's request, so it may reach an action.
+        #expect(!TopRewrite.cleans(Navigation(url: Self.url("https://bank.example/account/delete?utm_source=a"), kind: .linkActivated, source: other)))
+        #expect(!TopRewrite.cleans(Navigation(url: Self.url("https://bank.example/?utm_source=a"), kind: .formSubmitted, source: other)))
+        #expect(!TopRewrite.cleans(Navigation(url: Self.url("https://bank.example/?utm_source=a"), redirect: true, source: other)))
+        // The source frame still naming the page before, on bank.example: the page shown decides.
+        #expect(!TopRewrite.cleans(Navigation(url: Self.url("https://bank.example/account/delete?utm_source=a"), kind: .linkActivated,
+                                              shown: other, source: Self.url("https://bank.example"))))
         #expect(TopRewrite.cleans(Navigation(url: Self.url("https://www.bank.example/act?x=1&utm_source=a"), kind: .linkActivated,
                                              source: Self.url("https://bank.example"))))
         // In place, the request stays the page's (Sec-Fetch-Site as sent).

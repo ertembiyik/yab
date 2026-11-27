@@ -47,11 +47,10 @@ struct TopRewrite {
         if navigation.byYab { return true }
         // A load anew adds an entry: a page's own script navigation (location.replace) keeps its own.
         guard kind == .linkActivated || kind == .formSubmitted || navigation.redirect else { return false }
-        // A load anew reaches the site as no site's (Sec-Fetch-Site: none), so a
-        // cross-site request still carrying the page's parameters stays as sent.
-        if let source = navigation.source, SiteProcesses.site(of: source) != SiteProcesses.site(of: navigation.url),
-           !((Diary.withoutSharing(navigation.url) ?? navigation.url).query ?? "").isEmpty { return false }
-        return true
+        // A load anew reaches the site as no site's (Sec-Fetch-Site: none), so another site's request stays native.
+        // WebKit's source frame can still name the page before, so the page shown has to be same-site too.
+        let site = SiteProcesses.site(of: navigation.url)
+        return [navigation.source, navigation.shown].allSatisfy { $0.map { SiteProcesses.site(of: $0) == site } ?? true }
     }
 
     /// The address Yab sent (Tab.engineSent) as the engine asks for it: "https://a.example?q" is "https://a.example/?q".
