@@ -1195,6 +1195,12 @@ final class ColumnPage: NSView {
         return zip(next, items).contains { !$0.same($1) || $0.y != $1.y } || zip(nextHead, headItems).contains { !$0.same($1) || $0.y != $1.y }
     }
 
+    var topDepth: CGFloat { max(0, depth.above) }
+
+    func holdTop(_ strength: CGFloat?, eased: Bool = false) {
+        ends.hold(strength, eased: eased)
+    }
+
     /// The pins hidden, or carried `offset` across: standing still while
     /// the row of spaces moves the page under them. `from`: where the row
     /// was, to land the pins against it on the same spring.

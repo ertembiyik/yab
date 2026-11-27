@@ -61,7 +61,7 @@ final class SpacePager {
     /// still. Zero with no pins over it.
     private(set) var band: CGRect = .zero
     private var underPins: CGFloat = 0
-    /// The band takes in the plate: Mail, or spaces with different plate heights.
+    /// The band takes in the plate: Mail is in the change.
     private var plate = false
     /// What each page's grid shows, by its place in the order.
     private var pins: [Int: [Tab.ID]] = [:]
@@ -121,9 +121,9 @@ final class SpacePager {
             return false
         }
         if holding { finish() }
-        // A changing plate goes with its page, including a key that turns
-        // a still-landing live row toward a differently plated space.
-        let movingPlate = Self.movesPlate(browser, toward: target) ?? true
+        // Mail's head goes with its page, including a key that turns a
+        // still-landing live row toward Mail.
+        let movingPlate = Self.movesPlate(browser, toward: target)
         // Where the live row is drawn from the space it lands on: the
         // pictured row starts there, not snapped to that space.
         var carried: CGFloat = 0
@@ -182,8 +182,8 @@ final class SpacePager {
         let restX = -CGFloat(to - home) * page
         let x = drawn
         guard abs(x - restX) <= page else { return false }
-        // The new space's neighbors may need the plate carried, which live or plateless pages can't.
-        if live != nil || !plate, Self.movesPlate(browser, toward: nil) != false { return false }
+        // Mail beside the new space needs its head carried, which live or plateless pages can't.
+        if live != nil || !plate, Self.movesPlate(browser, toward: nil) { return false }
         // The caught springs' completions turn stale.
         generation += 1
         live?.catchRow(at: x)
@@ -442,23 +442,10 @@ final class SpacePager {
         return near.contains { order.indices.contains($0) && order[$0] == Space.mailID }
     }
 
-    /// Nil until setup has restored an unknown row. Diagnostics and
-    /// picture-ahead checks never restore tabs or their configurations.
-    private static func movesPlate(_ browser: Browser, toward target: Int?, load: Bool = false) -> Bool? {
-        if withMail(browser, toward: target) { return true }
-        guard ColumnKit.on else { return false }
-        let order = browser.turnOrder.map(\.id)
-        guard let home = order.firstIndex(of: browser.spaceID) else { return nil }
-        let current = SidePlate.extensionPlate(in: browser, space: browser.spaceID, tab: browser.active, shown: browser.sidePlated)
-        let travelling = browser.tabs.filter(browser.travels)
-        let plates: [SpacePlateRouting.Plate?] = SpacePlateRouting.places(home: home, count: order.count, toward: target).map { index in
-            let id = order[index]
-            if load, browser.parked[id] == nil { browser.parked[id] = browser.loadRow(id) }
-            guard let row = browser.parked[id].map({ browser.withShared($0, in: id) }) else { return nil }
-            let tab = (row.tabs + travelling).first { $0.id == row.active }
-            return SidePlate.extensionPlate(in: browser, space: id, tab: tab, shown: browser.sidePlated(row))
-        }
-        return SpacePlateRouting.moves(from: current, to: plates)
+    /// Only Mail's head goes with the pages: every other plate stands
+    /// still and changes what it shows when the space does (SidePlate).
+    private static func movesPlate(_ browser: Browser, toward target: Int?) -> Bool {
+        withMail(browser, toward: target)
     }
 
     /// The same plate-inclusive band for the picture, prepared pages and
@@ -481,7 +468,7 @@ final class SpacePager {
     /// drawing masked out.
     private func raise(_ browser: Browser, toward target: Int? = nil, movingPlate: Bool? = nil) -> Bool {
         let mail = Self.withMail(browser, toward: target)
-        let carriesPlate = movingPlate ?? Self.movesPlate(browser, toward: target) ?? true
+        let carriesPlate = movingPlate ?? Self.movesPlate(browser, toward: target)
         if ColumnKit.on && !carriesPlate { return raiseLive(browser) }
         // Out over the page as a card, the column stands in from the
         // window's edges and paints a ground of its own, cut out of the
@@ -493,8 +480,8 @@ final class SpacePager {
         let floating = browser.prefs.sideShut && browser.sideCard
         guard let column = browser.column, var band = column.spaceBand(browser), band.width > 20, band.height > 20 else { return false }
         let top = (floating ? Metrics.floatInset : 0) + browser.menuDown
-        // Different plate heights travel with their pages, as Mail's do:
-        // the native rows and the stationary SwiftUI plate share one mask.
+        // Mail's head travels with its page: the native rows and the
+        // stationary SwiftUI plate share one mask.
         if carriesPlate { band = Self.plateBand(band, top: top) }
         let height = column.bounds.height - top - (floating ? Metrics.floatInset : 0)
         // Where the pointer is, for the pages to come in under it as the
@@ -871,14 +858,14 @@ final class SpacePager {
             if browser.parked[id] == nil { browser.parked[id] = browser.loadRow(id) }
             guard let row = browser.parked[id].map({ browser.withShared($0, in: id) }) else { continue }
             let started = CACurrentMediaTime()
-            let direct = Self.movesPlate(browser, toward: order.firstIndex(of: id), load: false)
-            let gesture = Self.movesPlate(browser, toward: nil, load: false)
+            let direct = Self.movesPlate(browser, toward: order.firstIndex(of: id))
+            let gesture = Self.movesPlate(browser, toward: nil)
             // The column's own page always: the switch adopts it whether
             // the row slides live or pictured, or it makes the space's rows
-            // in the switch's pass. A route that carries the plate also
-            // gets its pictured page. One a quiet turn.
+            // in the switch's pass. A route past Mail also gets its
+            // pictured page. One a quiet turn.
             let native = pages.ready(id, row: row, travelling: travelling)
-            let pictured = !native && (direct != false || gesture != false)
+            let pictured = !native && (direct || gesture)
                 && preparePlate(browser, id: id, row: row, travelling: travelling)
             guard native || pictured else { continue }
             Self.madeAhead += 1
@@ -888,7 +875,7 @@ final class SpacePager {
         }
     }
 
-    /// A pictured page for a plate-changing route. Its band, paint and
+    /// A pictured page for a route past Mail. Its band, paint and
     /// plate flag match build/page, including the page cache identity.
     private func preparePlate(_ browser: Browser, id: UUID, row: Parked, travelling: [Tab]) -> Bool {
         guard let column = browser.column, let window = column.window,
@@ -997,12 +984,10 @@ final class SpacePager {
     private func pictureAhead(_ browser: Browser) {
         guard !active, let column = browser.column, !(browser.prefs.sideShut && browser.sideCard),
               let band = column.spaceBand(browser), band.width > 20, band.height > 20 else { return }
-        // Only a route that carries the plate wants a picture with the
-        // AppKit column. Missing rows are restored by prepare/setup, never
-        // by this check; a later quiet turn can picture them.
+        // Only a route past Mail wants a picture with the AppKit column.
         let movingPlate = Self.movesPlate(browser, toward: nil)
-        if ColumnKit.on, movingPlate != true { return }
-        let picturedBand = movingPlate == true ? Self.plateBand(band, top: browser.menuDown) : band
+        if ColumnKit.on, !movingPlate { return }
+        let picturedBand = movingPlate ? Self.plateBand(band, top: browser.menuDown) : band
         _ = picture(column, band: picturedBand, card: nil, own: Self.ownGround(browser), browser: browser)
     }
 
