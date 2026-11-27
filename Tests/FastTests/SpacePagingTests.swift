@@ -64,21 +64,21 @@ struct SpacePagingTests {
         #expect(SpacePaging.speed([], liftedAt: 1) == 0)
     }
 
-    @Test func springLandsCriticallyDampedInAQuarterSecond() {
-        // Response 0.25 s, damping 1: half the way in 67 ms, nine tenths by
-        // 155, all of it (99 percent) by about 265, and never past.
+    @Test func springLandsLikeArcs() {
+        // Measured: half the way in about 50 ms, nine tenths by 120, all of
+        // it (99 percent) by about 200, and never past.
         func done(_ share: Double) -> Double {
             var t = 0.0
             while SpacePaging.spring(t) > 1 - share { t += 0.001 }
             return t
         }
-        #expect(abs(done(0.5) - 0.067) < 0.005)
-        #expect(abs(done(0.9) - 0.155) < 0.005)
-        #expect(abs(done(0.99) - 0.264) < 0.01)
+        #expect(abs(done(0.5) - 0.054) < 0.01)
+        #expect(abs(done(0.9) - 0.124) < 0.012)
+        #expect(abs(done(0.99) - 0.212) < 0.02)
         let lowest = stride(from: 0.0, through: 1.5, by: 0.001).map { SpacePaging.spring($0) }.min() ?? 0
         #expect(lowest >= -1e-6)
-        #expect(abs(SpacePaging.stiffness - 631.65) < 0.1)
-        #expect(abs(SpacePaging.friction - 50.27) < 0.01)
+        #expect(abs(SpacePaging.stiffness - 986.96) < 0.1)
+        #expect(abs(SpacePaging.friction - 62.83) < 0.01)
     }
 
     @Test func caughtFingersHoldTheRowWhereItIs() {

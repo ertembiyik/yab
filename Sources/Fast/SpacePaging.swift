@@ -10,8 +10,8 @@ import Foundation
 // still moving, even slowly, and the row goes on the way it was going, to
 // the next space or back where it began; let go held still, it goes to
 // whichever space shows more. A key, a click or a let-go all land on one
-// spring, critically damped, a quarter of a second: half the way in 67 ms,
-// nine tenths in 155, all of it in about 265, never past.
+// spring, critically damped, a fifth of a second: half the way in 50 ms,
+// nine tenths in 120, all of it in about 200, never past.
 
 enum SpacePaging {
     /// Where the column is when two fingers go sideways over it.
@@ -123,7 +123,7 @@ enum SpacePaging {
     static let follow: Double = 0.5
     /// The spring every landing is on: its response, in seconds, and its
     /// damping, 1 being the quickest that never goes past.
-    static let response: Double = 0.25
+    static let response: Double = 0.2
     static let damping: Double = 1
     /// For Core Animation's spring, of mass 1.
     static var stiffness: Double { pow(2 * .pi / response, 2) }

@@ -650,9 +650,8 @@ freely. Two fingers on a trackpad can't move the pointer, so while the row
 is held a pointer that moved after the last scroll, with the scrolls quiet
 0.3 s, now lets it go as a still lift (`SpacePaging.liftedUnseen`).
 
-**The spring.** Response 0.25 s, critically damped (stiffness 632, damping
-50.3): half the way in 67 ms, nine tenths in 155, all of it by about 265.
-The fingers' speed goes to the landing spring only when it heads where the
+**The landing.** The spring stays response 0.2 s, critically damped. The
+fingers' speed goes to the landing spring only when it heads where the
 row lands (`SpacePaging.handOff`): a flick past the first or last space no
 longer throws the row further out first (27 pt before, 17 now, the fingers'
 own reach). A cancelled gesture goes back where it began, still. A second
