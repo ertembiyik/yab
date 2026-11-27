@@ -669,5 +669,28 @@ light it from the space's own row, nothing in front meaning lit
 (`ColumnCell.Context.newTabLit`), so it slides in lit, as the tab in front
 of a space does.
 
+**The plate and the top's blur stand still.** Between spaces whose plates
+differ (a pinned extension in one and not the other, the bar shown in one
+and hidden in the other) the plate went with its page: the row was
+pictured, plate and all. The picture can't hold the live blur under the
+pins, so the rows scrolled under them showed through as the row set off,
+and the blur went with the space. Every change of space but Mail's now
+slides the column's own pages (`raiseLive`): the plate stays where it is,
+as the lights do, and its address and pins turn to the next space's on the
+row's spring, faded and blurred in (`SidePlate.turn`, through the switch's
+quiet transaction). Each page's blur over the top is drawn down the column
+only. While the row slides every page wears the strongest of the row's
+pages (`ColumnPages.stillTop`), so it reads as one layer standing still
+and no page's scrolled rows show through as a weaker one passes; at the
+landing it eases to the new page's own. A mix of the two pages under the
+row was tried first: it uncovered the leaving page's scrolled rows as the
+row headed to an unscrolled space.
+
+**The rows stay put under a sideways swipe.** The glide a trackpad sends
+after two fingers lift went on to the rows' scroll view, free to scroll
+with its up and down drift as the row of spaces landed. The column's catch
+now keeps a sideways gesture's glide to itself
+(`SpaceSwipe.Catch.gliding`).
+
 Not verified: a real trackpad (posted scroll events), the card brought out
 over the page, Reduce Motion.

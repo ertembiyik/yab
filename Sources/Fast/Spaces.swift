@@ -1926,6 +1926,8 @@ struct SpaceSwipe: NSViewRepresentable {
             return abs(speed) > 600 && (speed < 0) == (travel < 0)
         }
         private var sideways: Bool?
+        /// The glide after a sideways swipe over the column: the row of spaces', never the rows' scroll.
+        private var gliding = false
 
         /// Fingers down again on a gesture whose end never came here, gone
         /// to another window or another app (a swipe of three fingers to
@@ -2006,6 +2008,7 @@ struct SpaceSwipe: NSViewRepresentable {
             }
             guard acceptsInput else {
                 lose()
+                gliding = false
                 owned = false
                 sideways = nil
                 paging = false
@@ -2017,6 +2020,10 @@ struct SpaceSwipe: NSViewRepresentable {
             }
             if column, event.phase == [], event.momentumPhase == [] { return wheeled(event) }
             guard Swipe.isGesture(event) else { return event }
+            if column, gliding, event.momentumPhase != [] {
+                if event.momentumPhase == .ended || event.momentumPhase == .cancelled { gliding = false }
+                return nil
+            }
             if column, event.phase == .began || event.phase == .ended || event.phase == .cancelled {
                 MainActor.assumeIsolated {
                     SpaceSwipe.note(event.phase == .began
@@ -2032,9 +2039,11 @@ struct SpaceSwipe: NSViewRepresentable {
                 owned = false
                 paging = false
                 unpaged = false
+                gliding = false
                 return event
             case .began:
                 lose()
+                gliding = false
                 owned = browser?.swipesSpaces == true
                     && bounds.contains(convert(event.locationInWindow, from: nil))
                     // Begun on the island: that swipe swaps players, or
@@ -2052,6 +2061,7 @@ struct SpaceSwipe: NSViewRepresentable {
                 let mine = owned && sideways == true
                 if event.phase == .ended || event.phase == .cancelled {
                     owned = false
+                    if column, mine { gliding = true }
                     // The row of spaces goes on the way the fingers went,
                     // or to whichever shows more (SpacePaging).
                     if mine, paging {
