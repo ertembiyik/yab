@@ -2904,10 +2904,10 @@ struct PagedSpace: View, Equatable {
                     ForEach(items) { item in
                         switch item {
                         case .newTab:
-                            comingNew
+                            comingNew(lit: row.active == nil)
                         case .line:
                             KeptLine(browser: browser)
-                            comingNew
+                            comingNew(lit: row.active == nil)
                         case .folder(let folder):
                             if let nest = folder.nest {
                                 NestRow(browser: browser, nest: nest, count: folder.members.count, over: folder.over)
@@ -2942,9 +2942,9 @@ struct PagedSpace: View, Equatable {
         }
     }
 
-    /// New Tab, heading today's as in the column.
-    private var comingNew: some View {
-        Quiet(icon: "plus", title: "New tab", height: SideBar.row, news: true) {}
+    /// New Tab, heading today's as in the column; lit when nothing is in front, as the space will land.
+    private func comingNew(lit: Bool) -> some View {
+        Quiet(icon: "plus", title: "New tab", height: SideBar.row, news: true, lit: lit, prefs: browser.prefs, browser: browser) {}
     }
 
     /// What the coming row draws, in order.

@@ -660,5 +660,15 @@ swipe while the row lands takes it where it is drawn and carries it on
 from there (`catchLanding`, `SpacePaging.travel`), where before the landing
 jumped to its end first.
 
+**New tab lit late.** Into a space with nothing in front, its New tab row
+lit only once the row had landed, 330 to 430 ms after the key, and later
+still after a few switches in a row, each adding its spring before the
+pages came down. The space beside was drawn as it would be with the space
+on screen's state: the pictured page (`PagedSpace`) never lit New tab, and
+an AppKit page laid ahead lit it as the space then in front had it. Both now
+light it from the space's own row, nothing in front meaning lit
+(`ColumnCell.Context.newTabLit`), so it slides in lit, as the tab in front
+of a space does.
+
 Not verified: a real trackpad (posted scroll events), the card brought out
 over the page, Reduce Motion.
